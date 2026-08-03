@@ -23,9 +23,16 @@ if (($ENV{'REQUEST_METHOD'} || '') eq 'POST' && $in{'confirm'}) {
     my ($active) = get_active_interfaces();
     my ($apply_ok, $out) = (1, '');
     ($apply_ok, $out) = action_apply_interface($name) if ($active->{$name});
-    webmin_log('delete', 'peer', $name, { public_key => $pub });
+    my ($fresh_snapshot, $refresh_error);
     if ($apply_ok) {
-        redirect('edit_interface.cgi?name='.urlize($name).'&peer_notice=deleted&refresh_runtime=1');
+        ($fresh_snapshot, $refresh_error) = refresh_runtime_snapshot(0);
+    }
+    webmin_log('delete', 'peer', $name, {
+        public_key => $pub,
+        runtime_refresh_ok => $fresh_snapshot ? 1 : 0,
+    });
+    if ($apply_ok) {
+        redirect('edit_interface.cgi?name='.urlize($name));
     }
     ui_print_header(undef, $text{'delete_title'}, '', undef, 1, 1);
     print ui_alert_box($apply_ok ? $text{'delete_done'} : $text{'action_failed'}, $apply_ok ? 'success' : 'danger');
