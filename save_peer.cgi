@@ -121,6 +121,10 @@ if ($active->{$name}) {
 webmin_log($is_new ? 'create' : 'modify', 'peer', $name,
     { public_key => $public, runtime_ok => $apply_ok ? 1 : 0 });
 
+if ($is_new && $apply_ok) {
+    redirect('edit_interface.cgi?name='.urlize($name).'&peer_notice=created&refresh_runtime=1');
+}
+
 my ($new_cfg) = parse_wireguard_config(conf_path($name));
 my $new_index = 0;
 for (my $i = 0; $i < @{$new_cfg->{'peers'}}; $i++) {
