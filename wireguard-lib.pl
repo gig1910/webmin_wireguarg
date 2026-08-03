@@ -5,7 +5,7 @@ Shared functions for the WireGuard Webmin module.
 =cut
 
 BEGIN { push(@INC, '..'); }
-use WebminCore;
+use WebminCore qw(:DEFAULT !encode_json !decode_json);
 use File::Basename qw(basename dirname);
 use File::Spec;
 use File::Path qw(make_path);
@@ -15,19 +15,15 @@ use Symbol qw(gensym);
 use MIME::Base64 ();
 use Digest::SHA qw(sha256_hex);
 use JSON::PP ();
-
-# WebminCore also exports functions named encode_json/decode_json.  Bind these
-# names explicitly to JSON::PP so JSON::PP boolean objects remain real JSON
-# booleans instead of being stringified as "JSON::PP::true/false".
-{
-    no warnings 'redefine';
-    sub encode_json { return JSON::PP::encode_json($_[0]); }
-    sub decode_json { return JSON::PP::decode_json($_[0]); }
-}
 use Encode qw(decode FB_CROAK);
 use Scalar::Util qw(blessed);
 use POSIX qw(strftime);
 use Socket qw(AF_INET AF_INET6 inet_pton inet_ntop);
+
+# Keep compatibility for shared module code that uses these names, while
+# preventing WebminCore's JSON helpers from taking precedence.
+sub encode_json { return JSON::PP::encode_json($_[0]); }
+sub decode_json { return JSON::PP::decode_json($_[0]); }
 
 init_config();
 our %access = get_module_acl();
