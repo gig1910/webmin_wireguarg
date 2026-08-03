@@ -14,7 +14,16 @@ use IPC::Open3;
 use Symbol qw(gensym);
 use MIME::Base64 ();
 use Digest::SHA qw(sha256_hex);
-use JSON::PP qw(encode_json decode_json);
+use JSON::PP ();
+
+# WebminCore also exports functions named encode_json/decode_json.  Bind these
+# names explicitly to JSON::PP so JSON::PP boolean objects remain real JSON
+# booleans instead of being stringified as "JSON::PP::true/false".
+{
+    no warnings 'redefine';
+    sub encode_json { return JSON::PP::encode_json($_[0]); }
+    sub decode_json { return JSON::PP::decode_json($_[0]); }
+}
 use Encode qw(decode FB_CROAK);
 use Scalar::Util qw(blessed);
 use POSIX qw(strftime);
