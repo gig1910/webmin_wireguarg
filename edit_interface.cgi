@@ -13,6 +13,8 @@ error(text('error_read', $path, $parse_error)) if (!$cfg);
 my $ifc = $cfg->{'interface'} || { 'values' => {}, 'meta' => {} };
 
 ui_print_header(undef, text('interface_title', $name), '', undef, 1, 1);
+my $page_instance = substr(sha256_hex(join('|', $$, time(), rand(), $name)), 0, 16);
+print '<div data-wg-interface-page="'.html_escape($page_instance).'">';
 print '<div id="wg-interface-runtime-error" class="alert alert-warning" style="display:none"></div>';
 print '<div id="wg-peer-action-result" class="alert" style="display:none"></div>';
 
@@ -135,6 +137,15 @@ print <<SCRIPT;
 </style>
 <script>
 (function() {
+    const scriptElement = document.currentScript;
+    const root = scriptElement && scriptElement.closest('[data-wg-interface-page]');
+    if (!root) return;
+
+    if (window.__wgInterfacePageController &&
+        typeof window.__wgInterfacePageController.destroy === 'function') {
+        window.__wgInterfacePageController.destroy();
+    }
+
     const interfaceName = $js_name;
     const activeText = $js_active;
     const inactiveText = $js_inactive;
@@ -147,6 +158,12 @@ print <<SCRIPT;
     const confirmPeerDisable = $js_confirm_disable;
     const runtimeLoadingText = $js_runtime_loading;
     const runtimeErrorPrefix = $js_runtime_error_prefix;
+    const requestControllers = new Set();
+    let destroyed = false;
+
+    function findById(id) {
+        return root.querySelector('#' + CSS.escape(id));
+    }
 
     function formatBytes(value) {
         value = Number(value) || 0;
@@ -158,21 +175,21 @@ print <<SCRIPT;
     }
 
     function setActions(active) {
-        const loading = document.getElementById('wg-actions-loading');
-        const activeActions = document.getElementById('wg-actions-active');
-        const inactiveActions = document.getElementById('wg-actions-inactive');
+        const loading = findById('wg-actions-loading');
+        const activeActions = findById('wg-actions-active');
+        const inactiveActions = findById('wg-actions-inactive');
         if (loading) loading.style.display = 'none';
         if (activeActions) activeActions.style.display = active ? 'inline' : 'none';
         if (inactiveActions) inactiveActions.style.display = active ? 'none' : 'inline';
     }
 
     function isPeerDisabled(id) {
-        const state = document.querySelector('[data-wg-peer-state="' + CSS.escape(id) + '"]');
+        const state = root.querySelector('[data-wg-peer-state="' + CSS.escape(id) + '"]');
         return !!state && state.dataset.disabled === '1';
     }
 
     function updatePeerState(id, disabled) {
-        const state = document.querySelector('[data-wg-peer-state="' + CSS.escape(id) + '"]');
+        const state = root.querySelector('[data-wg-peer-state="' + CSS.escape(id) + '"]');
         if (state) {
             state.dataset.disabled = disabled ? '1' : '0';
             state.textContent = disabled ? peerDisabledText : peerEnabledText;
@@ -181,7 +198,7 @@ print <<SCRIPT;
             state.classList.toggle('label-default', disabled);
             state.classList.toggle('wg-peer-state-disabled', disabled);
         }
-        const wrapper = document.querySelector('.wg-peer-toggle[data-peer-id="' + CSS.escape(id) + '"]');
+        const wrapper = root.querySelector('.wg-peer-toggle[data-peer-id="' + CSS.escape(id) + '"]');
         if (wrapper) {
             wrapper.dataset.peerDisabled = disabled ? '1' : '0';
             const button = wrapper.querySelector('[data-peer-toggle-button]');
@@ -191,9 +208,9 @@ print <<SCRIPT;
                 button.classList.toggle('btn-warning', !disabled);
             }
         }
-        const handshake = document.querySelector('[data-wg-handshake="' + CSS.escape(id) + '"]');
-        const rx = document.querySelector('[data-wg-rx="' + CSS.escape(id) + '"]');
-        const tx = document.querySelector('[data-wg-tx="' + CSS.escape(id) + '"]');
+        const handshake = root.querySelector('[data-wg-handshake="' + CSS.escape(id) + '"]');
+        const rx = root.querySelector('[data-wg-rx="' + CSS.escape(id) + '"]');
+        const tx = root.querySelector('[data-wg-tx="' + CSS.escape(id) + '"]');
         if (handshake) handshake.textContent = disabled ? peerDisabledText : runtimeLoadingText;
         if (disabled) {
             if (rx) rx.textContent = '—';
@@ -202,7 +219,7 @@ print <<SCRIPT;
     }
 
     function showPeerResult(message, kind) {
-        const box = document.getElementById('wg-peer-action-result');
+        const box = findById('wg-peer-action-result');
         if (!box) return;
         box.className = 'alert alert-' + (kind || 'success');
         box.textContent = message || '';
@@ -213,29 +230,31 @@ print <<SCRIPT;
         const body = await response.text();
         const contentType = (response.headers.get('content-type') || '').toLowerCase();
         if (!contentType.includes('application/json')) {
-            const sample = body.replace(/\\s+/g, ' ').trim().slice(0, 240);
+            const sample = body.replace(/\s+/g, ' ').trim().slice(0, 240);
             throw new Error('HTTP ' + response.status + ': сервер вернул не JSON' + (sample ? ': ' + sample : ''));
         }
         try {
             return JSON.parse(body);
         }
         catch (error) {
-            const sample = body.replace(/\\s+/g, ' ').trim().slice(0, 240);
+            const sample = body.replace(/\s+/g, ' ').trim().slice(0, 240);
             throw new Error('Некорректный JSON-ответ' + (sample ? ': ' + sample : ''));
         }
     }
 
-    document.addEventListener('click', async function(event) {
+    async function onPeerToggleClick(event) {
         const button = event.target.closest('[data-peer-toggle-button]');
-        if (!button) return;
+        if (!button || !root.contains(button)) return;
         event.preventDefault();
+        event.stopPropagation();
 
         const wrapper = button.closest('.wg-peer-toggle');
-        if (!wrapper) return;
+        if (!wrapper || wrapper.dataset.actionPending === '1') return;
         const peerId = wrapper.dataset.peerId;
         const currentlyDisabled = wrapper.dataset.peerDisabled === '1';
         if (!currentlyDisabled && !window.confirm(confirmPeerDisable)) return;
 
+        wrapper.dataset.actionPending = '1';
         const originalText = button.textContent;
         button.disabled = true;
         button.textContent = peerBusyText;
@@ -249,6 +268,8 @@ print <<SCRIPT;
             old_public_key: wrapper.dataset.publicKey || '',
             ajax: '1'
         });
+        const requestController = new AbortController();
+        requestControllers.add(requestController);
 
         try {
             const response = await fetch(wrapper.dataset.actionUrl, {
@@ -259,16 +280,18 @@ print <<SCRIPT;
                 },
                 body: payload.toString(),
                 credentials: 'same-origin',
-                cache: 'no-store'
+                cache: 'no-store',
+                signal: requestController.signal
             });
             const data = await decodeJsonResponse(response);
             if (!response.ok || !data.ok) throw new Error(data.error || ('HTTP ' + response.status));
+            if (destroyed) return;
             const disabled = !!data.disabled;
             updatePeerState(peerId, disabled);
-            document.querySelectorAll('.wg-peer-toggle').forEach(function(item) {
+            root.querySelectorAll('.wg-peer-toggle').forEach(function(item) {
                 if (data.digest) item.dataset.configDigest = data.digest;
             });
-            document.querySelectorAll('input[name="config_digest"]').forEach(function(input) {
+            root.querySelectorAll('input[name="config_digest"]').forEach(function(input) {
                 input.value = data.digest || input.value;
             });
             showPeerResult(data.message || (disabled ? peerDisabledText : peerEnabledText), 'success');
@@ -277,29 +300,35 @@ print <<SCRIPT;
             });
         }
         catch (error) {
-            showPeerResult(error.message || String(error), 'danger');
-            button.textContent = originalText;
+            if (!destroyed && error.name !== 'AbortError') {
+                showPeerResult(error.message || String(error), 'danger');
+                button.textContent = originalText;
+            }
         }
         finally {
-            wrapper.classList.remove('wg-peer-action-pending');
-            button.disabled = false;
+            requestControllers.delete(requestController);
+            if (!destroyed && root.contains(wrapper)) {
+                delete wrapper.dataset.actionPending;
+                wrapper.classList.remove('wg-peer-action-pending');
+                button.disabled = false;
+            }
         }
-    });
+    }
 
-    document.addEventListener('wg-runtime', function(event) {
+    function onRuntime(event) {
         const data = event.detail || {};
         const iface = data.interfaces && data.interfaces[interfaceName] ? data.interfaces[interfaceName] : { active: false, peers: [] };
         const active = !!iface.active;
-        const state = document.getElementById('wg-interface-state');
+        const state = findById('wg-interface-state');
         if (state) { state.textContent = active ? activeText : inactiveText; state.style.fontWeight = active ? 'bold' : 'normal'; }
-        const port = document.getElementById('wg-interface-port');
+        const port = findById('wg-interface-port');
         if (port && iface.listen_port) port.textContent = iface.listen_port;
-        const publicKey = document.getElementById('wg-interface-public-key');
+        const publicKey = findById('wg-interface-public-key');
         if (publicKey && iface.public_key) publicKey.textContent = iface.public_key;
         setActions(active);
 
         const peers = new Map((iface.peers || []).map(function(peer) { return [peer.id, peer]; }));
-        document.querySelectorAll('[data-wg-handshake]').forEach(function(element) {
+        root.querySelectorAll('[data-wg-handshake]').forEach(function(element) {
             const id = element.dataset.wgHandshake;
             if (isPeerDisabled(id)) {
                 element.textContent = peerDisabledText;
@@ -308,13 +337,13 @@ print <<SCRIPT;
             const peer = peers.get(id);
             element.textContent = peer ? (peer.handshake_text || '-') : (active ? '-' : notRunningText);
         });
-        document.querySelectorAll('[data-wg-rx]').forEach(function(element) {
+        root.querySelectorAll('[data-wg-rx]').forEach(function(element) {
             const id = element.dataset.wgRx;
             if (isPeerDisabled(id)) { element.textContent = '—'; return; }
             const peer = peers.get(id);
             element.textContent = peer ? formatBytes(peer.rx) : '—';
         });
-        document.querySelectorAll('[data-wg-tx]').forEach(function(element) {
+        root.querySelectorAll('[data-wg-tx]').forEach(function(element) {
             const id = element.dataset.wgTx;
             if (isPeerDisabled(id)) { element.textContent = '—'; return; }
             const peer = peers.get(id);
@@ -322,32 +351,59 @@ print <<SCRIPT;
         });
         peers.forEach(function(peer, id) {
             if (isPeerDisabled(id)) return;
-            const endpoint = document.querySelector('[data-wg-endpoint="' + CSS.escape(id) + '"]');
+            const endpoint = root.querySelector('[data-wg-endpoint="' + CSS.escape(id) + '"]');
             if (endpoint && peer.endpoint) endpoint.textContent = peer.endpoint;
         });
-        document.querySelectorAll('[data-wg-runtime-time]').forEach(function(element) {
+        root.querySelectorAll('[data-wg-runtime-time]').forEach(function(element) {
             element.textContent = new Date((data.timestamp || Date.now() / 1000) * 1000).toLocaleString();
         });
-        const error = document.getElementById('wg-interface-runtime-error');
+        const error = findById('wg-interface-runtime-error');
         if (error) error.style.display = 'none';
-    });
+    }
 
-    document.addEventListener('wg-runtime-error', function(event) {
-        const error = document.getElementById('wg-interface-runtime-error');
+    function onRuntimeError(event) {
+        const error = findById('wg-interface-runtime-error');
         if (!error) return;
         error.textContent = runtimeErrorPrefix + (event.detail && event.detail.error ? event.detail.error : '');
         error.style.display = 'block';
-    });
+    }
 
-    document.addEventListener('wg-runtime-warning', function(event) {
-        const error = document.getElementById('wg-runtime-error') || document.getElementById('wg-interface-runtime-error');
+    function onRuntimeWarning(event) {
+        const error = findById('wg-runtime-error') || findById('wg-interface-runtime-error');
         if (!error) return;
         error.textContent = event.detail && event.detail.warning ? event.detail.warning : '';
         error.style.display = error.textContent ? 'block' : 'none';
+    }
+
+    const detachObserver = new MutationObserver(function() {
+        if (!root.isConnected) destroy();
     });
+
+    function destroy() {
+        if (destroyed) return;
+        destroyed = true;
+        root.removeEventListener('click', onPeerToggleClick);
+        document.removeEventListener('wg-runtime', onRuntime);
+        document.removeEventListener('wg-runtime-error', onRuntimeError);
+        document.removeEventListener('wg-runtime-warning', onRuntimeWarning);
+        requestControllers.forEach(function(controller) { controller.abort(); });
+        requestControllers.clear();
+        detachObserver.disconnect();
+        if (window.__wgInterfacePageController && window.__wgInterfacePageController.root === root) {
+            delete window.__wgInterfacePageController;
+        }
+    }
+
+    root.addEventListener('click', onPeerToggleClick);
+    document.addEventListener('wg-runtime', onRuntime);
+    document.addEventListener('wg-runtime-error', onRuntimeError);
+    document.addEventListener('wg-runtime-warning', onRuntimeWarning);
+    detachObserver.observe(document.documentElement, { childList: true, subtree: true });
+    window.__wgInterfacePageController = { root: root, destroy: destroy };
 })();
 </script>
 SCRIPT
 
 print runtime_poll_html($name);
+print '</div>';
 ui_print_footer('index.cgi', $text{'index_title'});
