@@ -24,6 +24,9 @@ if (($ENV{'REQUEST_METHOD'} || '') eq 'POST' && $in{'confirm'}) {
     my ($apply_ok, $out) = (1, '');
     ($apply_ok, $out) = action_apply_interface($name) if ($active->{$name});
     webmin_log('delete', 'peer', $name, { public_key => $pub });
+    if ($apply_ok) {
+        redirect('edit_interface.cgi?name='.urlize($name).'&peer_notice=deleted&refresh_runtime=1');
+    }
     ui_print_header(undef, $text{'delete_title'}, '', undef, 1, 1);
     print ui_alert_box($apply_ok ? $text{'delete_done'} : $text{'action_failed'}, $apply_ok ? 'success' : 'danger');
     print '<pre>'.html_escape($out || '').'</pre>' if (length($out || ''));
