@@ -41,6 +41,10 @@ print ui_table_row($text{'interface_client_allowed'}, html_escape($client_allowe
 print ui_table_end();
 
 print graph_html($name, '', text('graph_interface_title', $name));
+print '<div class="wg-runtime-toolbar">'.
+    '<button type="button" class="btn btn-default" data-wg-runtime-refresh>'.html_escape($text{'journal_refresh'}).'</button> '.
+    '<span data-wg-runtime-refresh-status></span>'.
+    '</div>';
 
 my $toggle_peer_url = module_script_url('toggle_peer.cgi');
 my @rows;
@@ -115,6 +119,7 @@ if ($access{'manage'}) {
 }
 print '<p>'.ui_link_button('journal.cgi?name='.urlize($name), $text{'interface_logs'}).'</p>' if ($access{'logs'});
 
+my $js_page_instance = json_encode_utf8($page_instance);
 my $js_name = json_encode_utf8($name);
 my $js_active = json_encode_utf8($text{'status_active'});
 my $js_inactive = json_encode_utf8($text{'status_inactive'});
@@ -126,6 +131,8 @@ my $js_peer_disable = json_encode_utf8($text{'peer_disable'});
 my $js_peer_busy = json_encode_utf8($text{'peer_toggle_busy'});
 my $js_confirm_disable = json_encode_utf8($text{'confirm_peer_disable'});
 my $js_runtime_loading = json_encode_utf8($text{'runtime_loading'});
+my $js_runtime_updated = json_encode_utf8($text{'runtime_updated'});
+my $js_refresh = json_encode_utf8($text{'journal_refresh'});
 my $runtime_error_prefix = $text{'index_runtime_error'};
 $runtime_error_prefix =~ s/\$1//g;
 my $js_runtime_error_prefix = json_encode_utf8($runtime_error_prefix);
@@ -134,11 +141,17 @@ print <<SCRIPT;
 .wg-peer-toggle { margin: 0; display: inline-block; }
 .wg-peer-state-disabled { opacity: .75; }
 .wg-peer-action-pending { opacity: .65; }
+.wg-runtime-toolbar { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
 </style>
 <script>
 (function() {
+    const pageInstance = $js_page_instance;
     const scriptElement = document.currentScript;
-    const root = scriptElement && scriptElement.closest('[data-wg-interface-page]');
+    const root = (typeof document.querySelector === 'function'
+        ? document.querySelector('[data-wg-interface-page="' + pageInstance + '"]')
+        : null) || (scriptElement && typeof scriptElement.closest === 'function'
+            ? scriptElement.closest('[data-wg-interface-page]')
+            : null);
     if (!root) return;
 
     if (window.__wgInterfacePageController &&
@@ -157,6 +170,8 @@ print <<SCRIPT;
     const peerBusyText = $js_peer_busy;
     const confirmPeerDisable = $js_confirm_disable;
     const runtimeLoadingText = $js_runtime_loading;
+    const runtimeUpdatedText = $js_runtime_updated;
+    const refreshText = $js_refresh;
     const runtimeErrorPrefix = $js_runtime_error_prefix;
     const requestControllers = new Set();
     let destroyed = false;
@@ -181,6 +196,14 @@ print <<SCRIPT;
         if (loading) loading.style.display = 'none';
         if (activeActions) activeActions.style.display = active ? 'inline' : 'none';
         if (inactiveActions) inactiveActions.style.display = active ? 'none' : 'inline';
+    }
+
+    function pagePoller() {
+        const pollers = Object.values(window.__wgRuntimePollers || {});
+        for (const poller of pollers) {
+            if (poller && poller.root && root.contains(poller.root)) return poller;
+        }
+        return null;
     }
 
     function isPeerDisabled(id) {
@@ -242,7 +265,50 @@ print <<SCRIPT;
         }
     }
 
+    async function forceRuntimeRefresh(button) {
+        if (!button || button.dataset.refreshPending === '1') return;
+        button.dataset.refreshPending = '1';
+        button.disabled = true;
+        button.textContent = runtimeLoadingText;
+        const status = root.querySelector('[data-wg-runtime-refresh-status]');
+        if (status) status.textContent = runtimeLoadingText;
+        showPeerResult('', 'success');
+
+        try {
+            let poller = pagePoller();
+            if (!poller) {
+                await new Promise(function(resolve) { setTimeout(resolve, 0); });
+                poller = pagePoller();
+            }
+            if (!poller || typeof poller.refresh !== 'function') {
+                throw new Error(runtimeErrorPrefix);
+            }
+            const ok = await poller.refresh();
+            if (!ok) throw new Error(runtimeErrorPrefix);
+            if (status) status.textContent = runtimeUpdatedText + ': ' + new Date().toLocaleString();
+        }
+        catch (error) {
+            if (!destroyed) showPeerResult(error.message || String(error), 'danger');
+            if (status) status.textContent = '';
+        }
+        finally {
+            if (!destroyed && root.contains(button)) {
+                delete button.dataset.refreshPending;
+                button.disabled = false;
+                button.textContent = refreshText;
+            }
+        }
+    }
+
     async function onPeerToggleClick(event) {
+        const refreshButton = event.target.closest('[data-wg-runtime-refresh]');
+        if (refreshButton && root.contains(refreshButton)) {
+            event.preventDefault();
+            event.stopPropagation();
+            await forceRuntimeRefresh(refreshButton);
+            return;
+        }
+
         const button = event.target.closest('[data-peer-toggle-button]');
         if (!button || !root.contains(button)) return;
         event.preventDefault();
@@ -295,9 +361,13 @@ print <<SCRIPT;
                 input.value = data.digest || input.value;
             });
             showPeerResult(data.message || (disabled ? peerDisabledText : peerEnabledText), 'success');
-            Object.values(window.__wgRuntimePollers || {}).forEach(function(poller) {
-                if (poller && typeof poller.tick === 'function') poller.tick();
-            });
+            const poller = pagePoller();
+            if (poller && typeof poller.refresh === 'function') {
+                await poller.refresh();
+            }
+            else if (poller && typeof poller.tick === 'function') {
+                await poller.tick();
+            }
         }
         catch (error) {
             if (!destroyed && error.name !== 'AbortError') {
@@ -328,6 +398,12 @@ print <<SCRIPT;
         setActions(active);
 
         const peers = new Map((iface.peers || []).map(function(peer) { return [peer.id, peer]; }));
+        root.querySelectorAll('[data-wg-endpoint]').forEach(function(element) {
+            const id = element.dataset.wgEndpoint;
+            if (isPeerDisabled(id)) { element.textContent = '—'; return; }
+            const peer = peers.get(id);
+            element.textContent = peer ? (peer.endpoint || '(none)') : (active ? '—' : notRunningText);
+        });
         root.querySelectorAll('[data-wg-handshake]').forEach(function(element) {
             const id = element.dataset.wgHandshake;
             if (isPeerDisabled(id)) {
@@ -348,11 +424,6 @@ print <<SCRIPT;
             if (isPeerDisabled(id)) { element.textContent = '—'; return; }
             const peer = peers.get(id);
             element.textContent = peer ? formatBytes(peer.tx) : '—';
-        });
-        peers.forEach(function(peer, id) {
-            if (isPeerDisabled(id)) return;
-            const endpoint = root.querySelector('[data-wg-endpoint="' + CSS.escape(id) + '"]');
-            if (endpoint && peer.endpoint) endpoint.textContent = peer.endpoint;
         });
         root.querySelectorAll('[data-wg-runtime-time]').forEach(function(element) {
             element.textContent = new Date((data.timestamp || Date.now() / 1000) * 1000).toLocaleString();
