@@ -1,6 +1,23 @@
 package WebminCore;
 use Exporter 'import';
-our @EXPORT = qw(init_config get_module_acl lock_file unlock_file read_file_contents backquote_with_timeout has_command text error ReadParse webmin_log urlize get_webprefix html_escape);
+use JSON::PP ();
+use Scalar::Util qw(blessed);
+our @EXPORT = qw(init_config get_module_acl lock_file unlock_file read_file_contents backquote_with_timeout has_command text error ReadParse webmin_log urlize get_webprefix html_escape encode_json decode_json);
+
+# Model the conflicting JSON helpers exported by current WebminCore versions.
+# In particular, blessed JSON::PP booleans may be stringified by this helper.
+sub _webmin_json_value {
+    my ($value) = @_;
+    return "$value" if blessed($value);
+    return [ map { _webmin_json_value($_) } @$value ] if ref($value) eq 'ARRAY';
+    if (ref($value) eq 'HASH') {
+        return { map { $_ => _webmin_json_value($value->{$_}) } keys %$value };
+    }
+    return $value;
+}
+sub encode_json { return JSON::PP::encode_json(_webmin_json_value($_[0])); }
+sub decode_json { return JSON::PP::decode_json($_[0]); }
+
 sub init_config {
     no strict 'refs';
     ${"main::text"}{'diagnostics_completed_ok'} = 'Command completed successfully.';

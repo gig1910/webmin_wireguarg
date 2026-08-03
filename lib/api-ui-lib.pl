@@ -29,7 +29,15 @@ sub _json_normalize_utf8
 sub json_encode_utf8
 {
     my ($data) = @_;
-    return encode_json(_json_normalize_utf8($data));
+
+    # Do not call an unqualified encode_json(). WebminCore exports a function
+    # with the same name and, on some Webmin versions, it stringifies
+    # JSON::PP boolean objects as "JSON::PP::true/false". A private encoder
+    # preserves booleans as native JSON true/false and returns UTF-8 bytes.
+    return JSON::PP->new
+        ->utf8(1)
+        ->allow_nonref(1)
+        ->encode(_json_normalize_utf8($data));
 }
 
 sub json_response
@@ -141,7 +149,7 @@ sub diagnostic_read_json
     my $raw = <$fh>;
     close($fh);
     return undef if (!defined($raw) || !length($raw));
-    my $data = eval { decode_json($raw) };
+    my $data = eval { JSON::PP::decode_json($raw) };
     return ($@ || ref($data) ne 'HASH') ? undef : $data;
 }
 

@@ -151,7 +151,8 @@ sub read_stats_history
 
 sub runtime_poll_html
 {
-    my ($name) = @_;
+    my ($name, $force_first) = @_;
+    my $force_first_js = $force_first ? 'true' : 'false';
     my $interval = int($config{'stats_refresh_interval'} || 5);
     $interval = 2 if ($interval < 2);
     $interval = 3600 if ($interval > 3600);
@@ -165,7 +166,7 @@ sub runtime_poll_html
 <script>(function(){
  const API_BUILD='1.0.0';
  const root=document.getElementById('$id');if(!root)return;
- const url=root.dataset.wgRuntimeSource,interval=Math.max(2,Number(root.dataset.wgRuntimeInterval)||5)*1000;
+ const url=root.dataset.wgRuntimeSource,interval=Math.max(2,Number(root.dataset.wgRuntimeInterval)||5)*1000,forceFirst=$force_first_js;
  window.__wgRuntimePollers=window.__wgRuntimePollers||{};
  if(window.__wgWireGuardApiBuild&&window.__wgWireGuardApiBuild!==API_BUILD){
   Object.values(window.__wgRuntimePollers).forEach(function(p){if(p&&typeof p.cleanup==='function')p.cleanup();});
@@ -174,13 +175,14 @@ sub runtime_poll_html
  window.__wgWireGuardApiBuild=API_BUILD;
  const previous=window.__wgRuntimePollers[url];
  if(previous&&typeof previous.cleanup==='function')previous.cleanup();
- const state={busy:false,timer:null,controller:null,tick:null,root:root,stopped:false};
+ const state={busy:false,timer:null,controller:null,tick:null,refresh:null,forcePending:false,refreshWaiters:[],root:root,stopped:false};
  window.__wgRuntimePollers[url]=state;
  function cleanup(){
   state.stopped=true;
   if(state.timer){clearInterval(state.timer);state.timer=null;}
   if(state.controller){state.controller.abort();state.controller=null;}
-  state.busy=false;
+  state.busy=false;state.forcePending=false;
+  state.refreshWaiters.splice(0).forEach(function(resolve){resolve(false);});
   if(window.__wgRuntimePollers&&window.__wgRuntimePollers[url]===state)delete window.__wgRuntimePollers[url];
  }
  state.cleanup=cleanup;
@@ -210,17 +212,21 @@ sub runtime_poll_html
    throw error;
   }
  }
- async function tick(){
-  if(state.stopped)return;
-  if(!root.isConnected){cleanup();return;}
-  if(state.busy||!hostPageVisible())return;
+ async function tick(force){
+  if(state.stopped)return false;
+  if(!root.isConnected){cleanup();return false;}
+  if(!hostPageVisible())return false;
+  if(state.busy){if(force)state.forcePending=true;return false;}
   state.busy=true;
+  let succeeded=false;
   const controller=new AbortController();state.controller=controller;
   const timeout=setTimeout(function(){controller.abort();},Math.min(Math.max(interval,3000),10000));
   try{
-   const response=await fetch(url,{cache:'no-store',credentials:'same-origin',redirect:'error',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},signal:controller.signal});
+   const requestUrl=force?url+(url.includes('?')?'&':'?')+'refresh=1&_wg_now='+Date.now():url;
+   const response=await fetch(requestUrl,{cache:'no-store',credentials:'same-origin',redirect:'error',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},signal:controller.signal});
    const data=await decodeJson(response);
    if(!data.ok)throw new Error(data.error||('HTTP '+response.status));
+   succeeded=true;
    if(root.isConnected)document.dispatchEvent(new CustomEvent('wg-runtime',{detail:data}));
    if(data.warning&&root.isConnected)document.dispatchEvent(new CustomEvent('wg-runtime-warning',{detail:{url:url,warning:data.warning}}));
   }catch(error){
@@ -230,15 +236,31 @@ sub runtime_poll_html
     // overload MiniServ via authentic-theme/404.cgi. Stop until page reload.
     if(error.nonJson)cleanup();
    }
-  }finally{clearTimeout(timeout);if(state.controller===controller)state.controller=null;state.busy=false;}
+  }finally{
+   clearTimeout(timeout);
+   if(state.controller===controller)state.controller=null;
+   state.busy=false;
+   const forceAgain=state.forcePending;
+   state.forcePending=false;
+   if(force){state.refreshWaiters.splice(0).forEach(function(resolve){resolve(succeeded);});}
+   if(forceAgain&&!state.stopped)setTimeout(function(){tick(true);},0);
+  }
+  return succeeded;
  }
- state.tick=tick;
- const visibilityHandler=function(){if(hostPageVisible())tick();};
+ state.tick=function(){return tick(false);};
+ state.refresh=function(){
+  return new Promise(function(resolve){
+   state.refreshWaiters.push(resolve);
+   if(state.busy){state.forcePending=true;return;}
+   tick(true);
+  });
+ };
+ const visibilityHandler=function(){if(hostPageVisible())tick(false);};
  document.addEventListener('visibilitychange',visibilityHandler);
  const originalCleanup=cleanup;
  state.cleanup=function(){document.removeEventListener('visibilitychange',visibilityHandler);originalCleanup();};
  window.addEventListener('pagehide',state.cleanup,{once:true});
- setTimeout(tick,0);state.timer=setInterval(tick,interval);
+ setTimeout(function(){tick(forceFirst);},0);state.timer=setInterval(function(){tick(false);},interval);
 })();</script>
 HTML
 }

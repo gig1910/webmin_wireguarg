@@ -17,7 +17,7 @@ sub request_error
     my ($message) = @_;
     if ($ajax) {
         json_reply(
-            ok => JSON::PP::false,
+            ok => JSON::PP::false(),
             error => $message,
         );
     }
@@ -85,8 +85,18 @@ if ($interface_active) {
     }
 }
 
+# Invalidate the shared snapshot before replying. The page updates the
+# configuration state optimistically, then its normal poller rebuilds and reads
+# a fresh snapshot instead of waiting for the collector's next interval.
+my $runtime_path = runtime_snapshot_path();
+my $runtime_invalidated = !-e($runtime_path) || unlink($runtime_path);
+my $runtime_invalidate_error = $runtime_invalidated ? '' : "$!";
+
 my $action = $data{'disabled'} ? 'disable' : 'enable';
-webmin_log($action, 'peer', $name, { public_key => $data{'public_key'} });
+webmin_log($action, 'peer', $name, {
+    public_key => $data{'public_key'},
+    runtime_cache_invalidated => $runtime_invalidated ? 1 : 0,
+});
 
 my $message = $data{'disabled'}
     ? $text{'peer_toggle_disabled_done'}
@@ -95,11 +105,13 @@ $message .= ' '.$text{'peer_toggle_saved_inactive'} if (!$interface_active);
 
 if ($ajax) {
     json_reply(
-        ok => JSON::PP::true,
-        disabled => $data{'disabled'} ? JSON::PP::true : JSON::PP::false,
-        interface_active => $interface_active ? JSON::PP::true : JSON::PP::false,
+        ok => JSON::PP::true(),
+        disabled => $data{'disabled'} ? JSON::PP::true() : JSON::PP::false(),
+        interface_active => $interface_active ? JSON::PP::true() : JSON::PP::false(),
         digest => $new_digest,
         message => $message,
+        runtime_cache_invalidated => $runtime_invalidated ? JSON::PP::true() : JSON::PP::false(),
+        runtime_invalidate_error => $runtime_invalidate_error || '',
     );
 }
 

@@ -118,8 +118,22 @@ my ($apply_ok, $apply_output) = (1, '');
 if ($active->{$name}) {
     ($apply_ok, $apply_output) = action_apply_interface($name);
 }
+my ($runtime_invalidated, $runtime_invalidate_error) = (0, '');
+if ($apply_ok) {
+    my $runtime_path = runtime_snapshot_path();
+    $runtime_invalidated = !-e($runtime_path) || unlink($runtime_path);
+    $runtime_invalidate_error = $runtime_invalidated ? '' : "$!";
+}
 webmin_log($is_new ? 'create' : 'modify', 'peer', $name,
-    { public_key => $public, runtime_ok => $apply_ok ? 1 : 0 });
+    {
+        public_key => $public,
+        runtime_ok => $apply_ok ? 1 : 0,
+        runtime_cache_invalidated => $runtime_invalidated ? 1 : 0,
+    });
+
+if ($is_new && $apply_ok) {
+    redirect('edit_interface.cgi?name='.urlize($name));
+}
 
 my ($new_cfg) = parse_wireguard_config(conf_path($name));
 my $new_index = 0;

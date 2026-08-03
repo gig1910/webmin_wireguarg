@@ -5,7 +5,7 @@ Shared functions for the WireGuard Webmin module.
 =cut
 
 BEGIN { push(@INC, '..'); }
-use WebminCore;
+use WebminCore qw(:DEFAULT !encode_json !decode_json);
 use File::Basename qw(basename dirname);
 use File::Spec;
 use File::Path qw(make_path);
@@ -14,11 +14,21 @@ use IPC::Open3;
 use Symbol qw(gensym);
 use MIME::Base64 ();
 use Digest::SHA qw(sha256_hex);
-use JSON::PP qw(encode_json decode_json);
+use JSON::PP ();
 use Encode qw(decode FB_CROAK);
 use Scalar::Util qw(blessed);
 use POSIX qw(strftime);
 use Socket qw(AF_INET AF_INET6 inet_pton inet_ntop);
+
+# Keep compatibility for shared module code that uses these names, while
+# preventing WebminCore's JSON helpers from taking precedence. Typeglob aliases
+# preserve JSON::PP's own prototypes and avoid prototype-mismatch warnings.
+BEGIN {
+    no warnings 'redefine';
+    *encode_json = \&JSON::PP::encode_json;
+    *decode_json = \&JSON::PP::decode_json;
+}
+
 
 init_config();
 our %access = get_module_acl();

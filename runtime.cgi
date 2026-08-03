@@ -7,6 +7,9 @@ eval {
     my $requested = $in{'name'} || '';
     die $text{'error_invalid_name'}."\n" if (length($requested) && !valid_interface_name($requested));
 
+    my $force_refresh = $in{'refresh'} ? 1 : 0;
+    request_rate_limit('runtime_refresh', 30, 60) if ($force_refresh);
+
     my $interval = int($config{'stats_refresh_interval'} || 5);
     $interval = 2 if ($interval < 2);
     my $stale_after = $interval * 3;
@@ -15,7 +18,8 @@ eval {
     # Normally this reads the snapshot produced by the background collector.
     # On a fresh installation, or if the service failed, perform a throttled
     # asynchronous fallback refresh so status pages remain usable.
-    my ($snapshot, $snapshot_error, $fallback_refreshed) = refresh_runtime_snapshot($stale_after);
+    my ($snapshot, $snapshot_error, $fallback_refreshed) =
+        refresh_runtime_snapshot($force_refresh ? 0 : $stale_after);
     die $snapshot_error."\n" if (!$snapshot);
     my $snapshot_timestamp = 0 + ($snapshot->{'timestamp'} || 0);
     my $age = time() - $snapshot_timestamp;
@@ -62,6 +66,7 @@ eval {
     };
     $response->{'warning'} = text('runtime_cache_stale', human_duration($age)) if ($age > $stale_after);
     $response->{'fallback_refreshed'} = JSON::PP::true() if ($fallback_refreshed);
+    $response->{'forced_refresh'} = JSON::PP::true() if ($force_refresh && $fallback_refreshed);
     json_response($response);
     1;
 } or do {

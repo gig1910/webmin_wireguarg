@@ -14,6 +14,7 @@ perl tests/saveconfig-stop-test.pl
 perl tests/ui-helper-test.pl
 perl tests/export-navigation-test.pl
 perl tests/json-utf8-test.pl
+perl tests/json-boolean-literals-test.pl
 perl tests/dependency-test.pl
 perl tests/runtime-async-test.pl
 perl tests/install-check-test.pl
@@ -24,6 +25,8 @@ perl tests/async-js-test.pl
 perl tests/api-json-test.pl
 perl tests/miniserv-json-test.pl
 perl tests/peer-list-actions-test.pl
+perl tests/interface-controller-root-test.pl
+perl tests/peer-runtime-refresh-test.pl
 perl tests/diagnostic-js-test.pl
 perl tests/security-regression-test.pl
 perl tests/service-hardening-test.pl
