@@ -1,0 +1,25 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use FindBin;
+use File::Path qw(remove_tree make_path);
+use lib "$FindBin::Bin/stub";
+use lib "$FindBin::Bin/..";
+our (%config, %text);
+my $work = "$FindBin::Bin/saveconfig-work";
+remove_tree($work); make_path($work);
+$config{'conf_dir'} = $work;
+$config{'backup_dir'} = "$work/backups";
+$config{'wg_quick_cmd'} = "$FindBin::Bin/bin/wg-quick";
+$text{'error_backup'} = 'backup failed';
+require "$FindBin::Bin/../wireguard-lib.pl";
+my $path = "$work/wg0.conf";
+my $original = "[Interface]\nAddress = 10.0.0.1/24\nSaveConfig = true\n#ClientEndpoint = vpn.example:443\n\n[Peer] #Phone\nPublicKey = AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\n#PrivateKey = SECRET\nAllowedIPs = 10.0.0.2/32\n";
+open(my $fh, '>', $path) or die $!; print {$fh} $original; close($fh); chmod 0600, $path;
+my ($ok, $out) = action_stop_interface('wg0');
+die "stop failed: $out\n" if (!$ok);
+open($fh, '<', $path) or die $!; local $/; my $after = <$fh>; close($fh);
+die "SaveConfig rewrite was not restored\n" if ($after ne $original);
+my @backups = glob("$work/backups/*"); die "shutdown backup missing\n" if (!@backups);
+remove_tree($work);
+print "SaveConfig-safe stop test passed\n";

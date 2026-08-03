@@ -1,0 +1,6 @@
+view=1
+manage=1
+export_clients=1
+diagnostics=1
+logs=1
+install_dependencies=1

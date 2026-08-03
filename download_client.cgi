@@ -1,0 +1,22 @@
+#!/usr/local/bin/perl
+require './wireguard-lib.pl';
+ReadParse();
+assert_view_access();
+assert_export_access();
+my $name = $in{'name'};
+error($text{'error_invalid_name'}) if (!valid_interface_name($name));
+my ($cfg, $err) = parse_wireguard_config(conf_path($name));
+error($err) if (!$cfg);
+my $peer = get_peer_by_index($cfg, $in{'peer'});
+error($text{'error_peer'}) if (!$peer);
+my ($runtime) = get_cached_interface_dump($name);
+$runtime ||= {};
+my ($client, $ce) = build_client_config($cfg, $peer, $runtime);
+error($ce) if (!$client);
+my $fn = peer_display_name($peer, $in{'peer'});
+$fn =~ s/[^A-Za-z0-9_.-]+/_/g;
+$fn = 'wireguard-peer' if (!$fn);
+print "Content-Type: text/plain; charset=utf-8\r\n";
+print "Content-Disposition: attachment; filename=\"$fn.conf\"\r\n";
+print "Cache-Control: no-store\r\nPragma: no-cache\r\n\r\n";
+print $client;

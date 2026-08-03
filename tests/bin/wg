@@ -1,0 +1,6 @@
+#!/bin/sh
+case "$1" in
+  pubkey) cat >/dev/null; echo 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' ;;
+  genkey) echo 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=' ;;
+  *) exit 1 ;;
+esac

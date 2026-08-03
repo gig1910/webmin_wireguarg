@@ -1,0 +1,23 @@
+#!/usr/local/bin/perl
+require './wireguard-lib.pl';
+ReadParse();
+assert_view_access();
+assert_export_access();
+my $name = $in{'name'};
+error($text{'error_invalid_name'}) if (!valid_interface_name($name));
+my ($cfg, $err) = parse_wireguard_config(conf_path($name));
+error($err) if (!$cfg);
+my $peer = get_peer_by_index($cfg, $in{'peer'});
+error($text{'error_peer'}) if (!$peer);
+my ($runtime) = get_cached_interface_dump($name);
+$runtime ||= {};
+my ($client, $client_error) = build_client_config($cfg, $peer, $runtime);
+error($client_error) if (!$client);
+my $qr = command_path('qrencode_cmd', '/usr/bin/qrencode');
+error(text('error_command', $qr)) if (!has_command($qr));
+my ($ok, $svg) = run_command_stdin([ $qr, '-t', 'SVG', '-o', '-', '-m', '1' ], $client);
+error($text{'qr_failed'}) if (!$ok || !length($svg));
+print "Content-Type: image/svg+xml; charset=utf-8\r\n";
+print "Cache-Control: no-store, no-cache, must-revalidate, private\r\n";
+print "Pragma: no-cache\r\nExpires: 0\r\n\r\n";
+print $svg;

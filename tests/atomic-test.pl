@@ -1,0 +1,27 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use FindBin;
+use File::Path qw(remove_tree make_path);
+use lib "$FindBin::Bin/stub";
+use lib "$FindBin::Bin/..";
+our (%config, %text);
+my $work = "$FindBin::Bin/atomic-work";
+remove_tree($work); make_path($work);
+$config{'conf_dir'} = $work;
+$config{'backup_dir'} = "$work/backups";
+$text{'error_backup'} = 'backup failed';
+$text{'error_config_changed'} = 'changed';
+require "$FindBin::Bin/../wireguard-lib.pl";
+my $path = "$work/wg0.conf";
+open(my $fh, '>', $path) or die $!; print {$fh} "[Interface]\nAddress = 10.0.0.1/24\n"; close($fh); chmod 0600, $path;
+my ($cfg, $err) = parse_wireguard_config($path); die $err if (!$cfg);
+my ($ok, $we) = atomic_write_config($path, "[Interface]\nAddress = 10.0.0.2/24\n", $cfg->{'digest'});
+die "atomic write failed: $we\n" if (!$ok);
+my @backups = glob("$work/backups/*"); die "backup missing\n" if (!@backups);
+open($fh, '>>', $path) or die $!; print {$fh} "# external change\n"; close($fh);
+my ($stale_ok, $stale_err) = atomic_write_config($path, "bad\n", $cfg->{'digest'});
+die "stale write was accepted\n" if ($stale_ok);
+die "unexpected stale error: $stale_err\n" if ($stale_err ne 'changed');
+remove_tree($work);
+print "atomic write tests passed\n";

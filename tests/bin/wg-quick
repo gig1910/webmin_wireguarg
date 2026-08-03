@@ -1,0 +1,8 @@
+#!/bin/sh
+if [ "$1" = down ]; then
+  file="$2"
+  printf '[Interface]\nSaveConfig = true\n# rewritten by fake wg-quick\n' > "$file"
+  echo 'fake interface down'
+  exit 0
+fi
+exit 1
