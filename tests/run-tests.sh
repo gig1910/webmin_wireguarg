@@ -24,6 +24,7 @@ perl tests/async-js-test.pl
 perl tests/api-json-test.pl
 perl tests/miniserv-json-test.pl
 perl tests/peer-list-actions-test.pl
+perl tests/interface-controller-root-test.pl
 perl tests/peer-runtime-refresh-test.pl
 perl tests/diagnostic-js-test.pl
 perl tests/security-regression-test.pl
