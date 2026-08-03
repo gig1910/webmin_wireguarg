@@ -21,9 +21,14 @@ use POSIX qw(strftime);
 use Socket qw(AF_INET AF_INET6 inet_pton inet_ntop);
 
 # Keep compatibility for shared module code that uses these names, while
-# preventing WebminCore's JSON helpers from taking precedence.
-sub encode_json { return JSON::PP::encode_json($_[0]); }
-sub decode_json { return JSON::PP::decode_json($_[0]); }
+# preventing WebminCore's JSON helpers from taking precedence. Typeglob aliases
+# preserve JSON::PP's own prototypes and avoid prototype-mismatch warnings.
+BEGIN {
+    no warnings 'redefine';
+    *encode_json = \&JSON::PP::encode_json;
+    *decode_json = \&JSON::PP::decode_json;
+}
+
 
 init_config();
 our %access = get_module_acl();
