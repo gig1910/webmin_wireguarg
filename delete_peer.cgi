@@ -23,13 +23,15 @@ if (($ENV{'REQUEST_METHOD'} || '') eq 'POST' && $in{'confirm'}) {
     my ($active) = get_active_interfaces();
     my ($apply_ok, $out) = (1, '');
     ($apply_ok, $out) = action_apply_interface($name) if ($active->{$name});
-    my ($fresh_snapshot, $refresh_error);
+    my ($runtime_invalidated, $runtime_invalidate_error) = (0, '');
     if ($apply_ok) {
-        ($fresh_snapshot, $refresh_error) = refresh_runtime_snapshot(0);
+        my $runtime_path = runtime_snapshot_path();
+        $runtime_invalidated = !-e($runtime_path) || unlink($runtime_path);
+        $runtime_invalidate_error = $runtime_invalidated ? '' : "$!";
     }
     webmin_log('delete', 'peer', $name, {
         public_key => $pub,
-        runtime_refresh_ok => $fresh_snapshot ? 1 : 0,
+        runtime_cache_invalidated => $runtime_invalidated ? 1 : 0,
     });
     if ($apply_ok) {
         redirect('edit_interface.cgi?name='.urlize($name));
