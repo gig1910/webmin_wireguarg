@@ -15,7 +15,7 @@ sub slurp {
 my $toggle = slurp("$FindBin::Bin/../toggle_peer.cgi");
 die "peer toggle does not refresh the shared runtime snapshot\n"
     if $toggle !~ /refresh_runtime_snapshot\(0\)/;
-die "peer toggle refresh happens after runtime apply\n"
+die "peer toggle refresh happens before runtime apply\n"
     if index($toggle, 'refresh_runtime_snapshot(0)') < index($toggle, 'action_apply_interface');
 die "peer toggle JSON does not report runtime refresh state\n"
     if $toggle !~ /runtime_refreshed/;
