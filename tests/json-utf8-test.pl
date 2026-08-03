@@ -13,6 +13,10 @@ die "UTF-8 was double-encoded: $json\n" if $json =~ /Ã|Ð/;
 die "UTF-8 text missing: $json\n" if index($json, $raw) < 0;
 die "numeric value became a string: $json\n" if $json !~ /"count":19/;
 
+my $conflicting_json = WebminCore::encode_json({ disabled => JSON::PP::false() });
+die "WebminCore conflict fixture unexpectedly preserved a native boolean: $conflicting_json\n"
+    if $conflicting_json =~ /"disabled":false/;
+
 my $boolean_json = json_encode_utf8({
     ok => JSON::PP::true(),
     disabled => JSON::PP::false(),
