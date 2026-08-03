@@ -251,7 +251,7 @@ sub write_health
     my ($all_files, $all_bytes) = total_storage_stats();
     atomic_json_write("$dir/health.json", {
         timestamp => time(), pid => $$, interval => $interval,
-        history_enabled => $history_enabled ? JSON::PP::true : JSON::PP::false,
+        history_enabled => $history_enabled ? JSON::PP::true() : JSON::PP::false(),
         history_files => $history_files,
         history_storage_bytes => $history_bytes,
         storage_files => $all_files,
@@ -400,21 +400,21 @@ sub compact_history
     return 1;
 }
 
-write_health(ok => JSON::PP::true, running => JSON::PP::true,
+write_health(ok => JSON::PP::true(), running => JSON::PP::true(),
     state => 'compacting', error => '', started_at => time());
 my $startup_compaction_ok = compact_history();
 if ($stop_requested) {
-    write_health(ok => JSON::PP::true, running => JSON::PP::false,
+    write_health(ok => JSON::PP::true(), running => JSON::PP::false(),
         state => 'stopped', error => '', stopped_at => time());
     exit 0;
 }
 if (!$startup_compaction_ok) {
     $maintenance_error = 'history compaction failed';
-    write_health(ok => JSON::PP::false, running => JSON::PP::true,
+    write_health(ok => JSON::PP::false(), running => JSON::PP::true(),
         state => 'starting', error => $maintenance_error);
 }
 else {
-    write_health(ok => JSON::PP::true, running => JSON::PP::true,
+    write_health(ok => JSON::PP::true(), running => JSON::PP::true(),
         state => 'starting', error => '');
 }
 
@@ -457,8 +457,8 @@ while (!$stop_requested) {
 
     last if ($stop_requested);
     if ($now - $last_compact >= 600) {
-        write_health(ok => $last_error ? JSON::PP::false : JSON::PP::true,
-            running => JSON::PP::true, state => 'compacting', error => $last_error);
+        write_health(ok => $last_error ? JSON::PP::false() : JSON::PP::true(),
+            running => JSON::PP::true(), state => 'compacting', error => $last_error);
         if (compact_history()) { $maintenance_error = ''; }
         else { $maintenance_error = 'history compaction failed' if (!$stop_requested); }
         $last_error = join('; ', grep { length($_) } ($last_error, $maintenance_error));
@@ -473,13 +473,13 @@ while (!$stop_requested) {
             $last_error = join('; ', grep { length($_) } ($last_error, $maintenance_error));
             last if ($stop_requested);
         }
-        write_health(ok => $last_error ? JSON::PP::false : JSON::PP::true,
-            running => JSON::PP::true, state => 'running', error => $last_error);
+        write_health(ok => $last_error ? JSON::PP::false() : JSON::PP::true(),
+            running => JSON::PP::true(), state => 'running', error => $last_error);
         $last_health = time();
     }
     last if ($ENV{'WEBMIN_WIREGUARD_ONCE'});
     interruptible_pause($interval);
 }
-write_health(ok => JSON::PP::true, running => JSON::PP::false,
+write_health(ok => JSON::PP::true(), running => JSON::PP::false(),
     state => 'stopped', error => '', stopped_at => time());
 exit 0;
