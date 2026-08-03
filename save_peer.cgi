@@ -118,11 +118,19 @@ my ($apply_ok, $apply_output) = (1, '');
 if ($active->{$name}) {
     ($apply_ok, $apply_output) = action_apply_interface($name);
 }
+my ($fresh_snapshot, $refresh_error);
+if ($apply_ok) {
+    ($fresh_snapshot, $refresh_error) = refresh_runtime_snapshot(0);
+}
 webmin_log($is_new ? 'create' : 'modify', 'peer', $name,
-    { public_key => $public, runtime_ok => $apply_ok ? 1 : 0 });
+    {
+        public_key => $public,
+        runtime_ok => $apply_ok ? 1 : 0,
+        runtime_refresh_ok => $fresh_snapshot ? 1 : 0,
+    });
 
 if ($is_new && $apply_ok) {
-    redirect('edit_interface.cgi?name='.urlize($name).'&peer_notice=created&refresh_runtime=1');
+    redirect('edit_interface.cgi?name='.urlize($name));
 }
 
 my ($new_cfg) = parse_wireguard_config(conf_path($name));
