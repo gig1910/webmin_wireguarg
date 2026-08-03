@@ -17,7 +17,7 @@ sub request_error
     my ($message) = @_;
     if ($ajax) {
         json_reply(
-            ok => JSON::PP::false,
+            ok => JSON::PP::false(),
             error => $message,
         );
     }
@@ -105,12 +105,12 @@ $message .= ' '.$text{'peer_toggle_saved_inactive'} if (!$interface_active);
 
 if ($ajax) {
     json_reply(
-        ok => JSON::PP::true,
-        disabled => $data{'disabled'} ? JSON::PP::true : JSON::PP::false,
-        interface_active => $interface_active ? JSON::PP::true : JSON::PP::false,
+        ok => JSON::PP::true(),
+        disabled => $data{'disabled'} ? JSON::PP::true() : JSON::PP::false(),
+        interface_active => $interface_active ? JSON::PP::true() : JSON::PP::false(),
         digest => $new_digest,
         message => $message,
-        runtime_cache_invalidated => $runtime_invalidated ? JSON::PP::true : JSON::PP::false,
+        runtime_cache_invalidated => $runtime_invalidated ? JSON::PP::true() : JSON::PP::false(),
         runtime_invalidate_error => $runtime_invalidate_error || '',
     );
 }
