@@ -14,6 +14,7 @@ perl tests/saveconfig-stop-test.pl
 perl tests/ui-helper-test.pl
 perl tests/export-navigation-test.pl
 perl tests/json-utf8-test.pl
+perl tests/json-boolean-literals-test.pl
 perl tests/dependency-test.pl
 perl tests/runtime-async-test.pl
 perl tests/install-check-test.pl
