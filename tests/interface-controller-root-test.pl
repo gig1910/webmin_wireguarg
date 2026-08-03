@@ -136,4 +136,4 @@ JS_HEAD
     unlink($path);
 }
 
-print "interface controller root checks passed\n";
+print "interface controller root and manual refresh checks passed\n";
