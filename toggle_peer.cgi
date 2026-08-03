@@ -85,8 +85,16 @@ if ($interface_active) {
     }
 }
 
+# Refresh the shared snapshot before replying. The page already updates the
+# configuration state optimistically, then its normal poller immediately reads
+# this fresh snapshot instead of waiting for the collector's next interval.
+my ($fresh_snapshot, $refresh_error) = refresh_runtime_snapshot(0);
+
 my $action = $data{'disabled'} ? 'disable' : 'enable';
-webmin_log($action, 'peer', $name, { public_key => $data{'public_key'} });
+webmin_log($action, 'peer', $name, {
+    public_key => $data{'public_key'},
+    runtime_refresh_ok => $fresh_snapshot ? 1 : 0,
+});
 
 my $message = $data{'disabled'}
     ? $text{'peer_toggle_disabled_done'}
@@ -100,10 +108,13 @@ if ($ajax) {
         interface_active => $interface_active ? JSON::PP::true : JSON::PP::false,
         digest => $new_digest,
         message => $message,
+        runtime_refreshed => $fresh_snapshot ? JSON::PP::true : JSON::PP::false,
+        runtime_refresh_error => $refresh_error || '',
     );
 }
 
 ui_print_header(undef, $text{'action_title'}, '', undef, 1, 1);
 print ui_alert_box($message, 'success');
+print ui_alert_box(html_escape($refresh_error), 'warning') if (!$fresh_snapshot && length($refresh_error || ''));
 print '<pre>'.html_escape($apply_output || '').'</pre>' if (length($apply_output || ''));
 ui_print_footer('edit_interface.cgi?name='.urlize($name), text('interface_title', $name));
