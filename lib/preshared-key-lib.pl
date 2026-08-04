@@ -2,8 +2,9 @@
 
 PresharedKey validation, generation, configuration rewrite and peer-form UI.
 
-The actual key is never rendered into HTML. Existing values are represented only
-by a present/missing status, and a blank input preserves the stored value.
+The actual key is never rendered into HTML. An existing value is represented by
+a configured notification and an explicit remove button. Input and generation
+controls are shown only while the peer has no PresharedKey.
 
 =cut
 
@@ -18,7 +19,10 @@ sub preshared_key_text
     my %en = (
         input => 'New or imported PresharedKey',
         generate => 'Generate a new PresharedKey',
-        remove => 'Remove the stored PresharedKey',
+        remove => 'Remove PresharedKey',
+        configured => 'PresharedKey is configured for this peer.',
+        input_help => 'Paste a WireGuard PresharedKey in Base64 format, or generate a new one.',
+        remove_confirm => 'Remove PresharedKey from this peer? Other edited fields in this form will also be saved.',
         conflict => 'Choose only one PresharedKey action: enter a key, generate one, or remove the stored key.',
         invalid => 'PresharedKey has an invalid WireGuard key format.',
         generate_failed => 'Failed to generate a WireGuard PresharedKey.',
@@ -28,7 +32,10 @@ sub preshared_key_text
     my %ru = (
         input => 'Новый или переносимый PresharedKey',
         generate => 'Сгенерировать новый PresharedKey',
-        remove => 'Удалить сохранённый PresharedKey',
+        remove => 'Удалить PresharedKey',
+        configured => 'Для этого пира установлен PresharedKey.',
+        input_help => 'Вставьте PresharedKey WireGuard в формате Base64 или сгенерируйте новый.',
+        remove_confirm => 'Удалить PresharedKey этого пира? Остальные изменённые поля формы также будут сохранены.',
         conflict => 'Выберите только одно действие с PresharedKey: ввод ключа, генерацию или удаление сохранённого ключа.',
         invalid => 'PresharedKey имеет неверный формат ключа WireGuard.',
         generate_failed => 'Не удалось сгенерировать PresharedKey WireGuard.',
@@ -89,9 +96,6 @@ sub rewrite_peer_block_preshared_key
     $block = '' if (!defined($block));
     $preshared_key = _trim($preshared_key || '');
 
-    # build_peer_block() currently preserves PresharedKey as an unknown setting.
-    # Remove that preserved line first, then add the resolved value in the
-    # canonical position directly after PublicKey.
     $block =~ s/^[ \t]*#?[ \t]*PresharedKey[ \t]*=.*(?:\r?\n|\z)//gmi;
     return ($block, undef) if (!length($preshared_key));
 
@@ -107,9 +111,6 @@ sub rewrite_peer_block_preshared_key
     return ($block, undef);
 }
 
-# save_peer.cgi already calls build_peer_block() after all standard validation.
-# Wrap that function only inside the save request so the new fields participate
-# in the same CSRF, ACL, optimistic-locking, backup and runtime-apply path.
 our $WG_PSK_ORIGINAL_BUILD_PEER_BLOCK;
 if (defined(&build_peer_block)) {
     $WG_PSK_ORIGINAL_BUILD_PEER_BLOCK = \&build_peer_block;
@@ -137,6 +138,36 @@ if (defined(&build_peer_block)) {
     };
 }
 
+sub preshared_key_form_rows_for_state
+{
+    my ($present) = @_;
+    my $html = '';
+
+    if ($present) {
+        my $notice = '<div class="alert alert-success" style="margin:0 0 8px 0">'.
+            '<b>'.html_escape(preshared_key_text('configured')).'</b> '.
+            '<span>'.html_escape(preshared_key_text('not_shown')).'</span>'.
+            '</div>';
+        my $remove = '<button type="submit" class="btn btn-danger"'.
+            ' name="remove_preshared_key" value="1"'.
+            ' data-confirm="'.html_escape(preshared_key_text('remove_confirm')).'"'.
+            ' onclick="return window.confirm(this.getAttribute(\'data-confirm\'))">'.
+            html_escape(preshared_key_text('remove')).'</button>';
+        return $WG_PSK_ORIGINAL_UI_TABLE_ROW->('PresharedKey', $notice.$remove);
+    }
+
+    $html .= $WG_PSK_ORIGINAL_UI_TABLE_ROW->(
+        preshared_key_text('input'),
+        '<input type="password" name="preshared_key" size="48" autocomplete="new-password">'.
+        '<br><small>'.html_escape(preshared_key_text('input_help')).'</small>'
+    );
+    $html .= $WG_PSK_ORIGINAL_UI_TABLE_ROW->(
+        preshared_key_text('generate'),
+        ui_checkbox('generate_preshared_key', 1, preshared_key_text('generate'), 0)
+    );
+    return $html;
+}
+
 sub preshared_key_form_rows
 {
     return '' if (!$access{'manage'});
@@ -149,36 +180,9 @@ sub preshared_key_form_rows
         $peer = get_peer_by_index($cfg, $in{'peer'}) if ($cfg);
     }
     my $present = $peer && length(get_section_value($peer, 'PresharedKey') || '');
-    my $status = $present ? ($text{'key_saved'} || 'Saved') : ($text{'key_missing'} || 'Missing');
-    my $blank_help = $text{'key_blank_keep'} || 'Leave blank to keep the existing key.';
-
-    my $html = '';
-    $html .= $WG_PSK_ORIGINAL_UI_TABLE_ROW->(
-        'PresharedKey',
-        html_escape($status).' <small>'.html_escape(preshared_key_text('not_shown')).'</small>'
-    );
-    $html .= $WG_PSK_ORIGINAL_UI_TABLE_ROW->(
-        preshared_key_text('input'),
-        '<input type="password" name="preshared_key" size="48" autocomplete="new-password">'.
-        '<br><small>'.html_escape($blank_help).'</small>'
-    );
-    $html .= $WG_PSK_ORIGINAL_UI_TABLE_ROW->(
-        preshared_key_text('generate'),
-        ui_checkbox('generate_preshared_key', 1, preshared_key_text('generate'), 0)
-    );
-    if ($present) {
-        $html .= $WG_PSK_ORIGINAL_UI_TABLE_ROW->(
-            preshared_key_text('remove'),
-            ui_checkbox('remove_preshared_key', 1, preshared_key_text('remove'), 0)
-        );
-    }
-    return $html;
+    return preshared_key_form_rows_for_state($present ? 1 : 0);
 }
 
-# edit_peer.cgi already owns the key table. Inject the PSK rows immediately
-# after the public-key row without duplicating the large peer editor. A Webmin
-# CGI is a separate process, so this scoped wrapper cannot leak into another
-# request. Other module pages are unaffected by the exact script/label guard.
 our $WG_PSK_ORIGINAL_UI_TABLE_ROW;
 if (defined(&ui_table_row)) {
     $WG_PSK_ORIGINAL_UI_TABLE_ROW = \&ui_table_row;
