@@ -24,6 +24,24 @@ in standard `.conf` files.
   optional dependency installation;
 - CSRF protection, request throttling and atomic configuration writes.
 
+## Interface examples
+
+The screenshots use the Russian Webmin locale. Peer names, public endpoints,
+key material and QR-code contents have been redacted. Private RFC 1918 addresses
+remain visible as non-routable examples.
+
+### Module overview
+
+[![WireGuard VPN module overview](docs/images/overview.webp)](docs/images/overview.webp)
+
+### Interface management, diagnostics and client export
+
+[![WireGuard interface and peer management, diagnostics, logs and client export](docs/images/interface-details.webp)](docs/images/interface-details.webp)
+
+The combined gallery shows interface and peer management, traffic graphs,
+ping and traceroute diagnostics, the interface journal, generated client
+configuration and QR-code export.
+
 ## Requirements
 
 - Linux with Webmin and systemd;
