@@ -4,7 +4,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/stub";
 use lib "$FindBin::Bin/..";
-our (%config, %text, %in);
+our (%config, %text, %in, $WG_PSK_ORIGINAL_BUILD_PEER_BLOCK);
 $config{'wg_cmd'} = "$FindBin::Bin/bin/wg";
 require "$FindBin::Bin/../wireguard-lib.pl";
 
