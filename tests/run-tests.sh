@@ -10,6 +10,7 @@ perl tests/parser-fuzz-test.pl
 perl tests/ip-allocation-test.pl
 perl tests/key-client-test.pl
 perl tests/preshared-key-test.pl
+perl tests/preshared-key-ui-test.pl
 perl tests/atomic-test.pl
 perl tests/saveconfig-stop-test.pl
 perl tests/ui-helper-test.pl
