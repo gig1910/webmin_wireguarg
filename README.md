@@ -33,23 +33,32 @@ non-routable examples.
 
 ### Module overview
 
-[![WireGuard VPN module overview](docs/images/overview-en.svg)](docs/images/overview-en.svg)
+[![WireGuard VPN module overview](docs/images/en/main_screen.jpg)](docs/images/en/main_screen.jpg)
 
 ### Interface management
 
-[![WireGuard interface management](docs/images/interface-details-en.svg)](docs/images/interface-details-en.svg)
+[![WireGuard interface management](docs/images/en/interface_view.jpg)](docs/images/en/interface_view.jpg)
 
 ### Peer management and client settings
 
-[![WireGuard peer management and client settings](docs/images/peer-details-en.svg)](docs/images/peer-details-en.svg)
+[![WireGuard peer management and client settings](docs/images/en/peer_view.jpg)](docs/images/en/peer_view.jpg)
 
 ### Diagnostics and interface journal
 
-[![WireGuard diagnostics and interface journal](docs/images/diagnostics-en.svg)](docs/images/diagnostics-en.svg)
+[![WireGuard diagnostics and interface journal](docs/images/en/journal_view.jpg)](docs/images/en/journal_view.jpg)
+[![WireGuard diagnostics and interface journal](docs/images/en/peer_ping_sample.jpg)](docs/images/en/peer_ping_sample.jpg)
+[![WireGuard diagnostics and interface journal](docs/images/en/peer_traceroute_sample.jpg)](docs/images/en/peer_traceroute_sample.jpg)
 
 ### Client configuration and QR export
 
-[![WireGuard client configuration and QR export](docs/images/client-export-en.svg)](docs/images/client-export-en.svg)
+[![WireGuard client configuration and QR export](docs/images/en/peer_config_view.jpg)](docs/images/en/peer_config_view.jpg)
+[![WireGuard client configuration and QR export](docs/images/en/peer_qr_view.jpg)](docs/images/en/peer_qr_view.jpg.jpg)
+
+### Confirms
+
+[![WireGuard client configuration and QR export](docs/images/en/interface_remove_confirm.jpg)](docs/images/en/interface_remove_confirm.jpg)
+[![WireGuard client configuration and QR export](docs/images/en/peer_remove_confirm.jpg)](docs/images/en/peer_remove_confirm.jpg)
+[![WireGuard client configuration and QR export](docs/images/en/peer_disable_confirm.jpg)](docs/images/en/peer_disable_confirm.jpg)
 
 ## Requirements
 

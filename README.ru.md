@@ -33,14 +33,35 @@
 
 ### Главная страница модуля
 
-[![Главная страница модуля WireGuard VPN](docs/images/overview.webp)](docs/images/overview.webp)
+[![WireGuard VPN module overview](docs/images/ru/main_screen.jpg)](docs/images/ru/main_screen.jpg)
 
 ### Управление интерфейсом и пирами
 
-[![Управление интерфейсом и пирами WireGuard](docs/images/interface-details.webp)](docs/images/interface-details.webp)
+[![WireGuard interface management](docs/images/ru/interface_view.jpg)](docs/images/ru/interface_view.jpg)
 
 На странице показаны текущее состояние, график трафика, статусы пиров,
 AllowedIPs и элементы управления интерфейсом и пирами.
+
+### Управление клиентами
+
+[![WireGuard peer management and client settings](docs/images/ru/peer_view.jpg)](docs/images/ru/peer_view.jpg)
+
+### Диагностика и журнал
+
+[![WireGuard diagnostics and interface journal](docs/images/ru/journal_view.jpg)](docs/images/ru/journal_view.jpg)
+[![WireGuard diagnostics and interface journal](docs/images/ru/peer_ping_sample.jpg)](docs/images/ru/peer_ping_sample.jpg)
+[![WireGuard diagnostics and interface journal](docs/images/ru/peer_traceroute_sample.jpg)](docs/images/ru/peer_traceroute_sample.jpg)
+
+### Экспорт конфигураций клиента и QR-Code
+
+[![WireGuard client configuration and QR export](docs/images/ru/peer_config_view.jpg)](docs/images/ru/peer_config_view.jpg)
+[![WireGuard client configuration and QR export](docs/images/ru/peer_qr_view.jpg)](docs/images/ru/peer_qr_view.jpg.jpg)
+
+### Подтверждения
+
+[![WireGuard client configuration and QR export](docs/images/ru/interface_remove_confirm.jpg)](docs/images/ru/interface_remove_confirm.jpg)
+[![WireGuard client configuration and QR export](docs/images/ru/peer_remove_confirm.jpg)](docs/images/ru/peer_remove_confirm.jpg)
+[![WireGuard client configuration and QR export](docs/images/ru/peer_disable_confirm.jpg)](docs/images/ru/peer_disable_confirm.jpg)
 
 ## Требования
 
