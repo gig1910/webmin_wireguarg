@@ -5,7 +5,7 @@
 A Webmin module for managing WireGuard `wg-quick` interfaces and peers stored
 in standard `.conf` files.
 
-**Stable release:** `1.0.0`
+**Stable release:** `0.2.0`
 
 ## Features
 
@@ -34,7 +34,7 @@ in standard `.conf` files.
 
 ## Installation
 
-1. Download `webmin-wireguard-1.0.0.wbm.gz` from the release assets.
+1. Download `webmin-wireguard-0.2.0.wbm.gz` from the release assets.
 2. Open **Webmin → Webmin Configuration → Webmin Modules**.
 3. Install the downloaded module file.
 4. Open **Network → WireGuard VPN**.

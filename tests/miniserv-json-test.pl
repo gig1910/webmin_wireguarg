@@ -35,7 +35,7 @@ my $output;
 }
 
 die "JSON content type missing\n" if $output !~ /Content-Type: application\/json; charset=utf-8/;
-die "API build header missing\n" if $output !~ /X-WireGuard-Webmin-API: 1\.0\.0/;
+die "API build header missing\n" if $output !~ /X-WireGuard-Webmin-API: 0\.2\.0/;
 my (undef, $body) = split(/\r?\n\r?\n/, $output, 2);
 die "JSON body missing\n" if !defined($body);
 my $decoded = decode_json($body);

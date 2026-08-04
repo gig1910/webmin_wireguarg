@@ -15,8 +15,7 @@ die "module.info version mismatch\n" if $info !~ /^version=\Q$version\E$/m;
 my @checks = (
     ['lib/api-ui-lib.pl', "X-WireGuard-Webmin-API: $version"],
     ['lib/api-ui-lib.pl', "_wg_api'} = '$version"],
-    ['lib/metrics-lib.pl', "API_BUILD='$version'"],
-    ['diagnostic.cgi', "version => '$version'"],
+    ['lib/version-lib.pl', "WIREGUARD_WEBMIN_VERSION = '$version'"],
 );
 for my $check (@checks) {
     my ($path, $needle) = @$check;
