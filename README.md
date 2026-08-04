@@ -26,21 +26,20 @@ in standard `.conf` files.
 
 ## Interface examples
 
-The screenshots use the Russian Webmin locale. Peer names, public endpoints,
-key material and QR-code contents have been redacted. Private RFC 1918 addresses
-remain visible as non-routable examples.
+The examples use the English Webmin locale and the module's English
+localization strings. Peer names, public endpoints and key material have been
+redacted. Private RFC 1918 addresses remain visible as non-routable examples.
 
 ### Module overview
 
-[![WireGuard VPN module overview](docs/images/overview.webp)](docs/images/overview.webp)
+[![WireGuard VPN module overview](docs/images/overview-en.svg)](docs/images/overview-en.svg)
 
-### Interface management, diagnostics and client export
+### Interface and peer management
 
-[![WireGuard interface and peer management, diagnostics, logs and client export](docs/images/interface-details.webp)](docs/images/interface-details.webp)
+[![WireGuard interface and peer management](docs/images/interface-details-en.svg)](docs/images/interface-details-en.svg)
 
-The combined gallery shows interface and peer management, traffic graphs,
-ping and traceroute diagnostics, the interface journal, generated client
-configuration and QR-code export.
+The interface page shows runtime state, traffic history, peer status,
+AllowedIPs and interface and peer controls.
 
 ## Requirements
 
