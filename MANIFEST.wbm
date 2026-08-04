@@ -55,6 +55,7 @@ lib/runtime-lib.pl
 lib/api-ui-lib.pl
 lib/collector-config-lib.pl
 lib/metrics-lib.pl
+lib/preshared-key-lib.pl
 docs/INSTALLATION.md
 docs/CONFIGURATION.md
 docs/ACL.md
