@@ -19,10 +19,13 @@ local $WG_PSK_ORIGINAL_UI_TABLE_ROW = sub {
         my ($name, $value, $label) = @_;
         return '<label><input type="checkbox" name="'.$name.'" value="'.$value.'">'.$label.'</label>';
     };
+    local $text{'peer_title'} = 'Пир';
 
     my $configured = preshared_key_form_rows_for_state(1);
-    die "configured PresharedKey notice missing\n"
-        if ($configured !~ /alert-success/ || $configured !~ /PresharedKey/);
+    die "concise configured PresharedKey status missing\n"
+        if ($configured !~ /alert-success/ || $configured !~ />Установлен</);
+    die "configured PresharedKey status contains redundant explanation\n"
+        if ($configured =~ /Сохранённое значение|Для этого пира установлен/);
     die "configured PresharedKey remove button missing\n"
         if ($configured !~ /type="submit"/ || $configured !~ /name="remove_preshared_key"/);
     die "configured PresharedKey still shows creation controls\n"
