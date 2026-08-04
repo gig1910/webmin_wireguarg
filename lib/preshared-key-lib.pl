@@ -3,7 +3,7 @@
 PresharedKey validation, generation, configuration rewrite and peer-form UI.
 
 The actual key is never rendered into HTML. An existing value is represented by
-a configured notification and an explicit remove button. Input and generation
+a concise installed status and an explicit remove button. Input and generation
 controls are shown only while the peer has no PresharedKey.
 
 =cut
@@ -20,27 +20,25 @@ sub preshared_key_text
         input => 'New or imported PresharedKey',
         generate => 'Generate a new PresharedKey',
         remove => 'Remove PresharedKey',
-        configured => 'PresharedKey is configured for this peer.',
+        configured => 'Installed',
         input_help => 'Paste a WireGuard PresharedKey in Base64 format, or generate a new one.',
         remove_confirm => 'Remove PresharedKey from this peer? Other edited fields in this form will also be saved.',
         conflict => 'Choose only one PresharedKey action: enter a key, generate one, or remove the stored key.',
         invalid => 'PresharedKey has an invalid WireGuard key format.',
         generate_failed => 'Failed to generate a WireGuard PresharedKey.',
         insert_failed => 'Failed to place PresharedKey into the peer configuration.',
-        not_shown => 'The stored value is not displayed.',
     );
     my %ru = (
         input => 'Новый или переносимый PresharedKey',
         generate => 'Сгенерировать новый PresharedKey',
         remove => 'Удалить PresharedKey',
-        configured => 'Для этого пира установлен PresharedKey.',
+        configured => 'Установлен',
         input_help => 'Вставьте PresharedKey WireGuard в формате Base64 или сгенерируйте новый.',
         remove_confirm => 'Удалить PresharedKey этого пира? Остальные изменённые поля формы также будут сохранены.',
         conflict => 'Выберите только одно действие с PresharedKey: ввод ключа, генерацию или удаление сохранённого ключа.',
         invalid => 'PresharedKey имеет неверный формат ключа WireGuard.',
         generate_failed => 'Не удалось сгенерировать PresharedKey WireGuard.',
         insert_failed => 'Не удалось добавить PresharedKey в конфигурацию пира.',
-        not_shown => 'Сохранённое значение не отображается.',
     );
     return (_preshared_key_russian_ui() ? $ru{$key} : $en{$key}) || $key;
 }
@@ -145,8 +143,7 @@ sub preshared_key_form_rows_for_state
 
     if ($present) {
         my $notice = '<div class="alert alert-success" style="margin:0 0 8px 0">'.
-            '<b>'.html_escape(preshared_key_text('configured')).'</b> '.
-            '<span>'.html_escape(preshared_key_text('not_shown')).'</span>'.
+            '<b>'.html_escape(preshared_key_text('configured')).'</b>'.
             '</div>';
         my $remove = '<button type="submit" class="btn btn-danger"'.
             ' name="remove_preshared_key" value="1"'.
