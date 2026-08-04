@@ -107,6 +107,36 @@ sub rewrite_peer_block_preshared_key
     return ($block, undef);
 }
 
+# save_peer.cgi already calls build_peer_block() after all standard validation.
+# Wrap that function only inside the save request so the new fields participate
+# in the same CSRF, ACL, optimistic-locking, backup and runtime-apply path.
+our $WG_PSK_ORIGINAL_BUILD_PEER_BLOCK;
+if (defined(&build_peer_block)) {
+    $WG_PSK_ORIGINAL_BUILD_PEER_BLOCK = \&build_peer_block;
+    no warnings qw(redefine prototype);
+    *build_peer_block = sub {
+        my ($data, $old_peer) = @_;
+        my $block = $WG_PSK_ORIGINAL_BUILD_PEER_BLOCK->(@_);
+        return $block if (($0 || '') !~ /(?:^|\/)save_peer\.cgi$/);
+
+        my ($preshared_key, $resolve_error) = resolve_submitted_preshared_key(
+            $old_peer,
+            $in{'preshared_key'} || '',
+            $in{'generate_preshared_key'},
+            $in{'remove_preshared_key'}
+        );
+        error($resolve_error) if (!defined($preshared_key));
+
+        my ($rewritten, $rewrite_error) = rewrite_peer_block_preshared_key(
+            $block,
+            $preshared_key,
+            $data->{'disabled'}
+        );
+        error($rewrite_error) if (!defined($rewritten));
+        return $rewritten;
+    };
+}
+
 sub preshared_key_form_rows
 {
     return '' if (!$access{'manage'});
