@@ -17,7 +17,7 @@ sub main::urlize {
 }
 
 my $url = module_script_url('runtime.cgi', name => 'wg0');
-die "bad API URL: $url\n" if $url ne '/wireguard/runtime.cgi?_wg_api=1.0.0&name=wg0';
+die "bad API URL: $url\n" if $url ne '/wireguard/runtime.cgi?_wg_api=0.2.0&name=wg0';
 
 my $output = '';
 {
@@ -27,7 +27,7 @@ my $output = '';
 }
 die "JSON response contains CGI Status header\n" if $output =~ /^Status:/m;
 die "JSON content type missing\n" if $output !~ /Content-Type: application\/json; charset=utf-8/;
-die "API build header missing\n" if $output !~ /X-WireGuard-Webmin-API: 1\.0\.0/;
+die "API build header missing\n" if $output !~ /X-WireGuard-Webmin-API: 0\.2\.0/;
 my ($headers, $body) = split(/\r?\n\r?\n/, $output, 2);
 die "JSON body missing\n" if !defined($body);
 my $decoded = decode_json($body);

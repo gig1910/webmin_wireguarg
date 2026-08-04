@@ -3,7 +3,7 @@
 ## Install
 
 1. Install WireGuard tools and Webmin.
-2. Download `webmin-wireguard-1.0.0.wbm.gz`.
+2. Download `webmin-wireguard-0.2.0.wbm.gz`.
 3. In Webmin open **Webmin Configuration → Webmin Modules**.
 4. Install from the downloaded file and grant access only to intended users.
 5. Open **Network → WireGuard VPN**.

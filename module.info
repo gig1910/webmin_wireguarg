@@ -2,5 +2,5 @@ desc=WireGuard VPN
 desc_ru=WireGuard VPN
 category=net
 os_support=*-linux
-version=1.0.0
+version=0.2.0
 longdesc=Manage WireGuard interfaces and peers stored in wg-quick configuration files, generate client QR codes, inspect live traffic and run diagnostics.
