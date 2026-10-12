@@ -43,6 +43,23 @@ error(text('error_cidr', $bad_addr)) if (!$addr_ok);
 my @client_allowed = _split_list($in{'clientallowedips'});
 my ($client_ok, $bad_client) = validate_cidr_list(\@client_allowed);
 error(text('error_cidr', $bad_client)) if (@client_allowed && !$client_ok);
+my $fw_enabled = $in{'firewall_ufw'} ? 1 : 0;
+my $old_fw = $ifc ? (get_meta_value($ifc, 'webminfirewall') || '') : '';
+my $fw_managed = $fw_enabled || $old_fw eq 'ufw' || $old_fw eq 'off';
+error($text{'error_firewall_port_required'}) if ($fw_enabled && (!$port || $port < 1));
+# All saved configs may be edited offline. Before an actual activation, verify
+# that UFW is present and active; never enable/reset a system firewall.
+if ($fw_enabled && ($in{'save_start'} || $in{'save_restart'})) {
+    my $fw_error = wg_firewall_preflight($port);
+    error($fw_error) if (length($fw_error));
+}
+# Changing the managed firewall mode or a managed ListenPort requires a full
+# restart: wg syncconf updates the kernel, but does not run wg-quick hooks.
+if ($in{'save_apply'} && $ifc &&
+    ($fw_enabled != ($old_fw eq 'ufw' ? 1 : 0) ||
+     ($fw_managed && $port ne (get_section_value($ifc, 'ListenPort') || '')))) {
+    error($text{'error_firewall_restart_required'});
+}
 my @host_dns = _split_list($in{'dns'});
 # Save-only may prepare a config for later deployment. A requested start or
 # restart must not fail because resolvconf is unavailable.
@@ -52,6 +69,7 @@ if ($in{'save_start'} || $in{'save_restart'}) {
 }
 my %data = (
     'addresses' => \@addresses, 'listen_port' => $port,
+    'firewall_ufw' => $fw_enabled, 'firewall_managed' => $fw_managed,
     'private_key' => $private, 'public_key' => $public,
     'dns' => \@host_dns, 'mtu' => $mtu, 'table' => _trim($in{'table'}),
     'fwmark' => _trim($in{'fwmark'}), 'saveconfig' => _trim($in{'saveconfig'}),

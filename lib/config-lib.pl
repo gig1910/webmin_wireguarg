@@ -75,7 +75,7 @@ sub _parse_section_lines
             $section->{'meta'}->{'name'} = _trim($1);
             next;
         }
-        if ($work =~ /^\s*#\s*(ClientEndpoint|ClientDNS|ClientAllowedIPs|ClientMTU|ClientAddress)\s*[:=]\s*(.*?)\s*$/i) {
+        if ($work =~ /^\s*#\s*(ClientEndpoint|ClientDNS|ClientAllowedIPs|ClientMTU|ClientAddress|WebminFirewall)\s*[:=]\s*(.*?)\s*$/i) {
             $section->{'meta'}->{lc($1)} = _trim($2);
             next;
         }
@@ -432,12 +432,28 @@ sub build_interface_block
         my $lk = lc($key);
         push(@lines, sprintf('%-20s = %s', $key, $data->{$lk})) if (length($data->{$lk} || ''));
     }
-    push(@lines, '') if (@{$data->{'preup'} || []} || @{$data->{'postup'} || []});
-    _append_values(\@lines, 'PreUp', $data->{'preup'} || []);
-    _append_values(\@lines, 'PostUp', $data->{'postup'} || []);
-    push(@lines, '') if (@{$data->{'predown'} || []} || @{$data->{'postdown'} || []});
-    _append_values(\@lines, 'PreDown', $data->{'predown'} || []);
-    _append_values(\@lines, 'PostDown', $data->{'postdown'} || []);
+    # Hook entries owned by this module are generated rather than editable
+    # custom hooks. Do not accidentally duplicate them on subsequent saves.
+    my @preup = @{$data->{'preup'} || []};
+    my @predown = @{$data->{'predown'} || []};
+    my @postup = grep { !/wg-firewall-hook[.]pl/ } @{$data->{'postup'} || []};
+    my @postdown = grep { !/wg-firewall-hook[.]pl/ } @{$data->{'postdown'} || []};
+    if ($data->{'firewall_managed'}) {
+        # Keep cleanup when opted out, until the tunnel is stopped. A disabled
+        # managed policy has no PostUp, but retains an idempotent PostDown.
+        unshift(@postdown, wg_firewall_hook_command('down', ''));
+    }
+    if ($data->{'firewall_ufw'}) {
+        push(@postup, wg_firewall_hook_command('up', $data->{'listen_port'}));
+    }
+    push(@lines, '') if (@preup || @postup);
+    _append_values(\@lines, 'PreUp', \@preup);
+    _append_values(\@lines, 'PostUp', \@postup);
+    push(@lines, '') if (@predown || @postdown);
+    _append_values(\@lines, 'PreDown', \@predown);
+    _append_values(\@lines, 'PostDown', \@postdown);
+    push(@lines, '#WebminFirewall = '.($data->{'firewall_ufw'} ? 'ufw' : 'off'))
+        if ($data->{'firewall_managed'});
     push(@lines, '') if (grep { length($data->{$_} || '') } qw(clientendpoint clientdns clientallowedips clientmtu));
     foreach my $pair (
         [ 'ClientEndpoint', 'clientendpoint' ], [ 'ClientDNS', 'clientdns' ],
@@ -446,7 +462,7 @@ sub build_interface_block
     }
     my @unknown = _unknown_lines($old,
         [ qw(Address ListenPort PrivateKey DNS MTU Table FwMark SaveConfig PreUp PostUp PreDown PostDown) ],
-        [ qw(ClientEndpoint ClientDNS ClientAllowedIPs ClientMTU) ]);
+        [ qw(ClientEndpoint ClientDNS ClientAllowedIPs ClientMTU WebminFirewall) ]);
     if (@unknown) {
         push(@lines, '', '# Preserved custom settings', @unknown);
     }

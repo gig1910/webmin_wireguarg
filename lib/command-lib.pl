@@ -87,6 +87,30 @@ sub wg_quick_dns_dependency_error
         'wg-quick requires the resolvconf command when host DNS is configured.';
 }
 
+# The hook is invoked by systemd/wg-quick as well as by Webmin.
+# Quote every argument; never interpolate a submitted port into shell code.
+sub wg_firewall_hook_command
+{
+    my ($action, $port) = @_;
+    my @args = ($^X, File::Spec->rel2abs('wg-firewall-hook.pl'), $action, '%i');
+    push(@args, $port) if ($action eq 'up');
+    return join(' ', map { shell_quote($_) } @args);
+}
+
+sub wg_firewall_preflight
+{
+    my ($port) = @_;
+    return $text{'error_firewall_port_required'}
+        if (!defined($port) || $port !~ /^[0-9]+$/ || $port < 1 || $port > 65535);
+    my $ufw = '/usr/sbin/ufw';
+    return $text{'error_firewall_ufw_missing'} if (!-x $ufw);
+    return $text{'error_firewall_hook_missing'} if (!-r File::Spec->rel2abs('wg-firewall-hook.pl'));
+    my ($ok, $output) = run_command([ $ufw, 'status' ], 1, 10, 4096);
+    return $text{'error_firewall_ufw_inactive'}
+        if (!$ok || $output !~ /^Status:\s+active\b/im);
+    return '';
+}
+
 sub optional_dependency_spec
 {
     my ($id) = @_;

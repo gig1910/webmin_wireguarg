@@ -5,7 +5,8 @@ Version 1.0.0 replaces the former 1,800-line shared library with a compatibility
 - `wireguard-lib.pl` — Webmin bootstrap and compatibility loader.
 - `lib/security-lib.pl` — ACL checks, CSRF integrity, same-origin validation and request throttling.
 - `lib/ip-lib.pl` — CIDR parsing, overlap detection, free-address allocation and client route resolution.
-- `lib/command-lib.pl` — command paths, bounded command execution and optional dependency handling.
+- `lib/command-lib.pl` — command paths, bounded command execution, firewall preflight and optional dependency handling.
+- `lib/firewall-ufw-lib.pl` and `wg-firewall-hook.pl` — standalone, tagged UFW rules managed by wg-quick lifecycle hooks (not tied to the Webmin CGI process).
 - `lib/config-lib.pl` — loss-aware configuration parser, key handling, backups and atomic writes.
 - `lib/runtime-lib.pl` — runtime dump parsing and start/stop/apply/restart operations.
 - `lib/api-ui-lib.pl` — JSON transport, Webmin URLs, formatting and action forms.

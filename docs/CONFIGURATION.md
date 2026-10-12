@@ -40,3 +40,28 @@ standard WireGuard configuration remains the source of truth.
   default.
 
 Neither field provisions a DNS server or changes system DNS automatically.
+
+## Automatic UFW port lifecycle (opt-in)
+
+An interface may opt into UFW firewall management. For example, with
+`ListenPort = 38250` the generated configuration includes an internal
+`PostUp` hook to allow UDP/38250 and a `PostDown` hook to remove
+only the tagged rules belonging to this particular interface.
+The hooks execute under `wg-quick` whether started by Webmin or by
+`wg-quick@<name>.service`.
+
+- This feature supports **active UFW** only; it does not enable UFW or
+  replace nftables/firewalld rules. Keep the option disabled for an unmanaged
+  firewall. Both a fixed ListenPort and `/usr/sbin/ufw` are required.
+- Rules carry a `webmin-wg:<interface>` ownership comment. Cleanup looks
+  up that exact comment in numbered UFW rules, never issuing a broad
+  `ufw delete allow <port>/udp` that could remove a manually created rule.
+- The module retains the cleanup hook after opting out so an already-open
+  managed rule can be removed at the next normal stop.
+- Changing the ListenPort or the management setting is not a hot apply;
+  use save-only followed by a full stop/start or Save and restart.
+- UFW rules are persistent. An unclean shutdown/power loss may leave an
+  orphaned tagged rule until the interface is started again and then stopped;
+  audit such rules after abnormal shutdowns.
+- External firewalls, cloud security groups, routers and port forwarding
+  are outside the scope of this setting.
