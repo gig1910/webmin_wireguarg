@@ -105,6 +105,7 @@ sub wg_firewall_preflight
     my $ufw = '/usr/sbin/ufw';
     return $text{'error_firewall_ufw_missing'} if (!-x $ufw);
     return $text{'error_firewall_hook_missing'} if (!-r File::Spec->rel2abs('wg-firewall-hook.pl'));
+    local $ENV{'LC_ALL'} = 'C';
     my ($ok, $output) = run_command([ $ufw, 'status' ], 1, 10, 4096);
     return $text{'error_firewall_ufw_inactive'}
         if (!$ok || $output !~ /^Status:\s+active\b/im);

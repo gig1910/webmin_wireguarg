@@ -50,6 +50,9 @@ only the tagged rules belonging to this particular interface.
 The hooks execute under `wg-quick` whether started by Webmin or by
 `wg-quick@<name>.service`.
 
+- Runtime start/restart independently rechecks UFW before wg-quick executes;
+  an unavailable firewall never causes a preflight-induced tunnel shutdown.
+- The same automatically managed UDP port cannot be assigned to two interfaces.
 - This feature supports **active UFW** only; it does not enable UFW or
   replace nftables/firewalld rules. Keep the option disabled for an unmanaged
   firewall. Both a fixed ListenPort and `/usr/sbin/ufw` are required.

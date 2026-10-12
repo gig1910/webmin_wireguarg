@@ -136,6 +136,10 @@ sub action_start_interface
     return (0, $text{'error_interface_private_missing'}) if (!$cfg || !length($cfg->{'interface'}->{'private_key'} || ''));
     my $dns_error = wg_quick_dns_dependency_error([ get_section_values($cfg->{'interface'}, 'DNS') ]);
     return (0, $dns_error) if (length($dns_error));
+    if ((get_meta_value($cfg->{'interface'}, 'webminfirewall') || '') eq 'ufw') {
+        my $fw_error = wg_firewall_preflight(get_section_value($cfg->{'interface'}, 'ListenPort') || '');
+        return (0, $fw_error) if (length($fw_error));
+    }
     my $wgq = command_path('wg_quick_cmd', '/usr/bin/wg-quick');
     require_command($wgq);
     return run_command([ $wgq, 'up', $path ], 0, 90, 50000);
@@ -206,6 +210,10 @@ sub action_restart_interface
     if ($cfg && $cfg->{'interface'}) {
         my $dns_error = wg_quick_dns_dependency_error([ get_section_values($cfg->{'interface'}, 'DNS') ]);
         return (0, $dns_error) if (length($dns_error));
+        if ((get_meta_value($cfg->{'interface'}, 'webminfirewall') || '') eq 'ufw') {
+            my $fw_error = wg_firewall_preflight(get_section_value($cfg->{'interface'}, 'ListenPort') || '');
+            return (0, $fw_error) if (length($fw_error));
+        }
     }
     my ($down_ok, $down_out, $down_status, $down_cmd) = action_stop_interface($name);
     return (0, $down_out, $down_status, $down_cmd) if (!$down_ok);

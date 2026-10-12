@@ -39,6 +39,7 @@ interface_firewall_ufw=Automatic UDP port rule (UFW)
 interface_firewall_ufw_enabled=Open on activation; remove on deactivation
 interface_firewall_ufw_help=Optional. Automatically manage only a tagged UFW allow rule for ListenPort/UDP via wg-quick PostUp/PostDown hooks. Requires active UFW; does not enable UFW or modify manually created rules. Stop/start or full restart is required after changing this setting or the port.
 error_firewall_port_required=Automatic UFW management requires a fixed ListenPort from 1 to 65535.
+error_firewall_port_conflict=UDP port $1 is already managed by WireGuard interface $2. Use a different ListenPort to avoid shared-rule ownership conflicts.
 error_firewall_ufw_missing=UFW is unavailable at /usr/sbin/ufw. Automatic port management cannot run.
 error_firewall_ufw_inactive=UFW is not active or its status cannot be determined. The module will not enable the firewall automatically.
 error_firewall_hook_missing=WireGuard firewall hook script is missing from the installed module.

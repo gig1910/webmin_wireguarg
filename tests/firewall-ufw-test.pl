@@ -64,4 +64,22 @@ die "opt-out left an allow hook\n" if ($block =~ /PostUp\s*=\s*.*wg-firewall-hoo
 die "opt-out removed cleanup hook\n" if ($block !~ /PostDown\s*=\s*.*wg-firewall-hook[.]pl/m);
 die "opt-out marker missing\n" if ($block !~ /^#WebminFirewall = off$/m);
 
+# Runtime preflight must reject an unavailable firewall BEFORE stopping a tunnel.
+my $config_path = "$temp/wg_safe.conf";
+open(my $conf_fh, '>', $config_path) or die $!;
+print {$conf_fh} "[Interface]\nAddress = 10.10.10.1/24\nPrivateKey = TEST_PRIVATE\nListenPort = 38250\n#WebminFirewall = ufw\n";
+close($conf_fh);
+$config{'conf_dir'} = $temp;
+my $stop_calls = 0;
+{
+    no warnings 'redefine';
+    local *main::wg_firewall_preflight = sub { return 'UFW inactive test'; };
+    local *main::action_stop_interface = sub { $stop_calls++; return (1, 'stopped'); };
+    my ($start_ok, $start_error) = action_start_interface('wg_safe');
+    die "start did not block before wg-quick\n" if ($start_ok || $start_error ne 'UFW inactive test');
+    my ($restart_ok, $restart_error) = action_restart_interface('wg_safe');
+    die "restart did not preflight before shutdown\n"
+        if ($restart_ok || $restart_error ne 'UFW inactive test' || $stop_calls);
+}
+
 print "tagged UFW rule lifecycle, ownership and generated hook tests passed\n";

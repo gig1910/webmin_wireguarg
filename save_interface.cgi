@@ -47,6 +47,18 @@ my $fw_enabled = $in{'firewall_ufw'} ? 1 : 0;
 my $old_fw = $ifc ? (get_meta_value($ifc, 'webminfirewall') || '') : '';
 my $fw_managed = $fw_enabled || $old_fw eq 'ufw' || $old_fw eq 'off';
 error($text{'error_firewall_port_required'}) if ($fw_enabled && (!$port || $port < 1));
+if ($fw_enabled) {
+    my ($interfaces, $list_error) = list_configured_interfaces();
+    error($list_error) if (!$interfaces);
+    foreach my $item (@$interfaces) {
+        next if ($item->{'name'} eq $name);
+        my $other = $item->{'config'} && $item->{'config'}->{'interface'};
+        next if (!$other);
+        next if ((get_meta_value($other, 'webminfirewall') || '') ne 'ufw');
+        next if ((get_section_value($other, 'ListenPort') || '') ne $port);
+        error(text('error_firewall_port_conflict', $port, $item->{'name'}));
+    }
+}
 # All saved configs may be edited offline. Before an actual activation, verify
 # that UFW is present and active; never enable/reset a system firewall.
 if ($fw_enabled && ($in{'save_start'} || $in{'save_restart'})) {
