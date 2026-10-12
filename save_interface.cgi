@@ -43,10 +43,17 @@ error(text('error_cidr', $bad_addr)) if (!$addr_ok);
 my @client_allowed = _split_list($in{'clientallowedips'});
 my ($client_ok, $bad_client) = validate_cidr_list(\@client_allowed);
 error(text('error_cidr', $bad_client)) if (@client_allowed && !$client_ok);
+my @host_dns = _split_list($in{'dns'});
+# Save-only may prepare a config for later deployment. A requested start or
+# restart must not fail because resolvconf is unavailable.
+if ($in{'save_start'} || $in{'save_restart'}) {
+    my $dns_error = wg_quick_dns_dependency_error(\@host_dns);
+    error($dns_error) if (length($dns_error));
+}
 my %data = (
     'addresses' => \@addresses, 'listen_port' => $port,
     'private_key' => $private, 'public_key' => $public,
-    'dns' => [ _split_list($in{'dns'}) ], 'mtu' => $mtu, 'table' => _trim($in{'table'}),
+    'dns' => \@host_dns, 'mtu' => $mtu, 'table' => _trim($in{'table'}),
     'fwmark' => _trim($in{'fwmark'}), 'saveconfig' => _trim($in{'saveconfig'}),
     'preup' => [ grep { length($_) } map { _trim($_) } split(/\r?\n/, $in{'preup'} || '') ],
     'postup' => [ grep { length($_) } map { _trim($_) } split(/\r?\n/, $in{'postup'} || '') ],

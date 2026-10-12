@@ -134,6 +134,8 @@ sub action_start_interface
     return (0, text('action_missing', $name)) if (!-r $path);
     my ($cfg) = parse_wireguard_config($path);
     return (0, $text{'error_interface_private_missing'}) if (!$cfg || !length($cfg->{'interface'}->{'private_key'} || ''));
+    my $dns_error = wg_quick_dns_dependency_error([ get_section_values($cfg->{'interface'}, 'DNS') ]);
+    return (0, $dns_error) if (length($dns_error));
     my $wgq = command_path('wg_quick_cmd', '/usr/bin/wg-quick');
     require_command($wgq);
     return run_command([ $wgq, 'up', $path ], 0, 90, 50000);
@@ -198,6 +200,13 @@ sub action_apply_interface
 sub action_restart_interface
 {
     my ($name) = @_;
+    # Preflight before wg-quick down: a missing helper must not take down
+    # a running tunnel and then prevent its startup.
+    my ($cfg) = parse_wireguard_config(conf_path($name));
+    if ($cfg && $cfg->{'interface'}) {
+        my $dns_error = wg_quick_dns_dependency_error([ get_section_values($cfg->{'interface'}, 'DNS') ]);
+        return (0, $dns_error) if (length($dns_error));
+    }
     my ($down_ok, $down_out, $down_status, $down_cmd) = action_stop_interface($name);
     return (0, $down_out, $down_status, $down_cmd) if (!$down_ok);
     my ($up_ok, $up_out, $up_status, $up_cmd) = action_start_interface($name);

@@ -23,3 +23,20 @@ Important defaults:
 
 The module stores names and optional client-export metadata in comments so the
 standard WireGuard configuration remains the source of truth.
+
+## DNS fields when creating or editing an interface
+
+- **Host DNS (wg-quick)** maps to `DNS = ...` under the local `[Interface]`.
+  It changes the host's resolver when that tunnel starts; `wg-quick` on Linux
+  requires an executable `resolvconf` command in its PATH. This field is
+  optional and should normally be empty on VPN servers. With a nonempty value,
+  the module checks the dependency before start or restart, including before
+  taking down an active interface for restart. Save-only keeps working so
+  previously stored configurations can still be edited or prepared offline.
+- **DNS in exported client configurations** is stored separately as the
+  `#ClientDNS` metadata comment. It appears as `DNS = ...` in generated
+  client configurations only; it does not configure a DNS service or the
+  server's resolver. A per-peer client DNS value overrides the interface
+  default.
+
+Neither field provisions a DNS server or changes system DNS automatically.

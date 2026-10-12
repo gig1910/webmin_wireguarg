@@ -65,6 +65,28 @@ sub require_command
 }
 
 
+# wg-quick invokes 'resolvconf' by name for [Interface] DNS entries.
+# Match the inherited PATH of the wg-quick subprocess; resolvectl alone
+# does not provide the required resolvconf command.
+sub wg_quick_resolvconf_command
+{
+    foreach my $directory (split(/:/, $ENV{'PATH'} || '')) {
+        next if (!length($directory));
+        my $candidate = File::Spec->catfile($directory, 'resolvconf');
+        return $candidate if (-f $candidate && -x $candidate);
+    }
+    return '';
+}
+
+sub wg_quick_dns_dependency_error
+{
+    my ($dns_entries) = @_;
+    return '' if (!grep { length(_trim($_)) } @{$dns_entries || []});
+    return '' if (length(wg_quick_resolvconf_command()));
+    return $text{'error_dns_resolvconf_missing'} ||
+        'wg-quick requires the resolvconf command when host DNS is configured.';
+}
+
 sub optional_dependency_spec
 {
     my ($id) = @_;
