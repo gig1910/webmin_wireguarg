@@ -37,8 +37,9 @@ eval {
     my $truncated = @$history > 10000 ? 1 : 0;
     shift(@$history) if ($truncated);
 
-    my $usage = peer_usage_summary($history, $from, $to);
-    my $retention = collector_effective_settings(\%config)->{'stats_history_retention'};
+    my $effective = collector_effective_settings(\%config);
+    my $usage = peer_usage_summary($history, $from, $to, $effective->{'stats_refresh_interval'});
+    my $retention = $effective->{'stats_history_retention'};
     json_response({
         ok => JSON::PP::true(),
         timestamp => $now, from => $from, to => $to,

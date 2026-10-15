@@ -33,6 +33,8 @@ sub peer_usage_graph_html
     my $lbl_24h = html_escape($text{'peer_usage_24h'});
     my $lbl_custom = html_escape($text{'peer_usage_custom'});
     my $loading = html_escape($text{'peer_usage_loading'});
+    my $received = html_escape($text{'peer_usage_received'});
+    my $sent = html_escape($text{'peer_usage_sent'});
     return <<HTML;
 <div class="wg-peer-usage" id="$id" data-history-url="$history_url" data-poll-interval="$interval">
  <h3>$safe_title</h3>
@@ -49,8 +51,8 @@ sub peer_usage_graph_html
   </div>
  </div>
  <div class="wg-peer-usage-summary">
-  <strong data-wg-rx>$lbl_from: —</strong>
-  <strong data-wg-tx>$lbl_to: —</strong>
+  <strong data-wg-rx>$received: —</strong>
+  <strong data-wg-tx>$sent: —</strong>
   <small data-wg-covered></small>
  </div>
  <canvas class="wg-peer-usage-canvas" height="300" style="width:100%;height:300px"></canvas>

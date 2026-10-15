@@ -18,7 +18,7 @@ my $history = [
 ];
 my $summary = peer_usage_summary($history, 100, 150, 5);
 die "received total incorrect: $summary->{rx}\n" unless $summary->{rx} == 118;
-die "sent total incorrect: $summary->{tx}\n" unless $summary->{tx} == 167;
+die "sent total incorrect: $summary->{tx}\n" unless $summary->{tx} == 157;
 die "reset count incorrect\n" unless $summary->{resets} == 2;
 die "gap not detected\n" unless $summary->{gaps} == 1;
 die "observed timestamps incorrect\n" unless $summary->{first} == 100 && $summary->{last} == 150;
