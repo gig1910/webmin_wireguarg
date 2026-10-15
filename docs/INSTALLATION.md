@@ -33,6 +33,18 @@ Install the newer WBM over the existing module. Upgrades preserve:
 Only the managed metrics collector may be restarted when its unit changes.
 WireGuard interfaces are not restarted by the installer.
 
+## Analytics prerequisites
+
+Persistent peer analytics uses `/usr/bin/python3` and standard-library `sqlite3`.
+The collector manages `stats/analytics.sqlite3` with WAL and restricted access.
+Back up the existing statistics directory before upgrading, particularly to
+preserve legacy JSONL files for removed peers. To export Prometheus textfiles,
+create one of the supported node_exporter textfile directories and configure
+output path, interval and metric selection in Webmin. No WireGuard interface
+restart is needed; only the statistics collector may be restarted.
+
+See `docs/ANALYTICS.md` or `docs/ANALYTICS.ru.md`.
+
 ## Verify
 
 ```bash

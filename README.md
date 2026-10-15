@@ -7,6 +7,13 @@ in standard `.conf` files.
 
 **Stable release:** `0.2.0`
 
+## Development: persistent peer analytics
+
+The feature branch adds persistent 10-minute SQLite usage, activity events,
+an Analytics tab, protected storage maintenance and configurable Prometheus
+textfile metrics. See [Analytics operations](docs/ANALYTICS.md).
+These features are not yet included in the published stable release.
+
 ## Features
 
 - interface and peer CRUD with start, stop, restart and runtime apply;

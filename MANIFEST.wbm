@@ -68,6 +68,8 @@ lib/preshared-key-lib.pl
 lib/version-lib.pl
 docs/INSTALLATION.md
 docs/CONFIGURATION.md
+docs/ANALYTICS.md
+docs/ANALYTICS.ru.md
 docs/ACL.md
 docs/ARCHITECTURE.md
 docs/SECURITY-REVIEW.md
