@@ -19,7 +19,8 @@ eval {
     if ($items && ref($result->{'peers'}) eq 'ARRAY') {
         my %current;
         for my $item (@$items) {
-            for my $entry (@{$item->{'config'}->{'peers'} || []}) {
+            my $parsed = $item->{'config'} || {};
+            for my $entry (@{$parsed->{'peers'} || []}) {
                 my $public = get_section_value($entry, 'PublicKey') || '';
                 my $name = get_meta_value($entry, 'name') || '';
                 next if !$public || !$name;
