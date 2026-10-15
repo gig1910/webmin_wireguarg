@@ -60,7 +60,10 @@ open(my $ufh, '<', $unit) or die $!;
 local $/;
 my $unit_text = <$ufh>;
 close($ufh);
-die "unit missing writable state path\n" if ($unit_text !~ /^ReadWritePaths=\Q$state\E$/m);
+die "unit missing writable state path\n" if ($unit_text !~ /^ReadWritePaths=\Q$state\E(?:\s|$)/m);
+die "unit missing optional Prometheus writable paths\n"
+    if $unit_text !~ /-\/var\/lib\/node_exporter\/textfile_collector/ ||
+       $unit_text !~ /-\/var\/lib\/prometheus\/node-exporter/;
 die "unit missing collector path\n" if ($unit_text !~ /\Q$module\/stats-collector.pl\E/);
 
 open(my $lfh, '<', $systemctl_log) or die $!;
