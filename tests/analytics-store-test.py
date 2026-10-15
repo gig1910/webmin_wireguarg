@@ -3,6 +3,7 @@
 import importlib.util
 import json
 import os
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -40,10 +41,15 @@ class AnalyticsTest(unittest.TestCase):
         buckets=self.conn.execute("SELECT period,rx_bytes,tx_bytes FROM buckets "
                                   "WHERE peer_id=? ORDER BY period",(self.key_a,)).fetchall()
         self.assertEqual(buckets,[(600,100,100),(1200,100,100)])
-        kinds=[r[0] for r in self.conn.execute("SELECT type FROM events WHERE peer_id=?",
-                                               (self.key_a,))]
-        self.assertIn("endpoint_changed",kinds)
-        self.assertIn("handshake_observed",kinds)
+        events=self.conn.execute(
+            "SELECT at,type,endpoint,previous_endpoint FROM events WHERE peer_id=? "
+            "ORDER BY at",(self.key_a,)).fetchall()
+        self.assertEqual(events,[
+            (1188,"endpoint_ip_observed","192.0.2.1",""),
+            (1209,"endpoint_ip_changed","198.51.100.4","192.0.2.1")])
+        self.assertEqual(self.conn.execute(
+            "SELECT handshake,handshake_ip FROM peers WHERE id=?",
+            (self.key_a,)).fetchone(),(1209,"198.51.100.4"))
 
     def test_deactivate_recreate_same_ip_different_key(self):
         self.sample(self.a,1000,10,10)
@@ -127,12 +133,135 @@ class AnalyticsTest(unittest.TestCase):
         self.assertEqual(partial["totals"]["rx"],100)
 
     def test_filtered_events_and_db_size(self):
-        self.sample(self.a,1000,100,100)
-        self.sample(self.a,1005,110,130,"192.0.2.2:40404")
+        self.sample(self.a,1000,100,100,handshake=995)
+        self.sample(self.a,1005,110,130,"192.0.2.2:40404",handshake=1003)
         result=store.query(self.conn,{"peer_id":self.key_a,"from":900,"to":1100})
         self.assertTrue(result["db_bytes"]>0)
         self.assertEqual(result["totals"]["rx"],10)
-        self.assertTrue(any(e["type"]=="endpoint_changed" for e in result["events"]))
+        self.assertEqual(
+            [e["type"] for e in result["events"]],
+            ["endpoint_ip_changed","endpoint_ip_observed"])
+
+
+    def test_handshake_without_ip_change_is_coalesced(self):
+        self.sample(self.a,1000,1,2,handshake=995)
+        for t in range(1005,2000,5):
+            self.sample(self.a,t,t,t,endpoint="192.0.2.1:"+str(50000+t),
+                        handshake=t-1)
+        rows=self.conn.execute("SELECT at,type FROM events WHERE peer_id=?",
+                               (self.key_a,)).fetchall()
+        self.assertEqual(rows,[(995,"endpoint_ip_observed")])
+        self.assertEqual(self.conn.execute(
+            "SELECT handshake,handshake_ip FROM peers WHERE id=?",
+            (self.key_a,)).fetchone(),(1994,"192.0.2.1"))
+
+    def test_endpoint_changes_need_new_handshake(self):
+        self.sample(self.a,1000,10,20,handshake=997)
+        self.sample(self.a,1005,11,22,endpoint="203.0.113.25:1234",handshake=997)
+        self.assertEqual(self.conn.execute(
+            "SELECT COUNT(*) FROM events").fetchone()[0],1)
+        # Transient zero handshake must not lower the confirmed timestamp.
+        self.sample(self.a,1010,15,30,endpoint="203.0.113.25:1234",handshake=0)
+        self.assertEqual(self.conn.execute(
+            "SELECT handshake FROM peers WHERE id=?",(self.key_a,)).fetchone(),(997,))
+        self.sample(self.a,1015,20,40,endpoint="203.0.113.25:1234",handshake=1013)
+        events=self.conn.execute(
+            "SELECT at,type,endpoint,previous_endpoint FROM events WHERE peer_id=? "
+            "ORDER BY at",(self.key_a,)).fetchall()
+        self.assertEqual(events,[
+            (997,"endpoint_ip_observed","192.0.2.1",""),
+            (1013,"endpoint_ip_changed","203.0.113.25","192.0.2.1")])
+
+    def test_ipv6_port_changes_no_event(self):
+        self.sample(self.a,1500,100,200,endpoint="[2001:db8::1]:1234",
+                    handshake=1498)
+        self.sample(self.a,1510,120,240,endpoint="[2001:0db8::1]:9999",
+                    handshake=1508)
+        self.sample(self.a,1520,130,260,endpoint="[2001:db8::2]:9999",
+                    handshake=1518)
+        self.assertEqual(self.conn.execute(
+            "SELECT at,type,endpoint,previous_endpoint FROM events ORDER BY at"
+        ).fetchall(),[
+            (1498,"endpoint_ip_observed","2001:db8::1",""),
+            (1518,"endpoint_ip_changed","2001:db8::2","2001:db8::1")])
+        self.assertEqual(store.endpoint_ip("(none)"),"")
+        self.assertEqual(store.endpoint_ip("example.org:51820"),"")
+
+    def test_disabled_preserves_last_handshake_and_ip(self):
+        self.sample(self.a,1000,10,20,handshake=997)
+        store.ingest(self.conn,{"timestamp":1005,
+                        "interfaces":{"wg0":{"peer_list":[]}}})
+        self.assertEqual(self.conn.execute(
+            "SELECT active,handshake,handshake_ip FROM peers WHERE id=?",
+            (self.key_a,)).fetchone(),(0,997,"192.0.2.1"))
+        self.sample(self.b,1010,10,20,endpoint="192.0.2.1:50000",
+                    handshake=1009)
+        self.assertEqual(self.conn.execute(
+            "SELECT COUNT(*) FROM events WHERE peer_id=?", (self.key_a,)
+        ).fetchone()[0],1)
+        self.assertEqual(self.conn.execute(
+            "SELECT COUNT(*) FROM events WHERE peer_id=?", (self.key_b,)
+        ).fetchone()[0],1)
+
+    def test_legacy_activity_compaction_is_idempotent_and_backed_up(self):
+        # Simulate a DB written by the previous release, without handshake_ip.
+        self.conn.close()
+        os.unlink(self.db)
+        conn=sqlite3.connect(self.db)
+        conn.executescript(store.SCHEMA.replace(
+            " handshake_ip TEXT NOT NULL DEFAULT '',\n", ""))
+        ident=self.key_a
+        conn.execute("INSERT INTO peers(id,public_key,first_seen,last_seen,active,"
+                     "interface,endpoint,handshake) VALUES(?,?,?,?,?,?,?,?)",
+                     (ident,self.a,1000,1200,1,"wg0","198.51.100.2:4500",1180))
+        for t,kind,endpoint,detail in (
+            (1000,"first_seen","192.0.2.1:2000",""),
+            (1000,"handshake_observed","192.0.2.1:2000","998"),
+            (1005,"handshake_observed","192.0.2.1:2001","1004"),
+            (1010,"endpoint_changed","192.0.2.1:2002",""),
+            (1010,"handshake_observed","192.0.2.1:2002","1009"),
+            (1120,"endpoint_changed","198.51.100.2:4500",""),
+            (1120,"handshake_observed","198.51.100.2:4500","1118"),
+            (1122,"inactive","198.51.100.2:4500",""),
+            (1130,"sample_gap","198.51.100.2:4500","8")):
+            conn.execute("INSERT INTO events(peer_id,at,type,interface,endpoint,"
+                         "detail) VALUES(?,?,?,?,?,?)",
+                         (ident,t,kind,"wg0",endpoint,detail))
+        conn.commit()
+        conn.close()
+        self.conn=store.connect(str(self.db))
+        self.assertIn("handshake_ip",{
+            row[1] for row in self.conn.execute("PRAGMA table_info(peers)")})
+        store.ingest(self.conn,{"timestamp":1200,"interfaces":{"wg0":{"peer_list":[]}}})
+        compact=self.conn.execute(
+            "SELECT at,type,endpoint,previous_endpoint FROM events ORDER BY at"
+        ).fetchall()
+        self.assertEqual(compact,[
+            (998,"endpoint_ip_observed","192.0.2.1",""),
+            (1118,"endpoint_ip_changed","198.51.100.2","192.0.2.1")])
+        self.assertEqual(self.conn.execute(
+            "SELECT handshake_ip FROM peers WHERE id=?",
+            (ident,)).fetchone(),("198.51.100.2",))
+        backups=list((self.db.parent/"backups").glob("analytics-*.sqlite3"))
+        self.assertEqual(len(backups),1)
+        with sqlite3.connect(backups[0]) as older:
+            self.assertEqual(older.execute("SELECT COUNT(*) FROM events"
+                                          ).fetchone()[0],9)
+        store.ingest(self.conn,{"timestamp":1210,"interfaces":{"wg0":{"peer_list":[]}}})
+        self.assertEqual(self.conn.execute(
+            "SELECT at,type,endpoint,previous_endpoint FROM events ORDER BY at"
+        ).fetchall(),compact)
+        self.assertEqual(len(list((self.db.parent/"backups").glob("analytics-*.sqlite3"))),1)
+
+    def test_reset_and_gap_do_not_create_activity_entries(self):
+        self.sample(self.a,1000,1000,1000,handshake=999)
+        self.sample(self.a,1100,2000,2000,handshake=999)
+        self.sample(self.a,1110,10,20,handshake=999)
+        self.assertEqual(self.conn.execute("SELECT COUNT(*) FROM events"
+                                          ).fetchone()[0],1)
+        self.assertEqual(self.conn.execute(
+            "SELECT SUM(resets),SUM(gaps) FROM buckets WHERE peer_id=?",
+            (self.key_a,)).fetchone(),(1,1))
 
     def test_prometheus_text_contains_only_fingerprints(self):
         self.sample(self.a,1000,100,200,endpoint="192.0.2.5:12345")
