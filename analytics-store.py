@@ -19,6 +19,7 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS peers (
  id TEXT PRIMARY KEY, public_key TEXT NOT NULL UNIQUE,
  first_seen INTEGER NOT NULL, last_seen INTEGER NOT NULL,
+ name TEXT NOT NULL DEFAULT '',
  active INTEGER NOT NULL DEFAULT 0, interface TEXT NOT NULL,
  endpoint TEXT NOT NULL DEFAULT '', handshake INTEGER NOT NULL DEFAULT 0,
  handshake_ip TEXT NOT NULL DEFAULT '',
@@ -62,9 +63,12 @@ def connect(path):
     conn.execute("PRAGMA journal_mode=WAL")
     conn.executescript(SCHEMA)
     # CREATE TABLE IF NOT EXISTS does not add columns to pre-existing databases.
-    if "handshake_ip" not in {row[1] for row in conn.execute("PRAGMA table_info(peers)")}:
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(peers)")}
+    if "handshake_ip" not in columns:
         conn.execute("ALTER TABLE peers ADD COLUMN handshake_ip TEXT NOT NULL DEFAULT ''")
-        conn.commit()
+    if "name" not in columns:
+        conn.execute("ALTER TABLE peers ADD COLUMN name TEXT NOT NULL DEFAULT ''")
+    conn.commit()
     if p.exists():
         os.chmod(p, 0o600)
     return conn
@@ -239,6 +243,9 @@ def ingest(conn, request):
     interval = max(2, min(3600, int(request.get("interval") or 5)))
     instances = request.get("interfaces") or {}
     observed = set()
+    # Peer labels are *metadata*, not identity. Never merge based on a name.
+    requested_names = request.get("peer_names") or {}
+    names = requested_names if isinstance(requested_names, dict) else {}
     compact_legacy_activity(conn, conn.execute("PRAGMA database_list").fetchone()[2])
     with conn:
         conn.execute("BEGIN IMMEDIATE")
@@ -252,6 +259,8 @@ def ingest(conn, request):
                 except (ValueError, UnicodeError):
                     continue
                 observed.add(ident)
+                candidate_name = names.get(public, "")
+                peer_name = candidate_name.strip()[:200] if isinstance(candidate_name, str) else ""
                 endpoint = str(peer.get("endpoint") or "")
                 if endpoint == "(none)":
                     endpoint = ""
@@ -266,10 +275,10 @@ def ingest(conn, request):
                                    now,interval)
                     confirmed_ip = record_handshake_ip(
                         conn, ident, interface, endpoint, handshake, "")
-                    conn.execute("INSERT INTO peers(id,public_key,first_seen,last_seen,active,interface,"
+                    conn.execute("INSERT INTO peers(id,public_key,first_seen,last_seen,name,active,interface,"
                                  "endpoint,handshake,handshake_ip,sample_at,rx,tx) "
-                                 "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
-                                 (ident,public,now,now,1,interface,endpoint,
+                                 "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                                 (ident,public,now,now,peer_name,1,interface,endpoint,
                                   handshake,confirmed_ip,now,rx,tx))
                     bucket(conn,ident,now,0,0,samples=1)
                     continue
@@ -294,9 +303,19 @@ def ingest(conn, request):
                 else:
                     bucket(conn,ident,now,0,0,samples=1,gaps=1 if not active else 0)
                 conn.execute("UPDATE peers SET active=1,interface=?,last_seen=?,endpoint=?,"
-                             "handshake=?,handshake_ip=?,sample_at=?,rx=?,tx=? WHERE id=?",
+                             "handshake=?,handshake_ip=?,sample_at=?,rx=?,tx=?,"
+                             "name=CASE WHEN ?<>'' THEN ? ELSE name END WHERE id=?",
                              (interface,now,endpoint,last_handshake,confirmed_ip,
-                              now,rx,tx,ident))
+                              now,rx,tx,peer_name,peer_name,ident))
+        # Update labels also for peers disabled in wg-quick configs: they
+        # are absent from 'wg show dump' but remain in SQLite and in the
+        # declarative config source of truth.
+        for public, value in names.items():
+            if isinstance(public, str) and isinstance(value, str):
+                label = value.strip()[:200]
+                if label:
+                    conn.execute("UPDATE peers SET name=? WHERE public_key=?",
+                                 (label, public))
         for ident, interface, endpoint in conn.execute(
             "SELECT id,interface,endpoint FROM peers WHERE active=1"
         ).fetchall():
@@ -315,9 +334,9 @@ def query(conn, request):
     ident = request.get("peer_id") or ""
     if ident and not KEY.fullmatch(ident):
         raise ValueError("invalid peer key fingerprint")
-    peers = [dict(zip(("id","public_key","first_seen","last_seen","active","interface","endpoint","handshake","handshake_ip"),
+    peers = [dict(zip(("id","public_key","first_seen","last_seen","name","active","interface","endpoint","handshake","handshake_ip"),
                       row)) for row in conn.execute(
-            "SELECT id,public_key,first_seen,last_seen,active,interface,endpoint,handshake,handshake_ip "
+            "SELECT id,public_key,first_seen,last_seen,name,active,interface,endpoint,handshake,handshake_ip "
             "FROM peers ORDER BY last_seen DESC LIMIT 2000")]
     if ident and not conn.execute("SELECT 1 FROM peers WHERE id=?",(ident,)).fetchone():
         raise ValueError("peer not found")

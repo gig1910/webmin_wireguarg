@@ -13,6 +13,24 @@ eval {
         'peer_id' => $peer, 'from' => 0 + $from, 'to' => 0 + $to,
     });
     die $err if (!$result);
+    # Immediate, read-only resolution of renamed/configured peers; the
+    # collector persists these labels in SQLite for later deletion/disable.
+    my ($items) = list_configured_interfaces();
+    if ($items && ref($result->{'peers'}) eq 'ARRAY') {
+        my %current;
+        for my $item (@$items) {
+            for my $entry (@{$item->{'config'}->{'peers'} || []}) {
+                my $public = get_section_value($entry, 'PublicKey') || '';
+                my $name = get_meta_value($entry, 'name') || '';
+                next if !$public || !$name;
+                $current{sha256_hex($public)} = $name;
+            }
+        }
+        for my $record (@{$result->{'peers'}}) {
+            $record->{'name'} = $current{$record->{'id'}}
+                if exists $current{$record->{'id'}};
+        }
+    }
     json_response($result);
     1;
 } or do {

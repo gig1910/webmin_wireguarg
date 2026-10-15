@@ -4,6 +4,8 @@ use warnings;
 use JSON::PP qw(encode_json decode_json);
 use Digest::SHA qw(sha256_hex);
 use File::Path qw(make_path);
+use File::Spec;
+use Encode qw(decode FB_CROAK);
 use File::Basename qw(dirname);
 use FindBin;
 use Fcntl qw(:DEFAULT :flock F_GETFL F_SETFL O_NONBLOCK SEEK_SET);
@@ -14,6 +16,8 @@ use IPC::Open3;
 use Symbol qw(gensym);
 
 require "$FindBin::Bin/lib/collector-config-lib.pl";
+# Reuse the same WireGuard comment/name parser as the Webmin editor.
+require "$FindBin::Bin/lib/config-lib.pl";
 
 my $cfg_file = $ENV{'WEBMIN_WIREGUARD_CONFIG'} || '/etc/webmin/wireguard/config';
 my %cfg;
@@ -41,6 +45,8 @@ my $analytics_db = "$dir/analytics.sqlite3";
 my $last_prometheus = 0;
 my $last_prune = 0;
 my $analytics_error = '';
+my %known_peer_names;
+my $last_names_read = 0;
 my $runtime_timeout = $effective->{'runtime_timeout'};
 my $max_points = $effective->{'stats_max_points'};
 my $max_file_bytes = $effective->{'stats_effective_file_bytes'};
@@ -58,6 +64,31 @@ flock($collector_lock, LOCK_EX|LOCK_NB)
 sub valid_interface_name {
     my ($name) = @_;
     return defined($name) && $name =~ /^[A-Za-z0-9_=+.-]{1,15}$/;
+}
+
+sub collector_peer_names
+{
+    my $path = $cfg{'conf_dir'} || '/etc/wireguard';
+    my %names;
+    return \%names if !-d $path || !-r $path;
+    opendir(my $dh, $path) or return \%names;
+    my @files = grep { /^[A-Za-z0-9_=+.-]{1,15}\.conf$/ } readdir($dh);
+    closedir($dh);
+    for my $file (@files) {
+        my $full = File::Spec->catfile($path,$file);
+        next if !-f $full || !-r $full;
+        my ($parsed) = parse_wireguard_config($full);
+        next if !$parsed;
+        for my $peer (@{$parsed->{'peers'} || []}) {
+            my $public = get_section_value($peer,'PublicKey') || '';
+            my $label = get_meta_value($peer,'name') || '';
+            next if $public !~ /^[A-Za-z0-9+\/]{43}=$/ || !$label;
+            my $decoded = eval { decode('UTF-8', $label, FB_CROAK) };
+            $decoded = $label if !defined $decoded || $@;
+            $names{$public} = substr($decoded,0,200);
+        }
+    }
+    return \%names;
 }
 
 my $stop_requested = 0;
@@ -472,9 +503,13 @@ while (!$stop_requested) {
         });
 
         if ($analytics_enabled) {
+            if (!$last_names_read || $now - $last_names_read >= 60) {
+                %known_peer_names = %{collector_peer_names()};
+                $last_names_read = $now;
+            }
             my ($analytics_ok, $result) = analytics_call('ingest', {
                 timestamp => $now, interval => $interval, interfaces => $interfaces,
-                legacy_dir => $dir,
+                legacy_dir => $dir, peer_names => \%known_peer_names,
             });
             $analytics_error = $analytics_ok ? '' : "$result";
             $last_error = join('; ', grep { length($_) } ($last_error,$analytics_error));
