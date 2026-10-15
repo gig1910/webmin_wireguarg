@@ -34,6 +34,9 @@ my %labels = map { $_ => $text{$_} || $_ } qw(
     analytics_graph_rx analytics_graph_tx analytics_graph_empty analytics_graph_scale
     analytics_filters_heading analytics_summary_heading analytics_interface
     analytics_all_interfaces analytics_peer_open analytics_maintenance_warning
+    analytics_6h analytics_month analytics_quarter analytics_halfyear analytics_year
+    analytics_auto_refresh analytics_auto_off analytics_auto_10m analytics_auto_30m
+    analytics_auto_custom_note analytics_graph_zero analytics_error_time
 );
 my $strings = json_encode_utf8(\%labels);
 print <<HTML;
@@ -45,17 +48,27 @@ print <<HTML;
   <label>$text{'analytics_interface'} <select class="form-control" data-interface><option value="">$text{'analytics_all_interfaces'}</option></select></label>
   <label>$text{'analytics_peer'} <select class="form-control" data-peer></select></label>
   <label>$text{'analytics_period'} <select class="form-control" data-period>
-   <option value="86400">$text{'analytics_24h'}</option>
+   <option value="21600">$text{'analytics_6h'}</option>
+   <option value="86400" selected>$text{'analytics_24h'}</option>
    <option value="604800">$text{'analytics_7d'}</option>
-   <option value="2592000">$text{'analytics_30d'}</option>
+   <option value="month">$text{'analytics_month'}</option>
+   <option value="quarter">$text{'analytics_quarter'}</option>
+   <option value="halfyear">$text{'analytics_halfyear'}</option>
+   <option value="year">$text{'analytics_year'}</option>
    <option value="custom">$text{'analytics_custom'}</option>
   </select></label>
   <span data-custom hidden>
    <label>$text{'analytics_from'} <input type="datetime-local" class="form-control" data-from></label>
    <label>$text{'analytics_to'} <input type="datetime-local" class="form-control" data-to></label>
   </span>
+  <label>$text{'analytics_auto_refresh'} <select class="form-control" data-auto-refresh>
+    <option value="0" selected>$text{'analytics_auto_off'}</option>
+    <option value="600">$text{'analytics_auto_10m'}</option>
+    <option value="1800">$text{'analytics_auto_30m'}</option>
+  </select></label>
   <button class="btn btn-default" data-apply type="button">$text{'analytics_apply'}</button>
  </div>
+ <p class="help-block" data-auto-custom-note hidden>$text{'analytics_auto_custom_note'}</p>
  <div data-error class="alert alert-warning" hidden></div>
   </div>
  </section>
@@ -149,10 +162,11 @@ print <<HTML;
   const labels=$strings, initial=$selected_json, initialInterface=$initial_interface_json;
   const peer=root.querySelector('[data-peer]'), iface=root.querySelector('[data-interface]');
   const period=root.querySelector('[data-period]');
+  const auto=root.querySelector('[data-auto-refresh]');
   const custom=root.querySelector('[data-custom]'), start=root.querySelector('[data-from]');
   const end=root.querySelector('[data-to]'), output=root.querySelector('[data-error]');
   const graph=root.querySelector('[data-chart]'), graphBars=root.querySelector('[data-chart-bars]');
-  let data=null, seq=0, controller=null;
+  let data=null, seq=0, controller=null, autoTimer=null;
   function localInput(t) {
     const d=new Date(t), pad=x=>String(x).padStart(2,'0');
     return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+
@@ -170,10 +184,15 @@ print <<HTML;
     if(period.value==='custom'){
       from=Math.floor(new Date(start.value).getTime()/1000);
       to=Math.floor(new Date(end.value).getTime()/1000);
+    }else if(['month','quarter','halfyear','year'].includes(period.value)){
+      const d=new Date(to*1000);
+      if(period.value==='year')d.setFullYear(d.getFullYear()-1);
+      else d.setMonth(d.getMonth()-({month:1,quarter:3,halfyear:6})[period.value]);
+      from=Math.floor(d.getTime()/1000);
     }else from=to-Number(period.value);
     if(!Number.isFinite(from) || !Number.isFinite(to) ||
-       from<=0 || from>=to || to>Date.now()/1000+60 ||
-       to-from>366*86400)throw new Error('Invalid date interval');
+       from<=0 || to-from<21600 || to>Date.now()/1000+60 ||
+       to-from>366*86400)throw new Error(labels.analytics_error_time);
     return {from,to};
   }
   function peerLabel(p){
@@ -312,6 +331,15 @@ print <<HTML;
     }
     draw();
   }
+  function scheduleAuto(){
+    if(autoTimer!==null){clearTimeout(autoTimer);autoTimer=null;}
+    const interval=Number(auto.value);
+    if(!interval||period.value==='custom'||document.hidden||!root.isConnected)return;
+    autoTimer=setTimeout(()=>{
+      autoTimer=null;
+      if(!document.hidden&&root.isConnected)refresh();
+    },interval*1000);
+  }
   async function refresh(){
     const serial=++seq;
     if(controller)controller.abort();
@@ -334,16 +362,33 @@ print <<HTML;
     }catch(ex){
       if(ex.name==='AbortError'||serial!==seq)return;
       output.textContent=ex.message;output.hidden=false;
+    }finally{
+      if(serial===seq)scheduleAuto();
     }
   }
-  period.addEventListener('change',()=>{custom.hidden=period.value!=='custom';if(!custom.hidden){
-    end.value=localInput(Date.now());start.value=localInput(Date.now()-86400000);
-  }else refresh()});
+  period.addEventListener('change',()=>{
+    custom.hidden=period.value!=='custom';
+    auto.disabled=!custom.hidden;
+    root.querySelector('[data-auto-custom-note]').hidden=custom.hidden;
+    if(!custom.hidden){
+      if(autoTimer!==null){clearTimeout(autoTimer);autoTimer=null;}
+      end.value=localInput(Date.now());start.value=localInput(Date.now()-86400000);
+    }else refresh();
+  });
   iface.addEventListener('change',()=>{peer.value='';refresh()});
   peer.addEventListener('change',refresh);
   root.querySelector('[data-apply]').addEventListener('click',refresh);
-  // The HTML bar chart scales to the available width without Canvas.
-  window.addEventListener('pagehide',()=>{if(controller)controller.abort();});
+  auto.addEventListener('change',scheduleAuto);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){
+      if(autoTimer!==null){clearTimeout(autoTimer);autoTimer=null;}
+      if(controller)controller.abort();
+    }else if(auto.value!=='0'&&period.value!=='custom'&&root.isConnected)refresh();
+  });
+  window.addEventListener('pagehide',()=>{
+    if(autoTimer!==null){clearTimeout(autoTimer);autoTimer=null;}
+    if(controller)controller.abort();
+  });
   if(initialInterface){
     const option=document.createElement('option');
     option.value=initialInterface;option.textContent=initialInterface;
