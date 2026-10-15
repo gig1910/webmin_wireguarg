@@ -88,11 +88,12 @@ print <<HTML;
   <div class="panel-heading"><strong>$text{'analytics_chart'}</strong></div>
   <div class="panel-body">
  <div class="wg-analytics-chart-legend">
-   <span class="wg-analytics-dot wg-analytics-rx-dot"></span> $text{'analytics_graph_rx'}
    <span class="wg-analytics-dot wg-analytics-tx-dot"></span> $text{'analytics_graph_tx'}
+   <span class="wg-analytics-dot wg-analytics-rx-dot"></span> $text{'analytics_graph_rx'}
    <small data-chart-scale></small>
  </div>
  <div class="wg-analytics-chart" data-chart role="img" aria-label="$text{'analytics_chart'}">
+   <div class="wg-analytics-y-axis"><span data-chart-ymax></span><span>$text{'analytics_graph_zero'}</span><span data-chart-ymin></span></div>
    <div class="wg-analytics-chart-bars" data-chart-bars></div>
  </div>
  <div class="wg-analytics-chart-axis"><span data-chart-from></span><span data-chart-to></span></div>
@@ -137,22 +138,30 @@ print <<HTML;
 .wg-analytics-danger{border-color:rgba(190,50,40,.45)}
 \@media(max-width:700px){.wg-analytics-filters label,.wg-analytics-filters [data-peer],
 .wg-analytics-steps label{width:100%;min-width:0}}
-.wg-analytics-chart{display:block!important;width:100%;height:286px;min-height:286px;overflow:hidden;
+.wg-analytics-chart{display:flex!important;width:100%;height:286px;min-height:286px;overflow:hidden;
   padding:8px 10px 4px;border:1px solid rgba(127,127,127,.45);border-radius:4px}
-.wg-analytics-chart-bars{display:flex!important;align-items:stretch;height:264px;min-height:264px;
-  gap:1px;background:repeating-linear-gradient(to top,transparent 0,transparent calc(25% - 1px),
-  rgba(127,127,127,.23) calc(25% - 1px),rgba(127,127,127,.23) 25%)}
-.wg-analytics-bar-group{flex:1 1 0;min-width:0;display:flex;align-items:flex-end;gap:1px;height:100%}
-.wg-analytics-bar{display:block;flex:1 1 0;min-width:0;max-height:100%;border-radius:1px 1px 0 0}
-.wg-analytics-bar.rx{background-color:#3989d7}
-.wg-analytics-bar.tx{background-color:#2aa889}
+.wg-analytics-y-axis{display:flex;flex-direction:column;justify-content:space-between;flex:0 0 72px;
+  text-align:right;padding:0 8px 0 0;font-size:11px;opacity:.85}
+.wg-analytics-chart-bars{display:flex!important;align-items:stretch;position:relative;flex:1 1 auto;
+  min-width:0;height:264px;min-height:264px;gap:1px;
+  background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(12.5% - 1px),
+  rgba(127,127,127,.20) calc(12.5% - 1px),rgba(127,127,127,.20) 12.5%)}
+.wg-analytics-chart-bars::after{content:'';position:absolute;top:50%;left:0;right:0;
+  border-top:1px solid rgba(127,127,127,.7);pointer-events:none}
+.wg-analytics-bar-group{display:flex;flex:1 1 0;min-width:0;flex-direction:column;align-items:stretch;height:100%}
+.wg-analytics-half{height:50%;min-height:0;display:flex;flex-direction:column;align-items:stretch}
+.wg-analytics-half.tx{justify-content:flex-end}
+.wg-analytics-half.rx{justify-content:flex-start}
+.wg-analytics-bar{display:block;flex:0 0 auto;width:100%;min-height:0;max-height:100%}
+.wg-analytics-bar.tx{background-color:var(--primary-color,#4f8dd6)}
+.wg-analytics-bar.rx{background-color:var(--success-color,#42a878)}
 .wg-analytics-chart-empty{margin:auto;align-self:center;text-align:center;opacity:.8}
 .wg-analytics-chart-legend,.wg-analytics-chart-axis{display:flex;align-items:center;gap:8px;margin:8px 0}
 .wg-analytics-chart-legend small{margin-left:auto;opacity:.85}
 .wg-analytics-chart-axis{justify-content:space-between;font-size:12px;opacity:.85}
 .wg-analytics-dot{display:inline-block;width:10px;height:10px;border-radius:2px}
-.wg-analytics-rx-dot{background-color:#3989d7}
-.wg-analytics-tx-dot{background-color:#2aa889}
+.wg-analytics-rx-dot{background-color:var(--success-color,#42a878)}
+.wg-analytics-tx-dot{background-color:var(--primary-color,#4f8dd6)}
 </style>
 <script>
 (function(){
@@ -206,8 +215,8 @@ print <<HTML;
     const first=Math.floor(data.from/600)*600;
     const last=data.to;
     const span=Math.max(600,last-first);
-    // Visualization may downsample, but SQLite always stores 10-minute buckets.
-    const step=Math.max(600,Math.ceil(span/(180*600))*600);
+    // The backend groups long histories without discarding source 10m data.
+    const step=Math.max(600,Number(data.bucket_seconds)||600);
     const slots=Math.max(1,Math.ceil(span/step));
     const totals=Array.from({length:slots},()=>({rx:0,tx:0}));
     for(const b of raw){
@@ -235,18 +244,24 @@ print <<HTML;
            new Date(intervalEnd*1000).toLocaleString()+'\\n'+
            labels.analytics_graph_rx+': '+bytes(item.rx)+'\\n'+
            labels.analytics_graph_tx+': '+bytes(item.tx);
-        for(const [kind,value] of [['rx',item.rx],['tx',item.tx]]){
+        // Runtime-matched layout: TX up from zero, RX down from zero.
+        for(const [kind,value] of [['tx',item.tx],['rx',item.rx]]){
+          const half=document.createElement('div');
+          half.className='wg-analytics-half '+kind;
           const bar=document.createElement('span');
           bar.className='wg-analytics-bar '+kind;
           bar.style.height=value>0?Math.max(0.5,100*value/maximum)+'%':'0%';
-          group.append(bar);
+          half.append(bar);group.append(half);
         }
         fragment.append(group);
       }
       graphBars.append(fragment);
     }
     root.querySelector('[data-chart-scale]').textContent=
-       labels.analytics_graph_scale+': '+bytes(maximum);
+       labels.analytics_graph_scale+': '+bytes(maximum)+
+       (step>600?' / '+Math.round(step/600)+' × 10m':' / 10m');
+    root.querySelector('[data-chart-ymax]').textContent=bytes(maximum);
+    root.querySelector('[data-chart-ymin]').textContent=bytes(maximum);
     root.querySelector('[data-chart-from]').textContent=new Date(data.from*1000).toLocaleString();
     root.querySelector('[data-chart-to]').textContent=new Date(data.to*1000).toLocaleString();
     graph.setAttribute('aria-label',labels.analytics_chart+'; '+
