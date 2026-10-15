@@ -87,7 +87,7 @@ sub peer_usage_graph_html
   const error = root.querySelector('[data-wg-error]');
   const canvas = root.querySelector('canvas');
   const ctx = canvas.getContext('2d');
-  const minimumRefreshMs = Math.max(15000, Number(root.dataset.pollInterval) * 1000);
+  const minimumRefreshMs = Math.max(30000, Number(root.dataset.pollInterval) * 1000);
   const maxRange = 90 * 86400;
   let rows = [], bounds = null, requestSerial = 0, aborter = null;
   let previousRefresh = 0, disposed = false;

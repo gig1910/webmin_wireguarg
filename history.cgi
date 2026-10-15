@@ -32,9 +32,9 @@ eval {
     }
 
     # Read one extra sample to flag a clipped response rather than reporting
-    # an apparently complete aggregate from only its latest 10k observations.
-    my $history = read_stats_history($name, $peer, $from, 10001, $to);
-    my $truncated = @$history > 10000 ? 1 : 0;
+    # an apparently complete aggregate from only its latest 20k observations.
+    my $history = read_stats_history($name, $peer, $from, 20001, $to);
+    my $truncated = @$history > 20000 ? 1 : 0;
     shift(@$history) if ($truncated);
 
     my $effective = collector_effective_settings(\%config);

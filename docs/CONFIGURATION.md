@@ -49,7 +49,7 @@ history by peer public key via `history.cgi?name=...&peer=...&from=...&to=...`.
 Times in API requests are UNIX epoch seconds; the browser displays local time.
 Custom ranges are bounded to 90 days, but data availability is limited by
 the configured collector retention (24 hours by default), point and byte
-ceilings. A response is capped at 10,000 samples and marked truncated when
+ceilings. A response is capped at 20,000 samples and marked truncated when
 the cap is reached. No new database or collection processes are introduced.
 
 Period totals are sums of monotonic, consecutive RX/TX counter changes within
