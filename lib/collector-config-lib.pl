@@ -32,6 +32,8 @@ sub collector_effective_settings
         prometheus_enabled => (($cfg->{'prometheus_enabled'} || '0') eq '1') ? 1 : 0,
         prometheus_interval => _collector_int_setting($cfg,'prometheus_interval',60,10,3600),
         prometheus_metrics => $cfg->{'prometheus_metrics'} || 'traffic,peer_state,handshake,collector',
+        (map { ("prometheus_$_" => (($cfg->{"prometheus_$_"} // ($_ eq 'events' ? '0' : '1')) eq '1') ? 1 : 0) }
+            qw(traffic peer_state handshake events collector)),
         prometheus_textfile_path => $cfg->{'prometheus_textfile_path'} ||
           '/var/lib/node_exporter/textfile_collector/webmin_wireguard.prom',
         stats_refresh_interval => _collector_int_setting($cfg, 'stats_refresh_interval', 5, 2, 3600),
@@ -55,6 +57,7 @@ sub collector_settings_fingerprint
         wg_cmd stats_dir stats_refresh_interval stats_history_retention
         analytics_enabled analytics_retention_days stats_live_retention
         prometheus_enabled prometheus_interval prometheus_metrics prometheus_textfile_path
+        prometheus_traffic prometheus_peer_state prometheus_handshake prometheus_events prometheus_collector
         stats_history_enabled runtime_timeout stats_max_points
         stats_max_file_bytes stats_max_total_bytes stats_effective_file_bytes
         stats_health_interval

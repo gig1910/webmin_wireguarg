@@ -20,6 +20,9 @@ postinstall.pl
 uninstall.pl
 postuninstall.pl
 index.cgi
+analytics.cgi
+analytics_data.cgi
+analytics_maintenance.cgi
 interface_form.cgi
 edit_interface.cgi
 save_interface.cgi
@@ -58,6 +61,7 @@ lib/runtime-lib.pl
 lib/api-ui-lib.pl
 lib/collector-config-lib.pl
 lib/metrics-lib.pl
+lib/analytics-api-lib.pl
 lib/peer-usage-lib.pl
 lib/peer-usage-ui-lib.pl
 lib/preshared-key-lib.pl

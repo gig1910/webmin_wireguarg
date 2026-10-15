@@ -28,6 +28,7 @@ if ($peer) {
         html_escape(get_section_value($peer, 'Endpoint') || '-').'</span>'.
         ' &nbsp; <b>'.$text{'runtime_updated'}.':</b> <span data-wg-runtime-time>'.$text{'runtime_loading'}.'</span></div>';
     print graph_html($name, $public_key, text('graph_peer_title', peer_display_name($peer, $in{'peer'})));
+    print '<p><a href="analytics.cgi?peer_id='.urlize(sha256_hex($public_key)).'">'.html_escape($text{'analytics_peer_link'}).'</a></p>';
 }
 
 if ($access{'manage'}) {

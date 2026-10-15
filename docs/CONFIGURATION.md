@@ -66,7 +66,8 @@ including browser-initiated deletions. The SQLite backend uses only Python 3
 standard-library modules and does not require Perl DBI/DBD::SQLite.
 
 Prometheus textfile export is **off by default**. Configure the supported
-metric groups (traffic, peer_state, handshake, events, collector), interval,
+metric groups (traffic, peer_state, handshake, events, collector) using
+per-group Webmin settings, interval,
 and target file under either
 `/var/lib/node_exporter/textfile_collector/` or
 `/var/lib/prometheus/node-exporter/`. The directory must exist.

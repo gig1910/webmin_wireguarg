@@ -487,8 +487,8 @@ while (!$stop_requested) {
             }
             if ($analytics_ok && $effective->{'prometheus_enabled'} &&
                 $now - $last_prometheus >= $effective->{'prometheus_interval'}) {
-                my @metrics = grep { /^(?:traffic|peer_state|handshake|events|collector)$/ }
-                    split(/,/, $effective->{'prometheus_metrics'});
+                my @metrics = grep { $effective->{"prometheus_$_"} }
+                    qw(traffic peer_state handshake events collector);
                 my ($export_ok,$export_result) = analytics_call('prometheus', {
                     path => $effective->{'prometheus_textfile_path'},
                     metrics => \@metrics,

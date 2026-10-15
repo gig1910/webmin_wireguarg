@@ -12,6 +12,7 @@ if ($list_error) {
     exit;
 }
 
+print '<ul class="nav nav-tabs" style="margin-bottom:15px"><li class="active"><a href="index.cgi">'.html_escape($text{'analytics_interfaces_tab'}).'</a></li><li><a href="analytics.cgi">'.html_escape($text{'analytics_title'}).'</a></li></ul>';
 print '<div id="wg-runtime-error" class="alert alert-warning" style="display:none"></div>';
 print '<div class="wg-runtime-time">'.$text{'runtime_updated'}.': <span id="wg-index-runtime-time">'.$text{'runtime_loading'}.'</span></div>';
 
