@@ -109,11 +109,14 @@ def compact_legacy_activity(conn, path):
         baseline = {}
         # Existing handshake_observed.detail stores the actual UNIX timestamp.
         # The observation time (events.at) can be later than the handshake.
+        changes = []
+        # Stream the old activity history; a multi-year installation can have
+        # millions of handshakes and must not exhaust the collector's memory.
         historical = conn.execute(
             "SELECT peer_id,interface,endpoint,detail FROM events "
             "WHERE type='handshake_observed' "
             "ORDER BY peer_id,CAST(detail AS INTEGER),id"
-        ).fetchall()
+        )
         for ident, interface, endpoint, detail in historical:
             if not str(detail).isdigit() or int(detail) <= 0:
                 continue
@@ -122,10 +125,13 @@ def compact_legacy_activity(conn, path):
                 continue
             previous = baseline.get(ident, "")
             if ip != previous:
-                event(conn, ident, int(detail),
-                      "endpoint_ip_changed" if previous else "endpoint_ip_observed",
-                      interface, ip, previous)
+                changes.append((ident, int(detail),
+                                "endpoint_ip_changed" if previous else "endpoint_ip_observed",
+                                interface, ip, previous))
                 baseline[ident] = ip
+        historical.close()
+        for ident, stamp, kind, interface, ip, previous in changes:
+            event(conn, ident, stamp, kind, interface, ip, previous)
         # When no recorded handshake events are available, preserve an IP
         # baseline without inventing historical connection events.
         for ident, endpoint, handshake in conn.execute(
