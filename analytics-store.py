@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS buckets (
  gaps INTEGER NOT NULL DEFAULT 0,
  PRIMARY KEY(peer_id,period)
 );
+CREATE INDEX IF NOT EXISTS buckets_period ON buckets(period);
 CREATE TABLE IF NOT EXISTS events (
  id INTEGER PRIMARY KEY AUTOINCREMENT, peer_id TEXT NOT NULL,
  at INTEGER NOT NULL, type TEXT NOT NULL, interface TEXT NOT NULL,
@@ -358,13 +359,32 @@ def query(conn, request):
     else:
         where, scope = "", []
     args = scope + [bfrom,bto]
-    rows = conn.execute(
-        "SELECT peer_id,period,rx_bytes,tx_bytes,samples,resets,gaps FROM buckets WHERE "+
-        where+"period>=? AND period<=? ORDER BY period DESC LIMIT 20001",args).fetchall()
-    truncated = len(rows) > 20000
-    rows = rows[:20000]
-    buckets = [dict(zip(("peer_id","period","rx","tx","samples","resets","gaps"),r))
-               for r in reversed(rows)]
+    chart_points = int(request.get("chart_points") or 0)
+    if chart_points:
+        # Group inside SQLite before exporting. Even a one-year all-peer
+        # report must include *all* rows, never only the newest 20,000.
+        chart_points = max(1, min(720, chart_points))
+        count = (bto-bfrom)//600+1
+        factor = max(1, (count+chart_points-1)//chart_points)
+        step = factor*600
+        rows = conn.execute(
+            "SELECT ((period-?)/?)*?+?,SUM(rx_bytes),SUM(tx_bytes),"
+            "SUM(samples),SUM(resets),SUM(gaps) FROM buckets WHERE "+
+            where+"period>=? AND period<=? GROUP BY 1 ORDER BY 1",
+            [bfrom,step,step,bfrom]+args).fetchall()
+        buckets = [dict(zip(("period","rx","tx","samples","resets","gaps"),r))
+                   for r in rows]
+        truncated = False
+    else:
+        # Retained for compatibility with existing raw-bucket API callers.
+        step = 600
+        rows = conn.execute(
+            "SELECT peer_id,period,rx_bytes,tx_bytes,samples,resets,gaps FROM buckets WHERE "+
+            where+"period>=? AND period<=? ORDER BY period DESC LIMIT 20001",args).fetchall()
+        truncated = len(rows) > 20000
+        rows = rows[:20000]
+        buckets = [dict(zip(("peer_id","period","rx","tx","samples","resets","gaps"),r))
+                   for r in reversed(rows)]
     eargs = scope + [since,until]
     # Event predicates deliberately do not reuse bucket WHERE (period column).
     condition = where
@@ -375,7 +395,7 @@ def query(conn, request):
         "ORDER BY at DESC,id DESC LIMIT 2001",eargs).fetchall()
     events_truncated=len(events)>2000
     events=events[:2000]
-    report = {"ok":True,"from":since,"to":until,"bucket_seconds":600,
+    report = {"ok":True,"from":since,"to":until,"bucket_seconds":step,
               "truncated":truncated,"events_truncated":events_truncated,
               "db_bytes":os.stat(conn.execute("PRAGMA database_list").fetchone()[2]).st_size,
               "peers":peers,"buckets":buckets,

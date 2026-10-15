@@ -15,6 +15,7 @@ eval {
     my ($result, $err) = analytics_backend('query', {
         'peer_id' => $peer, 'interface' => $interface,
         'from' => 0 + $from, 'to' => 0 + $to,
+        'chart_points' => 180,
     });
     die $err if (!$result);
     # Immediate, read-only resolution of renamed/configured peers; the

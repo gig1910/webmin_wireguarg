@@ -361,6 +361,45 @@ class AnalyticsTest(unittest.TestCase):
         self.assertEqual(store.query(self.conn,{"from":1150,"to":1800,
                                                "interface":"wg0"})["totals"]["rx"],20)
 
+
+    def test_long_window_chart_is_aggregated_without_truncating_totals(self):
+        # A 365-day query for many peers crosses the original 20K row cap.
+        # Verify that SQL grouping returns exact totals and 180 or fewer bins.
+        start = 600
+        with self.conn:
+            self.conn.execute(
+                "INSERT INTO peers(id,public_key,first_seen,last_seen,interface) "
+                "VALUES(?,?,?,?,?)",
+                (self.key_a,self.a,start,start,"wg0"))
+            self.conn.executemany(
+                "INSERT INTO buckets(peer_id,period,rx_bytes,tx_bytes,samples) "
+                "VALUES(?,?,?,?,1)",
+                ((self.key_a,start+i*600,1,2) for i in range(22000))
+            )
+        until=start+22000*600
+        grouped=store.query(self.conn,{"from":start,"to":until,
+                                       "chart_points":180})
+        self.assertEqual(grouped["totals"]["rx"],22000)
+        self.assertEqual(grouped["totals"]["tx"],44000)
+        self.assertFalse(grouped["truncated"])
+        self.assertLessEqual(len(grouped["buckets"]),180)
+        self.assertGreater(grouped["bucket_seconds"],600)
+        self.assertEqual(sum(p["rx"] for p in grouped["buckets"]),22000)
+        self.assertEqual(sum(p["tx"] for p in grouped["buckets"]),44000)
+        # The database has not been downsampled or truncated.
+        self.assertEqual(self.conn.execute(
+            "SELECT COUNT(*) FROM buckets").fetchone()[0],22000)
+
+    def test_short_window_chart_retains_ten_minute_resolution(self):
+        self.sample(self.a,1200,100,100,handshake=1199)
+        self.sample(self.a,1205,140,160,handshake=1204)
+        result=store.query(self.conn,{"from":1150,"to":2400,
+                                      "chart_points":180})
+        self.assertEqual(result["bucket_seconds"],600)
+        self.assertEqual(result["totals"]["rx"],40)
+        self.assertEqual(result["totals"]["tx"],60)
+        self.assertFalse(result["truncated"])
+
     def test_prometheus_text_contains_only_fingerprints(self):
         self.sample(self.a,1000,100,200,endpoint="192.0.2.5:12345")
         self.sample(self.a,1005,200,300)
