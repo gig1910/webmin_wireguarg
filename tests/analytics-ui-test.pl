@@ -17,6 +17,12 @@ my $peer_page=slurp("$FindBin::Bin/../edit_peer.cgi");
 my $manifest=slurp("$FindBin::Bin/../MANIFEST.wbm");
 die "analytics tab missing\n" if $ui !~ /nav nav-tabs/ || $index !~ /analytics\.cgi/;
 die "date and peer filters missing\n" if $ui !~ /data-peer/ || $ui !~ /data-from/ || $ui !~ /data-to/;
+die "last handshake and confirmed IP missing from analytics\n"
+    if $ui !~ /data-last-handshake/ || $ui !~ /data-handshake-ip/;
+die "new compact IP event translations missing\n"
+    if $ui !~ /analytics_event_endpoint_ip_observed/ ||
+       $ui !~ /analytics_event_endpoint_ip_changed/;
+
 die "analytics entry point missing on interface\n"
     unless $interface =~ /direct_link_button\('analytics\.cgi'/;
 die "per-peer analytics link must use public-key fingerprint\n"

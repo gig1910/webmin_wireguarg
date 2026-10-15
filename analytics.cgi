@@ -26,6 +26,8 @@ my %labels = map { $_ => $text{$_} || $_ } qw(
     analytics_event_active analytics_event_inactive analytics_event_interface_changed
     analytics_event_counter_reset analytics_event_sample_gap
     analytics_event_legacy_history_imported
+    analytics_last_handshake analytics_handshake_ip analytics_no_handshake
+    analytics_event_endpoint_ip_observed analytics_event_endpoint_ip_changed
 );
 my $strings = json_encode_utf8(\%labels);
 print <<HTML;
@@ -46,6 +48,7 @@ print <<HTML;
  </div>
  <div data-error class="alert alert-warning" hidden></div>
  <div class="wg-analytics-totals"><strong data-rx></strong><strong data-tx></strong><small data-db-size></small></div>
+ <div class="wg-analytics-totals"><strong data-last-handshake></strong><strong data-handshake-ip></strong></div>
  <h3>$text{'analytics_chart'}</h3>
  <canvas data-chart width="900" height="270" style="width:100%;height:270px;border:1px solid #8885;border-radius:4px"></canvas>
  <div data-notes class="wg-analytics-notes"></div>
@@ -150,6 +153,13 @@ print <<HTML;
     root.querySelector('[data-tx]').textContent=labels.analytics_tx+': '+bytes(Number(result.totals.tx));
     root.querySelector('[data-db-size]').textContent=labels.analytics_db_size+': '+
       bytes(Number(result.db_bytes));
+    const selectedPeer=(result.peers||[]).find(p=>p.id===peer.value);
+    root.querySelector('[data-last-handshake]').textContent=labels.analytics_last_handshake+': '+
+      (selectedPeer && Number(selectedPeer.handshake)>0
+       ? new Date(Number(selectedPeer.handshake)*1000).toLocaleString()
+       : (selectedPeer ? labels.analytics_no_handshake : '—'));
+    root.querySelector('[data-handshake-ip]').textContent=labels.analytics_handshake_ip+': '+
+      (selectedPeer && selectedPeer.handshake_ip ? selectedPeer.handshake_ip : '—');
     const notes=[];
     if(!result.buckets.length && !result.events.length)notes.push(labels.analytics_empty);
     else {
