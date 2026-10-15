@@ -305,7 +305,10 @@ def maintain(conn, request, path):
     with conn:
         conn.execute("BEGIN IMMEDIATE")
         if action in ("delete_before","prune"):
-            conn.execute("DELETE FROM buckets WHERE period<?",(cutoff,))
+            # Ten-minute buckets cannot be sliced by individual seconds.
+            # Delete only buckets wholly before the timestamp boundary.
+            bucket_cutoff=(cutoff//600)*600
+            conn.execute("DELETE FROM buckets WHERE period<?",(bucket_cutoff,))
             conn.execute("DELETE FROM events WHERE at<?",(cutoff,))
             # Do not erase peer identities/states on retention maintenance.
         elif action=="delete_peer":

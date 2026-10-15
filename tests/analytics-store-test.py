@@ -68,6 +68,14 @@ class AnalyticsTest(unittest.TestCase):
                          " FROM buckets WHERE peer_id=?",(self.key_a,)).fetchone(),
                          (400,500,1))
 
+    def test_time_cutoff_preserves_intersecting_bucket(self):
+        self.sample(self.a,1190,100,100)
+        self.sample(self.a,1210,300,300)
+        store.maintain(self.conn,{"action":"delete_before","before":1205,
+                                  "confirm":"DELETE"},str(self.db))
+        periods=[x[0] for x in self.conn.execute("SELECT period FROM buckets")]
+        self.assertEqual(periods,[1200])
+
     def test_backup_delete_and_vacuum(self):
         self.sample(self.a,1000,1,1)
         self.sample(self.a,1005,20,20)

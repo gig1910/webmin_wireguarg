@@ -75,7 +75,9 @@ per query and explicitly warns when results are truncated. Narrow the requested
 period to inspect earlier activity. The page also displays database size.
 
 SQLite WAL transactions serialize writes and maintenance,
-including browser-initiated deletions. The SQLite backend uses only Python 3
+including browser-initiated deletions. Time-based deletion preserves any
+10-minute bucket that intersects the cutoff moment, to avoid discarding
+traffic after the specified timestamp. Activity events use exact timestamps. The SQLite backend uses only Python 3
 standard-library modules and does not require Perl DBI/DBD::SQLite.
 
 Prometheus textfile export is **off by default**. Configure the supported
