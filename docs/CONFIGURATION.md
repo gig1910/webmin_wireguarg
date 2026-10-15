@@ -53,7 +53,9 @@ by its name, IP address, or a private key. Disabling or deleting a configured
 peer does not delete its records. Replacing the key creates a distinct identity.
 
 Every collector sample updates 10-minute traffic buckets from cumulative
-counter deltas. Small sample intervals crossing bucket boundaries are allocated
+counter deltas. Custom filtering includes all 10-minute buckets intersecting
+the requested interval, even when its boundaries are not aligned to 10 minutes.
+Small sample intervals crossing bucket boundaries are allocated
 proportionally (an approximation). Counter resets and missing samples are
 recorded as events. Activity events include first observation, inactive/active
 transitions, endpoint changes and newly observed handshake timestamps.

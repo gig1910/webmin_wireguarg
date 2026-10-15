@@ -389,6 +389,9 @@ analytics_error_disabled=Analytics collection is disabled in module settings.
 analytics_warning=Events show only collector observations; endpoint changes alone do not prove reconnection.
 analytics_events_limited=Only the latest 2000 activity events in this range are displayed. Narrow the filter to inspect older events.
 analytics_db_size=SQLite database size
+analytics_bucket_note=Usage is measured in full 10-minute buckets; custom date bounds include overlapping buckets.
+analytics_resets=Counter resets detected. Usage across the reset cannot be fully recovered.
+analytics_gaps=Missing observations detected. Traffic distribution across gaps is estimated.
 
 analytics_event_time=Time
 analytics_event_type=Event

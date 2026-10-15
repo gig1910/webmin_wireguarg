@@ -18,7 +18,8 @@ my %labels = map { $_ => $text{$_} || $_ } qw(
     analytics_all_peers analytics_empty analytics_loading analytics_rx analytics_tx
     analytics_truncated analytics_partial analytics_warning analytics_first_seen
     analytics_last_seen analytics_peer_active analytics_peer_inactive
-    analytics_events_limited analytics_db_size
+    analytics_events_limited analytics_db_size analytics_bucket_note
+    analytics_resets analytics_gaps
     analytics_event_first_seen analytics_event_endpoint_observed
     analytics_event_endpoint_changed analytics_event_handshake_observed
     analytics_event_active analytics_event_inactive analytics_event_interface_changed
@@ -47,6 +48,7 @@ print <<HTML;
  <h3>$text{'analytics_chart'}</h3>
  <canvas data-chart width="900" height="270" style="width:100%;height:270px;border:1px solid #8885;border-radius:4px"></canvas>
  <div data-notes class="wg-analytics-notes"></div>
+ <p><small>$text{'analytics_bucket_note'}</small></p>
  <h3>$text{'analytics_events'}</h3>
  <div class="wg-analytics-table"><table class="table table-striped">
  <thead><tr><th>$text{'analytics_event_time'}</th><th>$text{'analytics_peer'}</th><th>$text{'analytics_event_type'}</th><th>$text{'analytics_event_endpoint'}</th><th>$text{'analytics_event_previous'}</th></tr></thead>
@@ -156,6 +158,8 @@ print <<HTML;
     }
     if(result.truncated)notes.push(labels.analytics_truncated);
     if(result.events_truncated)notes.push(labels.analytics_events_limited);
+    if(result.totals.resets)notes.push(labels.analytics_resets);
+    if(result.totals.gaps)notes.push(labels.analytics_gaps);
     root.querySelector('[data-notes]').textContent=notes.join(' ');
     const body=root.querySelector('[data-events]');
     body.replaceChildren();

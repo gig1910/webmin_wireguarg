@@ -99,6 +99,14 @@ class AnalyticsTest(unittest.TestCase):
             "SELECT SUM(rx_bytes) FROM buckets WHERE peer_id=?",
             (self.key_a,)).fetchone()[0],100)
 
+    def test_exact_bucket_end_excludes_next_bucket(self):
+        self.sample(self.a,1190,100,100)
+        self.sample(self.a,1210,300,300)
+        partial=store.query(self.conn,{"peer_id":self.key_a,"from":1200,"to":1800})
+        self.assertEqual(len(partial["buckets"]),1)
+        self.assertEqual(partial["buckets"][0]["period"],1200)
+        self.assertEqual(partial["totals"]["rx"],100)
+
     def test_filtered_events_and_db_size(self):
         self.sample(self.a,1000,100,100)
         self.sample(self.a,1005,110,130,"192.0.2.2:40404")

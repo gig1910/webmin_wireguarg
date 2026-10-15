@@ -244,7 +244,7 @@ def query(conn, request):
         raise ValueError("peer not found")
     # Windows are 10-minute quantized; include intersecting buckets.
     bfrom = (since//600)*600
-    bto = (until//600)*600
+    bto = ((until-1)//600)*600
     where = "peer_id=? AND " if ident else ""
     args = ([ident] if ident else []) + [bfrom,bto]
     rows = conn.execute(
