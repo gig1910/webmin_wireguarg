@@ -8,6 +8,19 @@ case "$VERSION" in
   ''|*[!0-9A-Za-z.+-]*) echo "Invalid VERSION: $VERSION" >&2; exit 1 ;;
 esac
 
+# Keep the whole build/test toolchain executable. Detect Git mode regressions
+# explicitly rather than failing later with an opaque "Permission denied".
+for path in \
+    scripts/build-release.sh scripts/check-release.sh tests/run-tests.sh \
+    tests/diagnostic-test.sh tests/collector-test.sh \
+    tests/bin/wg tests/bin/wg-quick tests/bin/ping
+do
+    if [ ! -x "$path" ]; then
+        echo "Build prerequisite is not executable: $path (Git mode must be 100755)" >&2
+        exit 1
+    fi
+done
+
 # Test the sources once before packaging. Nothing tracked is modified.
 ./tests/run-tests.sh
 ./scripts/check-release.sh
