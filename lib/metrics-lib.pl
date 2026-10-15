@@ -270,6 +270,7 @@ HTML
 sub graph_html
 {
     my ($name,$peer_key,$title)=@_; return '' if (($config{'stats_enabled'}||'1') eq'0');
+    return peer_usage_graph_html($name, $peer_key, $title) if length($peer_key || '');
     my $window=int($config{'stats_live_window'}||900);$window=60if$window<60;$window=86400if$window>86400;
     my$id='wgchart_'.substr(sha256_hex(($name||'').'|'.($peer_key||'').'|'.rand()),0,12);
     my %history_params = (name => $name); $history_params{'peer'} = $peer_key if length($peer_key||''); my$history_url=html_escape(module_script_url('history.cgi', %history_params));

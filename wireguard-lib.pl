@@ -47,6 +47,7 @@ require './lib/api-ui-lib.pl';
 require './lib/collector-config-lib.pl';
 require './lib/metrics-lib.pl';
 require './lib/peer-usage-lib.pl';
+require './lib/peer-usage-ui-lib.pl';
 require './lib/preshared-key-lib.pl';
 require './lib/version-lib.pl';
 
