@@ -12,6 +12,7 @@ import sys
 import tempfile
 import time
 import hashlib
+import ipaddress
 from pathlib import Path
 
 SCHEMA = """
@@ -20,6 +21,7 @@ CREATE TABLE IF NOT EXISTS peers (
  first_seen INTEGER NOT NULL, last_seen INTEGER NOT NULL,
  active INTEGER NOT NULL DEFAULT 0, interface TEXT NOT NULL,
  endpoint TEXT NOT NULL DEFAULT '', handshake INTEGER NOT NULL DEFAULT 0,
+ handshake_ip TEXT NOT NULL DEFAULT '',
  sample_at INTEGER, rx INTEGER, tx INTEGER
 );
 CREATE TABLE IF NOT EXISTS buckets (
@@ -59,6 +61,10 @@ def connect(path):
     conn.execute("PRAGMA busy_timeout=10000")
     conn.execute("PRAGMA journal_mode=WAL")
     conn.executescript(SCHEMA)
+    # CREATE TABLE IF NOT EXISTS does not add columns to pre-existing databases.
+    if "handshake_ip" not in {row[1] for row in conn.execute("PRAGMA table_info(peers)")}:
+        conn.execute("ALTER TABLE peers ADD COLUMN handshake_ip TEXT NOT NULL DEFAULT ''")
+        conn.commit()
     if p.exists():
         os.chmod(p, 0o600)
     return conn
@@ -70,6 +76,79 @@ def event(conn, ident, stamp, kind, interface, endpoint="", previous="", detail=
         "VALUES(?,?,?,?,?,?,?)",
         (ident, stamp, kind, interface, endpoint, previous, detail),
     )
+
+
+def endpoint_ip(endpoint):
+    """IP without port, including IPv6 [address]:port; do not infer hostnames."""
+    endpoint = str(endpoint or "").strip()
+    if not endpoint or endpoint == "(none)":
+        return ""
+    if endpoint.startswith("["):
+        endpoint = endpoint[1:].split("]", 1)[0] if "]" in endpoint else ""
+    elif endpoint.count(":") == 1:
+        endpoint = endpoint.rsplit(":", 1)[0]
+    try:
+        return str(ipaddress.ip_address(endpoint))
+    except ValueError:
+        return ""
+
+
+def compact_legacy_activity(conn, path):
+    """Back up and reduce old per-handshake events to meaningful IP changes."""
+    marker = "handshake_ip_compaction_v1"
+    if conn.execute("SELECT 1 FROM properties WHERE key=?", (marker,)).fetchone():
+        return
+    old_events = conn.execute(
+        "SELECT COUNT(*) FROM events WHERE type NOT IN "
+        "('endpoint_ip_observed','endpoint_ip_changed')"
+    ).fetchone()[0]
+    if old_events:
+        backup(conn, path)  # SQLite online backup *before* destructive cleanup
+    with conn:
+        conn.execute("BEGIN IMMEDIATE")
+        baseline = {}
+        # Existing handshake_observed.detail stores the actual UNIX timestamp.
+        # The observation time (events.at) can be later than the handshake.
+        historical = conn.execute(
+            "SELECT peer_id,interface,endpoint,detail FROM events "
+            "WHERE type='handshake_observed' "
+            "ORDER BY peer_id,CAST(detail AS INTEGER),id"
+        ).fetchall()
+        for ident, interface, endpoint, detail in historical:
+            if not str(detail).isdigit() or int(detail) <= 0:
+                continue
+            ip = endpoint_ip(endpoint)
+            if not ip:
+                continue
+            previous = baseline.get(ident, "")
+            if ip != previous:
+                event(conn, ident, int(detail),
+                      "endpoint_ip_changed" if previous else "endpoint_ip_observed",
+                      interface, ip, previous)
+                baseline[ident] = ip
+        # When no recorded handshake events are available, preserve an IP
+        # baseline without inventing historical connection events.
+        for ident, endpoint, handshake in conn.execute(
+            "SELECT id,endpoint,handshake FROM peers"
+        ).fetchall():
+            ip = baseline.get(ident) or (endpoint_ip(endpoint) if handshake else "")
+            conn.execute("UPDATE peers SET handshake_ip=? WHERE id=?", (ip, ident))
+        conn.execute(
+            "DELETE FROM events WHERE type NOT IN "
+            "('endpoint_ip_observed','endpoint_ip_changed')"
+        )
+        conn.execute("INSERT OR IGNORE INTO properties(key,value) VALUES(?,?)",
+                     (marker, "1"))
+
+
+def record_handshake_ip(conn, ident, interface, endpoint, handshake, previous):
+    ip = endpoint_ip(endpoint)
+    if not ip or not handshake or ip == previous:
+        return previous
+    event(conn, ident, handshake,
+          "endpoint_ip_changed" if previous else "endpoint_ip_observed",
+          interface, ip, previous)
+    return ip
 
 
 def bucket(conn, ident, stamp, rx, tx, samples=0, resets=0, gaps=0):
@@ -144,9 +223,7 @@ def migrate_legacy(conn, ident, public, interface, directory, stamp, interval):
                             split_delta(conn,ident,before,t,rx-old_rx,tx-old_tx,gap)
                             imported+=1
                     last=(t,rx,tx)
-    if imported:
-        event(conn,ident,stamp,"legacy_history_imported",interface,
-              detail=str(imported))
+    # Import statistics without adding a noisy activity event.
     conn.execute("INSERT INTO properties(key,value) VALUES(?,?)",
                  (marker,str(imported)))
 
@@ -156,6 +233,7 @@ def ingest(conn, request):
     interval = max(2, min(3600, int(request.get("interval") or 5)))
     instances = request.get("interfaces") or {}
     observed = set()
+    compact_legacy_activity(conn, conn.execute("PRAGMA database_list").fetchone()[2])
     with conn:
         conn.execute("BEGIN IMMEDIATE")
         for interface, data in instances.items():
@@ -174,57 +252,52 @@ def ingest(conn, request):
                 handshake = max(0, int(peer.get("latest_handshake") or 0))
                 rx = max(0, int(peer.get("rx_bytes") or 0))
                 tx = max(0, int(peer.get("tx_bytes") or 0))
-                previous = conn.execute("SELECT active,endpoint,handshake,sample_at,rx,tx,interface "
-                                        "FROM peers WHERE id=?", (ident,)).fetchone()
+                previous = conn.execute(
+                    "SELECT active,endpoint,handshake,sample_at,rx,tx,interface,handshake_ip "
+                    "FROM peers WHERE id=?", (ident,)).fetchone()
                 if previous is None:
                     migrate_legacy(conn,ident,public,interface,request.get("legacy_dir"),
                                    now,interval)
+                    confirmed_ip = record_handshake_ip(
+                        conn, ident, interface, endpoint, handshake, "")
                     conn.execute("INSERT INTO peers(id,public_key,first_seen,last_seen,active,interface,"
-                                 "endpoint,handshake,sample_at,rx,tx) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                                 (ident,public,now,now,1,interface,endpoint,handshake,now,rx,tx))
-                    event(conn,ident,now,"first_seen",interface,endpoint)
-                    if endpoint:
-                        event(conn,ident,now,"endpoint_observed",interface,endpoint)
-                    if handshake:
-                        event(conn,ident,now,"handshake_observed",interface,endpoint,
-                              detail=str(handshake))
+                                 "endpoint,handshake,handshake_ip,sample_at,rx,tx) "
+                                 "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                                 (ident,public,now,now,1,interface,endpoint,
+                                  handshake,confirmed_ip,now,rx,tx))
                     bucket(conn,ident,now,0,0,samples=1)
                     continue
-                active, old_endpoint, old_handshake, before, old_rx, old_tx, old_interface = previous
-                if not active:
-                    event(conn,ident,now,"active",interface,endpoint)
-                if old_interface != interface:
-                    event(conn,ident,now,"interface_changed",interface,endpoint,detail=old_interface)
-                if endpoint != old_endpoint:
-                    event(conn,ident,now,"endpoint_changed",interface,endpoint,old_endpoint)
-                if handshake and handshake > (old_handshake or 0):
-                    event(conn,ident,now,"handshake_observed",interface,endpoint,
-                          detail=str(handshake))
+                active, old_endpoint, old_handshake, before, old_rx, old_tx, old_interface, old_ip = previous
+                confirmed_ip = old_ip
+                if handshake > (old_handshake or 0):
+                    confirmed_ip = record_handshake_ip(
+                        conn, ident, interface, endpoint, handshake, old_ip)
+                # Zero during a restart does not erase the latest known handshake.
+                last_handshake = max(handshake, old_handshake or 0)
                 reset = 0
                 gap = 0
                 if active and before is not None and now > before:
                     if rx < old_rx or tx < old_tx:
                         reset = 1
-                        event(conn,ident,now,"counter_reset",interface,endpoint)
+                        # Bucket reset counter remains; no event-log spam.
                         bucket(conn,ident,now,0,0,samples=1,resets=1)
                     else:
                         gap = int(now - before > max(60, interval * 3))
-                        if gap:
-                            event(conn,ident,now,"sample_gap",interface,endpoint,
-                                  detail=str(now-before))
+                        # Bucket gap counter remains; no event-log spam.
                         split_delta(conn,ident,int(before),now,rx-old_rx,tx-old_tx,gap)
                 else:
                     bucket(conn,ident,now,0,0,samples=1,gaps=1 if not active else 0)
                 conn.execute("UPDATE peers SET active=1,interface=?,last_seen=?,endpoint=?,"
-                             "handshake=?,sample_at=?,rx=?,tx=? WHERE id=?",
-                             (interface,now,endpoint,handshake,now,rx,tx,ident))
+                             "handshake=?,handshake_ip=?,sample_at=?,rx=?,tx=? WHERE id=?",
+                             (interface,now,endpoint,last_handshake,confirmed_ip,
+                              now,rx,tx,ident))
         for ident, interface, endpoint in conn.execute(
             "SELECT id,interface,endpoint FROM peers WHERE active=1"
         ).fetchall():
             if ident not in observed:
                 conn.execute("UPDATE peers SET active=0,sample_at=NULL,rx=NULL,tx=NULL WHERE id=?",
                              (ident,))
-                event(conn,ident,now,"inactive",interface,endpoint)
+                # No routine disconnected event; history remains keyed to public key.
     return {"ok": True, "observed": len(observed)}
 
 
@@ -236,9 +309,9 @@ def query(conn, request):
     ident = request.get("peer_id") or ""
     if ident and not KEY.fullmatch(ident):
         raise ValueError("invalid peer key fingerprint")
-    peers = [dict(zip(("id","public_key","first_seen","last_seen","active","interface","endpoint","handshake"),
+    peers = [dict(zip(("id","public_key","first_seen","last_seen","active","interface","endpoint","handshake","handshake_ip"),
                       row)) for row in conn.execute(
-            "SELECT id,public_key,first_seen,last_seen,active,interface,endpoint,handshake "
+            "SELECT id,public_key,first_seen,last_seen,active,interface,endpoint,handshake,handshake_ip "
             "FROM peers ORDER BY last_seen DESC LIMIT 2000")]
     if ident and not conn.execute("SELECT 1 FROM peers WHERE id=?",(ident,)).fetchone():
         raise ValueError("peer not found")
@@ -259,7 +332,8 @@ def query(conn, request):
     condition = "peer_id=? AND " if ident else ""
     events = conn.execute(
         "SELECT peer_id,at,type,interface,endpoint,previous_endpoint,detail "
-        "FROM events WHERE "+condition+"at>=? AND at<=? "
+        "FROM events WHERE "+condition+"type IN ('endpoint_ip_observed','endpoint_ip_changed') "
+        "AND at>=? AND at<=? "
         "ORDER BY at DESC,id DESC LIMIT 2001",eargs).fetchall()
     events_truncated=len(events)>2000
     events=events[:2000]
