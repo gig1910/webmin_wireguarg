@@ -1,0 +1,355 @@
+#!/usr/bin/env python3
+"""Persistent WireGuard peer analytics, using Python's standard sqlite3 module.
+
+Protocol: argv = ACTION DATABASE_PATH; stdin = one JSON object; stdout = JSON.
+Never stores WireGuard private keys. All identities are SHA256(public_key).
+"""
+import json
+import os
+import re
+import sqlite3
+import sys
+import tempfile
+import time
+import hashlib
+from pathlib import Path
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS peers (
+ id TEXT PRIMARY KEY, public_key TEXT NOT NULL UNIQUE,
+ first_seen INTEGER NOT NULL, last_seen INTEGER NOT NULL,
+ active INTEGER NOT NULL DEFAULT 0, interface TEXT NOT NULL,
+ endpoint TEXT NOT NULL DEFAULT '', handshake INTEGER NOT NULL DEFAULT 0,
+ sample_at INTEGER, rx INTEGER, tx INTEGER
+);
+CREATE TABLE IF NOT EXISTS buckets (
+ peer_id TEXT NOT NULL, period INTEGER NOT NULL,
+ rx_bytes INTEGER NOT NULL DEFAULT 0, tx_bytes INTEGER NOT NULL DEFAULT 0,
+ samples INTEGER NOT NULL DEFAULT 0, resets INTEGER NOT NULL DEFAULT 0,
+ gaps INTEGER NOT NULL DEFAULT 0,
+ PRIMARY KEY(peer_id,period)
+);
+CREATE TABLE IF NOT EXISTS events (
+ id INTEGER PRIMARY KEY AUTOINCREMENT, peer_id TEXT NOT NULL,
+ at INTEGER NOT NULL, type TEXT NOT NULL, interface TEXT NOT NULL,
+ endpoint TEXT NOT NULL DEFAULT '', previous_endpoint TEXT NOT NULL DEFAULT '',
+ detail TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS events_peer_time ON events(peer_id,at);
+CREATE INDEX IF NOT EXISTS events_time ON events(at);
+CREATE TABLE IF NOT EXISTS properties (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+"""
+KEY = re.compile(r"^[0-9a-f]{64}$")
+IFACE = re.compile(r"^[A-Za-z0-9_=+.-]{1,15}$")
+VALID_METRICS = ("traffic", "peer_state", "handshake", "events", "collector")
+
+
+def peer_id(public_key):
+    if not isinstance(public_key, str) or not public_key:
+        raise ValueError("public key required")
+    return hashlib.sha256(public_key.encode("ascii")).hexdigest()
+
+
+def connect(path):
+    p = Path(path)
+    if not p.is_absolute() or p.is_symlink() or p.suffix != ".sqlite3":
+        raise ValueError("invalid database path")
+    p.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(p), timeout=10)
+    conn.execute("PRAGMA busy_timeout=10000")
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.executescript(SCHEMA)
+    if p.exists():
+        os.chmod(p, 0o600)
+    return conn
+
+
+def event(conn, ident, stamp, kind, interface, endpoint="", previous="", detail=""):
+    conn.execute(
+        "INSERT INTO events(peer_id,at,type,interface,endpoint,previous_endpoint,detail) "
+        "VALUES(?,?,?,?,?,?,?)",
+        (ident, stamp, kind, interface, endpoint, previous, detail),
+    )
+
+
+def bucket(conn, ident, stamp, rx, tx, samples=0, resets=0, gaps=0):
+    slot = (int(stamp) // 600) * 600
+    conn.execute(
+        "INSERT INTO buckets(peer_id,period,rx_bytes,tx_bytes,samples,resets,gaps) "
+        "VALUES(?,?,?,?,?,?,?) ON CONFLICT(peer_id,period) DO UPDATE SET "
+        "rx_bytes=rx_bytes+excluded.rx_bytes,tx_bytes=tx_bytes+excluded.tx_bytes,"
+        "samples=samples+excluded.samples,resets=resets+excluded.resets,"
+        "gaps=gaps+excluded.gaps",
+        (ident, slot, max(0,int(rx)), max(0,int(tx)), samples, resets, gaps),
+    )
+
+
+def split_delta(conn, ident, before, after, rx, tx, gap=0):
+    """Allocate measured counter growth proportionally at 10-minute borders.
+
+    This interpolation is an approximation, not exact packet timing.
+    """
+    if before >= after:
+        return
+    chunks = []
+    start = before
+    while start < after:
+        stop = min(after, ((start // 600) + 1) * 600)
+        chunks.append((stop, stop - start))
+        start = stop
+    total = after - before
+    accounted_rx = accounted_tx = 0
+    for index, (stop, duration) in enumerate(chunks):
+        last = index == len(chunks)-1
+        part_rx = rx-accounted_rx if last else (rx*duration)//total
+        part_tx = tx-accounted_tx if last else (tx*duration)//total
+        accounted_rx += part_rx
+        accounted_tx += part_tx
+        bucket(conn, ident, stop-1, part_rx, part_tx,
+               samples=1 if last else 0, gaps=gap if last else 0)
+
+
+def ingest(conn, request):
+    now = int(request.get("timestamp") or time.time())
+    interval = max(2, min(3600, int(request.get("interval") or 5)))
+    instances = request.get("interfaces") or {}
+    observed = set()
+    with conn:
+        conn.execute("BEGIN IMMEDIATE")
+        for interface, data in instances.items():
+            if not IFACE.fullmatch(interface):
+                continue
+            for peer in (data.get("peer_list") or []):
+                public = peer.get("public_key", "")
+                try:
+                    ident = peer_id(public)
+                except (ValueError, UnicodeError):
+                    continue
+                observed.add(ident)
+                endpoint = str(peer.get("endpoint") or "")
+                if endpoint == "(none)":
+                    endpoint = ""
+                handshake = max(0, int(peer.get("latest_handshake") or 0))
+                rx = max(0, int(peer.get("rx_bytes") or 0))
+                tx = max(0, int(peer.get("tx_bytes") or 0))
+                previous = conn.execute("SELECT active,endpoint,handshake,sample_at,rx,tx,interface "
+                                        "FROM peers WHERE id=?", (ident,)).fetchone()
+                if previous is None:
+                    conn.execute("INSERT INTO peers(id,public_key,first_seen,last_seen,active,interface,"
+                                 "endpoint,handshake,sample_at,rx,tx) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                                 (ident,public,now,now,1,interface,endpoint,handshake,now,rx,tx))
+                    event(conn,ident,now,"first_seen",interface,endpoint)
+                    if endpoint:
+                        event(conn,ident,now,"endpoint_observed",interface,endpoint)
+                    if handshake:
+                        event(conn,ident,now,"handshake_observed",interface,endpoint,
+                              detail=str(handshake))
+                    bucket(conn,ident,now,0,0,samples=1)
+                    continue
+                active, old_endpoint, old_handshake, before, old_rx, old_tx, old_interface = previous
+                if not active:
+                    event(conn,ident,now,"active",interface,endpoint)
+                if old_interface != interface:
+                    event(conn,ident,now,"interface_changed",interface,endpoint,detail=old_interface)
+                if endpoint != old_endpoint:
+                    event(conn,ident,now,"endpoint_changed",interface,endpoint,old_endpoint)
+                if handshake and handshake > (old_handshake or 0):
+                    event(conn,ident,now,"handshake_observed",interface,endpoint,
+                          detail=str(handshake))
+                reset = 0
+                gap = 0
+                if active and before is not None and now > before:
+                    if rx < old_rx or tx < old_tx:
+                        reset = 1
+                        event(conn,ident,now,"counter_reset",interface,endpoint)
+                        bucket(conn,ident,now,0,0,samples=1,resets=1)
+                    else:
+                        gap = int(now - before > max(60, interval * 3))
+                        if gap:
+                            event(conn,ident,now,"sample_gap",interface,endpoint,
+                                  detail=str(now-before))
+                        split_delta(conn,ident,int(before),now,rx-old_rx,tx-old_tx,gap)
+                else:
+                    bucket(conn,ident,now,0,0,samples=1,gaps=1 if not active else 0)
+                conn.execute("UPDATE peers SET active=1,interface=?,last_seen=?,endpoint=?,"
+                             "handshake=?,sample_at=?,rx=?,tx=? WHERE id=?",
+                             (interface,now,endpoint,handshake,now,rx,tx,ident))
+        for ident, interface, endpoint in conn.execute(
+            "SELECT id,interface,endpoint FROM peers WHERE active=1"
+        ).fetchall():
+            if ident not in observed:
+                conn.execute("UPDATE peers SET active=0,sample_at=NULL,rx=NULL,tx=NULL WHERE id=?",
+                             (ident,))
+                event(conn,ident,now,"inactive",interface,endpoint)
+    return {"ok": True, "observed": len(observed)}
+
+
+def query(conn, request):
+    since = int(request.get("from") or (time.time()-86400))
+    until = int(request.get("to") or time.time())
+    if since < 0 or since >= until or until > time.time()+60 or until-since > 366*86400:
+        raise ValueError("invalid range")
+    ident = request.get("peer_id") or ""
+    if ident and not KEY.fullmatch(ident):
+        raise ValueError("invalid peer key fingerprint")
+    peers = [dict(zip(("id","public_key","first_seen","last_seen","active","interface","endpoint","handshake"),
+                      row)) for row in conn.execute(
+            "SELECT id,public_key,first_seen,last_seen,active,interface,endpoint,handshake "
+            "FROM peers ORDER BY last_seen DESC LIMIT 2000")]
+    if ident and not any(p["id"] == ident for p in peers):
+        raise ValueError("peer not found")
+    # Windows are 10-minute quantized; include intersecting buckets.
+    bfrom = (since//600)*600
+    bto = (until//600)*600
+    where = "peer_id=? AND " if ident else ""
+    args = ([ident] if ident else []) + [bfrom,bto]
+    rows = conn.execute(
+        "SELECT peer_id,period,rx_bytes,tx_bytes,samples,resets,gaps FROM buckets WHERE "+
+        where+"period>=? AND period<=? ORDER BY period DESC LIMIT 20001",args).fetchall()
+    truncated = len(rows) > 20000
+    rows = rows[:20000]
+    buckets = [dict(zip(("peer_id","period","rx","tx","samples","resets","gaps"),r))
+               for r in reversed(rows)]
+    eargs = ([ident] if ident else []) + [since,until]
+    # Event predicates deliberately do not reuse bucket WHERE (period column).
+    condition = "peer_id=? AND " if ident else ""
+    events = conn.execute(
+        "SELECT peer_id,at,type,interface,endpoint,previous_endpoint,detail "
+        "FROM events WHERE "+condition+"at>=? AND at<=? "
+        "ORDER BY at DESC,id DESC LIMIT 2000",eargs).fetchall()
+    report = {"ok":True,"from":since,"to":until,"bucket_seconds":600,
+              "truncated":truncated,"peers":peers,"buckets":buckets,
+              "events":[dict(zip(("peer_id","at","type","interface","endpoint","previous","detail"),e))
+                        for e in events],
+              "totals":{"rx":sum(b["rx"] for b in buckets),
+                        "tx":sum(b["tx"] for b in buckets),
+                        "resets":sum(b["resets"] for b in buckets),
+                        "gaps":sum(b["gaps"] for b in buckets)}}
+    return report
+
+
+def backup(conn, path):
+    target = Path(path).parent / "backups"
+    target.mkdir(mode=0o700,exist_ok=True)
+    dest = target / ("analytics-"+str(int(time.time()))+"-"+str(os.getpid())+".sqlite3")
+    with sqlite3.connect(str(dest)) as other:
+        conn.backup(other)
+    os.chmod(dest,0o600)
+    files=sorted(target.glob("analytics-*.sqlite3"), key=lambda p:p.stat().st_mtime,reverse=True)
+    for old in files[5:]:
+        old.unlink()
+    return str(dest)
+
+
+def maintain(conn, request, path):
+    action=request.get("action")
+    if action not in ("delete_before","delete_peer","purge","vacuum","prune"):
+        raise ValueError("invalid maintenance action")
+    if action in ("delete_before","delete_peer","purge") and request.get("confirm") != "DELETE":
+        raise ValueError("explicit confirmation required")
+    ident=request.get("peer_id") or ""
+    if action=="delete_peer" and not KEY.fullmatch(ident):
+        raise ValueError("invalid peer fingerprint")
+    cutoff=int(request.get("before") or 0)
+    if action in ("delete_before","prune") and cutoff <= 0:
+        raise ValueError("valid cutoff required")
+    copy_path = backup(conn,path) if action in ("delete_before","delete_peer","purge") else ""
+    with conn:
+        conn.execute("BEGIN IMMEDIATE")
+        if action in ("delete_before","prune"):
+            conn.execute("DELETE FROM buckets WHERE period<?",(cutoff,))
+            conn.execute("DELETE FROM events WHERE at<?",(cutoff,))
+            # Do not erase peer identities/states on retention maintenance.
+        elif action=="delete_peer":
+            conn.execute("DELETE FROM buckets WHERE peer_id=?",(ident,))
+            conn.execute("DELETE FROM events WHERE peer_id=?",(ident,))
+            conn.execute("DELETE FROM peers WHERE id=?",(ident,))
+        elif action=="purge":
+            for table in ("buckets","events","peers"):
+                conn.execute("DELETE FROM "+table)
+    if action=="vacuum":
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        conn.execute("VACUUM")
+    return {"ok":True,"action":action,"backup":copy_path}
+
+
+def prometheus(conn, request):
+    path=request.get("path") or ""
+    if not re.fullmatch(
+        r"/(?:var/lib/node_exporter/textfile_collector|var/lib/prometheus/node-exporter)/"
+        r"[A-Za-z0-9_.-]+\.prom",path
+    ) or ".." in path:
+        raise ValueError("Prometheus path must be in an approved node exporter textfile directory")
+    dest=Path(path)
+    if not dest.parent.is_dir() or dest.is_symlink():
+        raise ValueError("Prometheus target directory missing or unsafe")
+    enabled=set(request.get("metrics") or [])
+    if not enabled.issubset(VALID_METRICS):
+        raise ValueError("invalid metrics selection")
+    out=[]
+    def metric(name,description,kind,rows):
+        out.append("# HELP "+name+" "+description)
+        out.append("# TYPE "+name+" "+kind)
+        out.extend(rows)
+    peers=conn.execute("SELECT id,active,handshake FROM peers").fetchall()
+    if "traffic" in enabled:
+        all_usage=conn.execute("SELECT peer_id,SUM(rx_bytes),SUM(tx_bytes) FROM buckets GROUP BY peer_id")
+        rx=[];tx=[]
+        for ident,rec,send in all_usage:
+            rx.append('webmin_wg_peer_stored_rx_bytes{peer="'+ident+'"} '+str(rec or 0))
+            tx.append('webmin_wg_peer_stored_tx_bytes{peer="'+ident+'"} '+str(send or 0))
+        metric("webmin_wg_peer_stored_rx_bytes","Recorded RX bytes in retained history","gauge",rx)
+        metric("webmin_wg_peer_stored_tx_bytes","Recorded TX bytes in retained history","gauge",tx)
+    if "peer_state" in enabled:
+        metric("webmin_wg_peer_active","Peer present in last successful WireGuard snapshot","gauge",
+               ['webmin_wg_peer_active{peer="'+i+'"} '+str(a) for i,a,h in peers])
+    if "handshake" in enabled:
+        metric("webmin_wg_peer_last_handshake_timestamp_seconds",
+               "Last observed handshake UNIX timestamp","gauge",
+               ['webmin_wg_peer_last_handshake_timestamp_seconds{peer="'+i+'"} '+str(h or 0)
+                for i,a,h in peers])
+    if "events" in enabled:
+        metric("webmin_wg_stored_events","Events retained in SQLite","gauge",
+               ["webmin_wg_stored_events "+str(conn.execute("SELECT count(*) FROM events").fetchone()[0])])
+    if "collector" in enabled:
+        metric("webmin_wg_analytics_export_timestamp_seconds","Last successful exporter run","gauge",
+               ["webmin_wg_analytics_export_timestamp_seconds "+str(int(time.time()))])
+    fd,tmp=tempfile.mkstemp(dir=str(dest.parent),prefix=".webmin-wg-",suffix=".tmp")
+    try:
+        with os.fdopen(fd,"w",encoding="utf-8") as f:
+            f.write("\n".join(out)+"\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(tmp,0o644)
+        os.replace(tmp,path)
+    finally:
+        if os.path.exists(tmp): os.unlink(tmp)
+    return {"ok":True,"metrics":len(out)}
+
+
+def main():
+    if len(sys.argv)!=3 or sys.argv[1] not in ("ingest","query","maintain","prometheus","health"):
+        raise ValueError("usage: analytics-store.py ACTION /absolute/path.sqlite3")
+    action,path=sys.argv[1:]
+    body=json.load(sys.stdin)
+    conn=connect(path)
+    try:
+        if action=="ingest": result=ingest(conn,body)
+        elif action=="query": result=query(conn,body)
+        elif action=="maintain": result=maintain(conn,body,path)
+        elif action=="prometheus": result=prometheus(conn,body)
+        else:
+            result={"ok":True,"peers":conn.execute("SELECT COUNT(*) FROM peers").fetchone()[0],
+                    "buckets":conn.execute("SELECT COUNT(*) FROM buckets").fetchone()[0],
+                    "events":conn.execute("SELECT COUNT(*) FROM events").fetchone()[0],
+                    "db_bytes":os.stat(path).st_size}
+        print(json.dumps(result,ensure_ascii=True,separators=(",",":")))
+    finally:
+        conn.close()
+
+
+if __name__=="__main__":
+    try: main()
+    except Exception as exc:
+        print(json.dumps({"ok":False,"error":str(exc)},ensure_ascii=True))
+        sys.exit(1)
