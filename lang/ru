@@ -411,3 +411,6 @@ analytics_event_interface_changed=Смена интерфейса
 analytics_event_counter_reset=Сброс счётчиков
 analytics_event_sample_gap=Пропуск измерений
 analytics_event_legacy_history_imported=Перенос старой истории
+collector_config_pending=Сборщик запущен. Ожидается новое подтверждение настроек (предыдущее состояние ещё не обновлено).
+collector_config_unverified=Запущенный сборщик не сообщил отпечаток настроек. Проверьте состояние службы и её журнал.
+collector_config_different=Различающиеся параметры

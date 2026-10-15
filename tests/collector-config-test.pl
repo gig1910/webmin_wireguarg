@@ -22,10 +22,29 @@ my $f2 = collector_settings_fingerprint($tight);
 die "collector fingerprint did not change\n" if $f1 eq $f2;
 die "collector fingerprint is malformed\n" unless $f1 =~ /^[0-9a-f]{64}$/;
 
+
+# A systemd 'active' status can precede the new collector health snapshot.
+# Old health data must never trigger a spurious restart request.
+my $service = { state => 'active', main_pid => 2002 };
+my $fresh = { pid => 2002, config_fingerprint => $f1 };
+my $old = { pid => 2001, config_fingerprint => $f2 };
+die "new process inherits stale health warning\n"
+    unless collector_applied_config_state($service, $old, $f1) eq 'pending';
+die "new process confirmation not recognized\n"
+    unless collector_applied_config_state($service, $fresh, $f1) eq 'current';
+die "real running configuration mismatch not recognized\n"
+    unless collector_applied_config_state($service, $fresh, $f2) eq 'restart_required';
+die "missing health fingerprint is incorrectly reported as a restart requirement\n"
+    unless collector_applied_config_state($service, { pid => 2002 }, $f1) eq 'unverified';
+die "missing health PID is incorrectly reported as a restart requirement\n"
+    unless collector_applied_config_state($service, { config_fingerprint => $f2 }, $f1) eq 'pending';
+die "inactive service incorrectly requires restart\n"
+    unless collector_applied_config_state({ state => 'inactive', main_pid => 0 }, $old, $f1) eq 'inactive';
+
 open(my $fh, '<', "$FindBin::Bin/../collector_status.cgi") or die $!;
 local $/; my $status = <$fh>; close($fh);
 die "running-settings mismatch detection missing\n"
-    if $status !~ /restart_required/ || $status !~ /collector_settings_fingerprint/;
+    if $status !~ /restart_required/ || $status !~ /collector_settings_fingerprint/ || $status !~ /collector_applied_config_state/;
 my ($desired_block) = $status =~ /(my \$desired.*?my \$ok)/s;
 die "cannot locate collector desired-state check\n" if !defined($desired_block);
 die "failed stop state is incorrectly accepted as a clean stop\n" if $desired_block =~ /eq 'failed'/;
@@ -33,7 +52,7 @@ die "failed stop state is incorrectly accepted as a clean stop\n" if $desired_bl
 open($fh, '<', "$FindBin::Bin/../index.cgi") or die $!;
 local $/; my $index = <$fh>; close($fh);
 die "collector restart warning UI missing\n"
-    if $index !~ /collector_restart_required/ || $index !~ /data-role="warning"/;
+    if $index !~ /collector_restart_required/ || $index !~ /data-role="warning"/ || $index !~ /configPendingText/;
 
 for my $file (qw(config.info config.info.ru)) {
     open($fh, '<', "$FindBin::Bin/../$file") or die $!;

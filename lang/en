@@ -411,3 +411,6 @@ analytics_event_interface_changed=Interface changed
 analytics_event_counter_reset=Counter reset
 analytics_event_sample_gap=Sample gap
 analytics_event_legacy_history_imported=Legacy history imported
+collector_config_pending=Collector started. Waiting for fresh configuration confirmation (the previous health snapshot is still on disk).
+collector_config_unverified=The running collector did not report a configuration fingerprint. Inspect its service status and journal.
+collector_config_different=Settings that differ

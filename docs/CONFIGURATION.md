@@ -138,3 +138,7 @@ The hooks execute under `wg-quick` whether started by Webmin or by
   audit such rules after abnormal shutdowns.
 - External firewalls, cloud security groups, routers and port forwarding
   are outside the scope of this setting.
+
+### Collector restart status
+
+A successful systemd start is not the same as a new metrics health snapshot. Webmin compares `health.json.pid` to systemd `MainPID`; while they differ (for instance, during startup compaction) it displays **waiting for configuration confirmation**, not a false restart request. Once the new collector reports its fingerprint, only a mismatch from that running PID triggers the restart warning. The status response includes `health.config_state` (`pending`, `current`, `restart_required`, `unverified`, or `inactive`) and `config_mismatch_keys` for diagnosis.

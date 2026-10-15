@@ -66,11 +66,21 @@ sub collector_snapshot
     my $health = collector_health();
     my $current_settings = collector_effective_settings(\%config);
     my $current_fingerprint = collector_settings_fingerprint($current_settings);
-    my $running_fingerprint = $health->{'config_fingerprint'} || '';
-    my $restart_required = ($service->{'state'} || '') eq 'active' &&
-        (!$running_fingerprint || $running_fingerprint ne $current_fingerprint);
+    my $config_state = collector_applied_config_state($service, $health, $current_fingerprint);
     $health->{'current_config_fingerprint'} = $current_fingerprint;
-    $health->{'restart_required'} = $restart_required ? JSON::PP::true() : JSON::PP::false();
+    $health->{'config_state'} = $config_state;
+    $health->{'restart_required'} = $config_state eq 'restart_required'
+        ? JSON::PP::true() : JSON::PP::false();
+    $health->{'config_pending'} = $config_state eq 'pending'
+        ? JSON::PP::true() : JSON::PP::false();
+    # Include names only, not values: a real mismatch should be actionable,
+    # and Webmin should not accidentally echo custom paths or other settings.
+    my $observed = $health->{'effective_settings'} || {};
+    my @changed = $config_state eq 'restart_required'
+        ? grep { (defined($current_settings->{$_}) ? $current_settings->{$_} : '') ne
+                 (defined($observed->{$_}) ? $observed->{$_} : '') } sort keys(%$current_settings)
+        : ();
+    $health->{'config_mismatch_keys'} = \@changed;
     $health->{'current_effective_settings'} = $current_settings;
     return { health => $health, service => $service };
 }
@@ -79,11 +89,25 @@ sub wait_for_service_state
 {
     my ($action) = @_;
     my $deadline = time() + 8;
+    my $expected = $action eq 'stop' ? '' :
+        collector_settings_fingerprint(collector_effective_settings(\%config));
     my $status;
     while (1) {
         $status = collector_service_status();
         my $state = $status->{'state'} || '';
-        last if ($action eq 'stop' ? ($state eq 'inactive' || $state eq 'failed' || !$status->{'installed'}) : $state eq 'active');
+        if ($action eq 'stop') {
+            last if ($state eq 'inactive' || $state eq 'failed' || !$status->{'installed'});
+        }
+        elsif ($state eq 'failed' || $state eq 'inactive') {
+            # Failure must not be reported as a successful start.
+            last if (time() >= $deadline);
+        }
+        elsif ($state eq 'active') {
+            my $applied = collector_applied_config_state($status, collector_health(), $expected);
+            # Do not report success immediately after systemd says active if
+            # health.json still belongs to the previous process.
+            last if ($applied ne 'pending');
+        }
         last if (time() >= $deadline);
         select(undef, undef, undef, 0.25);
     }
@@ -92,13 +116,22 @@ sub wait_for_service_state
 
 sub collector_action_output
 {
-    my ($action, $command_output, $action_ok, $operation_ok, $service) = @_;
+    my ($action, $command_output, $action_ok, $operation_ok, $service, $config_state) = @_;
     my $systemctl = command_path('systemctl_cmd', '/usr/bin/systemctl');
     my $output = '$ '.join(' ', map { shell_quote($_) } ($systemctl, $action, $collector_unit))."\n";
     $output .= length($command_output || '') ? $command_output : "(systemctl не вывел сообщений)\n";
     $output .= "\n---\n";
     $output .= 'Результат systemctl: '.($action_ok ? 'команда принята' : 'ошибка')."\n";
-    $output .= 'Итог операции: '.($operation_ok ? 'успешно' : 'ошибка')."\n";
+    my $outcome = $operation_ok ? 'успешно' : 'ошибка';
+    if ($operation_ok && $action ne 'stop') {
+        $outcome = 'служба запущена; ожидается подтверждение настроек'
+            if (($config_state || '') eq 'pending');
+        $outcome = 'служба запущена; настройки не подтверждены'
+            if (($config_state || '') eq 'unverified');
+        $outcome = 'служба запущена; настройки не совпадают'
+            if (($config_state || '') eq 'restart_required');
+    }
+    $output .= 'Итог операции: '.$outcome."\n";
     $output .= 'Состояние службы: '.($service->{'state'} || 'unknown');
     $output .= '/'.$service->{'substate'} if ($service->{'substate'});
     $output .= "\nMainPID: ".($service->{'main_pid'} || 0)."\n";
@@ -130,7 +163,9 @@ if (($ENV{'REQUEST_METHOD'} || 'GET') eq 'POST') {
         ? (($service->{'state'} || '') eq 'inactive')
         : (($service->{'state'} || '') eq 'active');
     my $ok = $command_ok && $desired;
-    my $output = collector_action_output($action, $command_out, $command_ok, $ok, $service);
+    my $snapshot = collector_snapshot();
+    my $config_state = $snapshot->{'health'}->{'config_state'} || '';
+    my $output = collector_action_output($action, $command_out, $command_ok, $ok, $service, $config_state);
     if (!$desired) {
         $output .= "\nОжидаемое состояние службы не достигнуто за отведённое время.\n";
     }
@@ -139,7 +174,6 @@ if (($ENV{'REQUEST_METHOD'} || 'GET') eq 'POST') {
         service_state => $service->{'state'} || '',
         command_status => 0 + ($status_code || 0),
     });
-    my $snapshot = collector_snapshot();
     $snapshot->{'service'} = $service;
     json_response({
         ok => $ok ? JSON::PP::true() : JSON::PP::false(),

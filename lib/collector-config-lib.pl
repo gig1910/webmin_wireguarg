@@ -66,4 +66,20 @@ sub collector_settings_fingerprint
     return Digest::SHA::sha256_hex($payload);
 }
 
+# Service activation is not the same as the collector publishing a fresh
+# health snapshot. Old health.json can survive a restart while initial history
+# compaction is running. Only compare fingerprints when the health PID matches
+# the systemd MainPID: otherwise we would recommend an endless restart loop.
+sub collector_applied_config_state
+{
+    my ($service, $health, $expected_fingerprint) = @_;
+    return 'inactive' if (($service->{'state'} || '') ne 'active');
+    my $running_pid = 0 + ($service->{'main_pid'} || 0);
+    my $health_pid = 0 + ($health->{'pid'} || 0);
+    return 'pending' if (!$running_pid || !$health_pid || $running_pid != $health_pid);
+    my $fingerprint = $health->{'config_fingerprint'} || '';
+    return 'unverified' if (!$fingerprint);
+    return $fingerprint eq ($expected_fingerprint || '') ? 'current' : 'restart_required';
+}
+
 1;

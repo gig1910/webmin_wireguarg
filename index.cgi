@@ -103,6 +103,9 @@ my $js_collector_confirm_restart = json_encode_utf8($text{'collector_confirm_res
 my $js_collector_running_action = json_encode_utf8($text{'collector_running_action'});
 my $js_collector_compacting = json_encode_utf8($text{'collector_compacting'});
 my $js_collector_restart_required = json_encode_utf8($text{'collector_restart_required'});
+my $js_collector_config_pending = json_encode_utf8($text{'collector_config_pending'});
+my $js_collector_config_unverified = json_encode_utf8($text{'collector_config_unverified'});
+my $js_collector_config_different = json_encode_utf8($text{'collector_config_different'});
 my $js_collector_last_compaction = json_encode_utf8($text{'collector_last_compaction'});
 print <<'COLLECTOR_JS_HEAD';
 <script>
@@ -114,6 +117,7 @@ print "const startingText=$js_collector_starting, stoppingText=$js_collector_sto
 print "const lastUpdateText=$js_collector_last_update, storageText=$js_collector_storage, serviceStateText=$js_collector_service_state;\n";
 print "const confirmStop=$js_collector_confirm_stop, confirmRestart=$js_collector_confirm_restart, runningActionText=$js_collector_running_action;\n";
 print "const compactingText=$js_collector_compacting, restartRequiredText=$js_collector_restart_required, lastCompactionText=$js_collector_last_compaction;\n";
+print "const configPendingText=$js_collector_config_pending, configUnverifiedText=$js_collector_config_unverified, configDifferentText=$js_collector_config_different;\n";
 print <<'COLLECTOR_JS';
     const root = document.getElementById(rootId);
     if (!root || root.dataset.initialized === '1') return;
@@ -145,7 +149,8 @@ print <<'COLLECTOR_JS';
         const state = service.state || 'unknown';
         let message = unavailableText, css = 'text-warning';
         if (state === 'active') {
-            if (h.state === 'compacting') { message = compactingText; css = 'text-warning'; }
+            if (h.config_pending) { message = configPendingText; css = 'text-warning'; }
+            else if (h.state === 'compacting') { message = compactingText; css = 'text-warning'; }
             else if (!h.available || h.stale || h.ok === false) { message = staleText; css = 'text-warning'; }
             else { message = healthyText; css = 'text-success'; }
         }
@@ -162,7 +167,15 @@ print <<'COLLECTOR_JS';
             detailText += '; ' + lastCompactionText + ': ' + fmtBytes(h.last_compaction.bytes_before || 0) + ' → ' + fmtBytes(h.last_compaction.bytes_after || 0);
         }
         details.textContent = detailText;
-        if (warning) { warning.textContent = h.restart_required ? restartRequiredText : ''; warning.style.display = h.restart_required ? 'block' : 'none'; }
+        if (warning) {
+            const mismatched = Array.isArray(h.config_mismatch_keys) ? h.config_mismatch_keys : [];
+            const needsRestart = h.config_state === 'restart_required' && h.restart_required;
+            const unverified = h.config_state === 'unverified';
+            warning.textContent = needsRestart
+                ? restartRequiredText + (mismatched.length ? ' ' + configDifferentText + ': ' + mismatched.join(', ') : '')
+                : (unverified ? configUnverifiedText : '');
+            warning.style.display = (needsRestart || unverified) ? 'block' : 'none';
+        }
         setButtonVisibility(service);
     }
     async function request(method, action) {
