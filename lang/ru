@@ -426,3 +426,7 @@ analytics_handshake_ip=Последний подтверждённый IP
 analytics_no_handshake=Рукопожатий пока нет
 analytics_event_endpoint_ip_observed=Первый подтверждённый IP
 analytics_event_endpoint_ip_changed=Смена IP при рукопожатии
+analytics_graph_rx=Входящий трафик (RX)
+analytics_graph_tx=Исходящий трафик (TX)
+analytics_graph_empty=Нет данных для графика за выбранный период
+analytics_graph_scale=Максимум за интервал

@@ -426,3 +426,7 @@ analytics_handshake_ip=Last confirmed IP
 analytics_no_handshake=No handshake observed
 analytics_event_endpoint_ip_observed=First confirmed IP
 analytics_event_endpoint_ip_changed=IP changed at handshake
+analytics_graph_rx=Incoming traffic (RX)
+analytics_graph_tx=Outgoing traffic (TX)
+analytics_graph_empty=No data for chart in the selected range
+analytics_graph_scale=Maximum per interval

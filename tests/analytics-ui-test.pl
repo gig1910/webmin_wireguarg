@@ -17,6 +17,11 @@ my $peer_page=slurp("$FindBin::Bin/../edit_peer.cgi");
 my $manifest=slurp("$FindBin::Bin/../MANIFEST.wbm");
 die "analytics tab missing\n" if $ui !~ /nav nav-tabs/ || $index !~ /analytics\.cgi/;
 die "date and peer filters missing\n" if $ui !~ /data-peer/ || $ui !~ /data-from/ || $ui !~ /data-to/;
+die "traffic chart HTML bar rendering missing\n"
+    if $ui !~ /data-chart-bars/ || $ui !~ /wg-analytics-bar-group/ ||
+       $ui !~ /totals\[slot\]\.rx\+=/ || $ui =~ /canvas\.getContext/;
+die "peer name in selector and event list missing\n"
+    if $ui !~ /peerLabel\(p\)/ || $ui !~ /peerLabel\(peerData\)/;
 die "last handshake and confirmed IP missing from analytics\n"
     if $ui !~ /data-last-handshake/ || $ui !~ /data-handshake-ip/;
 die "new compact IP event translations missing\n"

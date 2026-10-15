@@ -40,6 +40,7 @@ perl tests/service-hardening-test.pl
 perl tests/collector-config-test.pl
 perl tests/ui-ux-test.pl
 perl tests/analytics-ui-test.pl
+perl tests/analytics-chart-test.pl
 ./tests/diagnostic-test.sh
 ./tests/collector-test.sh
 

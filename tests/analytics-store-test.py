@@ -263,6 +263,65 @@ class AnalyticsTest(unittest.TestCase):
             "SELECT SUM(resets),SUM(gaps) FROM buckets WHERE peer_id=?",
             (self.key_a,)).fetchone(),(1,1))
 
+
+    def test_peer_name_is_metadata_not_identity(self):
+        first = self.sample(self.a,1000,1,2,handshake=999)
+        request = {
+            "timestamp":1005, "interval":5, "peer_names":{self.a:"Tanya"},
+            "interfaces":{"wg0":{"peer_list":[{
+                "public_key":self.a,"endpoint":"192.0.2.1:50000",
+                "latest_handshake":999,"rx_bytes":2,"tx_bytes":3
+            }]}}
+        }
+        store.ingest(self.conn,request)
+        row=self.conn.execute("SELECT id,name FROM peers WHERE id=?",
+                              (self.key_a,)).fetchone()
+        self.assertEqual(row,(self.key_a,"Tanya"))
+        # Names can change, but every row remains attached to its key.
+        request["timestamp"]=1010
+        request["peer_names"]={self.a:"Таня",self.b:"Таня"}
+        store.ingest(self.conn,request)
+        self.assertEqual(self.conn.execute(
+            "SELECT name FROM peers WHERE id=?",(self.key_a,)).fetchone(),
+            ("Таня",))
+        self.assertEqual(self.conn.execute(
+            "SELECT COUNT(*) FROM peers").fetchone()[0],1)
+        # Disabling does not erase its identity or last known name.
+        store.ingest(self.conn,{"timestamp":1015,
+            "interfaces":{"wg0":{"peer_list":[]}}})
+        self.assertEqual(self.conn.execute(
+            "SELECT name,active FROM peers WHERE id=?",(self.key_a,)).fetchone(),
+            ("Таня",0))
+        self.conn.close()
+        self.conn=store.connect(str(self.db))
+        self.assertEqual(self.conn.execute(
+            "SELECT name FROM peers WHERE id=?",(self.key_a,)).fetchone(),
+            ("Таня",))
+        # Different key, same label/IP, remains entirely separate.
+        store.ingest(self.conn,{"timestamp":1020,"interval":5,
+           "peer_names":{self.b:"Таня"},
+           "interfaces":{"wg0":{"peer_list":[{
+             "public_key":self.b,"endpoint":"192.0.2.1:50000",
+             "latest_handshake":1019,"rx_bytes":100,"tx_bytes":100
+           }]}}})
+        self.assertEqual(self.conn.execute(
+            "SELECT id,name FROM peers ORDER BY id").fetchall(),
+            sorted([(self.key_a,"Таня"),(self.key_b,"Таня")]))
+
+    def test_preexisting_database_without_name_gets_migrated(self):
+        self.conn.close()
+        os.unlink(self.db)
+        import sqlite3
+        conn=sqlite3.connect(self.db)
+        schema=store.SCHEMA.replace(" name TEXT NOT NULL DEFAULT '',\n", "")
+        conn.executescript(schema)
+        conn.commit()
+        conn.close()
+        self.conn=store.connect(str(self.db))
+        self.assertIn("name",{
+            row[1] for row in self.conn.execute("PRAGMA table_info(peers)")})
+        self.assertEqual(self.conn.execute("SELECT COUNT(*) FROM peers").fetchone()[0],0)
+
     def test_prometheus_text_contains_only_fingerprints(self):
         self.sample(self.a,1000,100,200,endpoint="192.0.2.5:12345")
         self.sample(self.a,1005,200,300)

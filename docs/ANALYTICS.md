@@ -33,3 +33,9 @@ Open **Networking → WireGuard VPN → Analytics** to inspect all peers, includ
 ### One-time legacy event compaction
 
 On the first collector sample after upgrading, a consistent SQLite online backup is created if old events exist. Existing `handshake_observed` events are folded into first confirmed IP and true IP changes using handshake epochs stored in event details; other old noisy events are removed transactionally. Traffic buckets and their reset/gap counters are unaffected. No network reconnection is inferred merely from a source-port change; both IPv4 and IPv6 are supported.
+
+### Traffic chart and peer names
+
+The Analytics page renders RX/TX HTML bars with explicit chart height (not Canvas), from 10-minute SQLite buckets. Selecting all peers sums bytes across peers per time slot. Long periods merge *presentation* slots up to 180 bars; stored 10-minute data remains unchanged. Tooltips show slot timestamps and bytes.
+
+Peer labels show the configured WireGuard name plus interface and shortened public key, with the full public key/SHA-256 in the selector tooltip. The collector persists the latest configured name in SQLite by public key, including disabled peers. Names survive configuration deletion, and a new public key using the same name or IP never inherits another peer's statistics. The view also resolves current configuration names immediately.
