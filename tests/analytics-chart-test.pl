@@ -45,7 +45,8 @@ if($node) {
 die "rendered chart does not reference labels" unless $html =~ /analytics_graph_rx/;
 die "responsive CSS media query lost during template interpolation"
     unless $html =~ /\@media\(max-width:700px\)/;
-die "unsafe peer edit link code generated" if $js =~ m{/\/wireguard/};
+die "peer edit navigation path validation missing"
+    unless $js =~ /pathname\.endsWith\('\/wireguard\/edit_peer\.cgi'\)/;
 die "peer link URL must be same-origin"
     unless $js =~ /url\.origin===window\.location\.origin/;
 
