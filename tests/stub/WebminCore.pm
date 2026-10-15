@@ -20,6 +20,12 @@ sub decode_json { return JSON::PP::decode_json($_[0]); }
 
 sub init_config {
     no strict 'refs';
+    # Hermetic CGI tests never write to the host's Webmin state directory
+    # and never depend on the host ping binary or ICMP permissions.
+    ${"main::config"}{'state_dir'} = $ENV{'WEBMIN_TEST_STATE_DIR'}
+        if (defined $ENV{'WEBMIN_TEST_STATE_DIR'} && length $ENV{'WEBMIN_TEST_STATE_DIR'});
+    ${"main::config"}{'ping_cmd'} = $ENV{'WEBMIN_TEST_PING_CMD'}
+        if (defined $ENV{'WEBMIN_TEST_PING_CMD'} && length $ENV{'WEBMIN_TEST_PING_CMD'});
     ${"main::text"}{'diagnostics_completed_ok'} = 'Command completed successfully.';
     ${"main::text"}{'diagnostics_completed_error'} = 'Command exited with code $1.';
     ${"main::text"}{'diagnostics_completed_signal'} = 'Command was stopped by signal $1.';

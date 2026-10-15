@@ -1,0 +1,26 @@
+#!/bin/sh
+# Offline fixture for asynchronous diagnostic CGI tests.
+# No network activity: this tests the real job launch, stream and Stop paths.
+count=''
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -c)
+            shift
+            count="$1"
+            ;;
+    esac
+    shift
+done
+if [ -n "$count" ]; then
+    printf '%s\n' \
+        'PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.' \
+        '64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.01 ms' \
+        '64 bytes from 127.0.0.1: icmp_seq=2 ttl=64 time=0.01 ms' \
+        '--- 127.0.0.1 ping statistics ---' \
+        '2 packets transmitted, 2 received, 0% packet loss'
+    exit 0
+fi
+while :; do
+    printf '%s\n' '64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.01 ms'
+    sleep 1
+done

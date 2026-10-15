@@ -4,6 +4,8 @@ cd "$(dirname "$0")/.."
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT INT TERM
 export WIREGUARD_DIAGNOSTIC_DIR="$TMP"
+export WEBMIN_TEST_STATE_DIR="$TMP/webmin"
+export WEBMIN_TEST_PING_CMD="$PWD/tests/bin/ping"
 export PERL5LIB=tests/stub
 TOKEN="$(perl -e 'require "./wireguard-lib.pl"; print csrf_token()')"
 
@@ -17,7 +19,7 @@ json_field() {
 start="$(REQUEST_METHOD=POST QUERY_STRING="name=wg0&peer=0&target=127.0.0.1&operation=ping&ping_count=2&_wg_csrf=$TOKEN" perl ./diagnostic.cgi)"
 start_body="$(printf '%s\n' "$start" | body_only)"
 job="$(printf '%s' "$start_body" | json_field job_id)"
-[ -n "$job" ] || { echo "No diagnostic job ID" >&2; exit 1; }
+[ -n "$job" ] || { echo "No diagnostic job ID; CGI response: $start_body" >&2; exit 1; }
 
 offset=0
 combined=''
@@ -54,7 +56,7 @@ fi
 start_inf="$(REQUEST_METHOD=POST QUERY_STRING="name=wg0&peer=0&target=127.0.0.1&operation=ping&infinite=1&_wg_csrf=$TOKEN" perl ./diagnostic.cgi)"
 start_inf_body="$(printf '%s\n' "$start_inf" | body_only)"
 job_inf="$(printf '%s' "$start_inf_body" | json_field job_id)"
-[ -n "$job_inf" ] || { echo "No continuous diagnostic job ID" >&2; exit 1; }
+[ -n "$job_inf" ] || { echo "No continuous diagnostic job ID; CGI response: $start_inf_body" >&2; exit 1; }
 
 child_pid=''
 i=0
