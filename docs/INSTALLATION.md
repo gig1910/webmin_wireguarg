@@ -58,3 +58,10 @@ cat /var/webmin/wireguard/stats/health.json
 Webmin removal disables and removes only a unit recognized as module-managed.
 WireGuard configuration, module settings, backups and collected history are
 kept intentionally. Remove them manually only after reviewing their contents.
+
+## Installed build identity
+
+Each `./scripts/build-release.sh` run stamps an independent build version:
+`<release>+<UTC timestamp with nanoseconds>.g<Git SHA>` (with `.dirty` when tracked source modifications are present). The `dist/webmin-wireguard-<build-version>.wbm.gz` filename is unique per build, and `module.info` in that archive contains the build version; the source checkout's release `VERSION` stays unchanged. The packaged `build.info` records the full commit SHA and UTC build time. Webmin displays this identity below the page heading on Interfaces, Analytics, interface details and peer details. `X-WireGuard-Webmin-Build` in JSON CGI responses can be used to verify deployment without relying on browser caches. A source checkout without a generated archive displays an explicit unstamped marker.
+
+**Always select the new build-specific `.wbm.gz`**, not an older `webmin-wireguard-0.2.0.wbm.gz` from a previous build. After installation verify that the build string on the Webmin page matches the filename. Installation does not restart live WireGuard interfaces; the separate metrics collector may restart when its unit changes.
