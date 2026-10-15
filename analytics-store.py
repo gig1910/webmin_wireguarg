@@ -334,17 +334,30 @@ def query(conn, request):
     ident = request.get("peer_id") or ""
     if ident and not KEY.fullmatch(ident):
         raise ValueError("invalid peer key fingerprint")
+    interface = request.get("interface") or ""
+    if interface and (not isinstance(interface,str) or
+                      not re.fullmatch(r"[A-Za-z0-9_=+.-]{1,15}", interface)):
+        raise ValueError("invalid interface")
     peers = [dict(zip(("id","public_key","first_seen","last_seen","name","active","interface","endpoint","handshake","handshake_ip"),
                       row)) for row in conn.execute(
             "SELECT id,public_key,first_seen,last_seen,name,active,interface,endpoint,handshake,handshake_ip "
             "FROM peers ORDER BY last_seen DESC LIMIT 2000")]
-    if ident and not conn.execute("SELECT 1 FROM peers WHERE id=?",(ident,)).fetchone():
-        raise ValueError("peer not found")
+    if ident:
+        row = conn.execute("SELECT interface FROM peers WHERE id=?", (ident,)).fetchone()
+        if not row:
+            raise ValueError("peer not found")
+        if interface and row[0] != interface:
+            raise ValueError("peer does not belong to the selected interface")
     # Windows are 10-minute quantized; include intersecting buckets.
     bfrom = (since//600)*600
     bto = ((until-1)//600)*600
-    where = "peer_id=? AND " if ident else ""
-    args = ([ident] if ident else []) + [bfrom,bto]
+    if ident:
+        where, scope = "peer_id=? AND ", [ident]
+    elif interface:
+        where, scope = "peer_id IN (SELECT id FROM peers WHERE interface=?) AND ", [interface]
+    else:
+        where, scope = "", []
+    args = scope + [bfrom,bto]
     rows = conn.execute(
         "SELECT peer_id,period,rx_bytes,tx_bytes,samples,resets,gaps FROM buckets WHERE "+
         where+"period>=? AND period<=? ORDER BY period DESC LIMIT 20001",args).fetchall()
@@ -352,9 +365,9 @@ def query(conn, request):
     rows = rows[:20000]
     buckets = [dict(zip(("peer_id","period","rx","tx","samples","resets","gaps"),r))
                for r in reversed(rows)]
-    eargs = ([ident] if ident else []) + [since,until]
+    eargs = scope + [since,until]
     # Event predicates deliberately do not reuse bucket WHERE (period column).
-    condition = "peer_id=? AND " if ident else ""
+    condition = where
     events = conn.execute(
         "SELECT peer_id,at,type,interface,endpoint,previous_endpoint,detail "
         "FROM events WHERE "+condition+"type IN ('endpoint_ip_observed','endpoint_ip_changed') "

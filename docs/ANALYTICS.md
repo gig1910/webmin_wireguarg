@@ -39,3 +39,7 @@ On the first collector sample after upgrading, a consistent SQLite online backup
 The Analytics page renders RX/TX HTML bars with explicit chart height (not Canvas), from 10-minute SQLite buckets. Selecting all peers sums bytes across peers per time slot. Long periods merge *presentation* slots up to 180 bars; stored 10-minute data remains unchanged. Tooltips show slot timestamps and bytes.
 
 Peer labels show the configured WireGuard name plus interface and shortened public key, with the full public key/SHA-256 in the selector tooltip. The collector persists the latest configured name in SQLite by public key, including disabled peers. Names survive configuration deletion, and a new public key using the same name or IP never inherits another peer's statistics. The view also resolves current configuration names immediately.
+
+## Consistent Webmin UI
+
+Analytics uses native Webmin/Bootstrap panels, tables, buttons and navigation tabs. Filters, summaries, charts, IP history and destructive maintenance operations are visually separated. An interface filter is executed in the backend alongside peer and time filters, including for archived peers. Event entries link to currently configured peers via the normal Webmin navigation; deleted peers have no edit link. Interface attribution comes from the peer's stored interface, not a historical per-bucket field, so moving a public key to another interface does not split its prior usage by interface.

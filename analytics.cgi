@@ -29,11 +29,17 @@ my %labels = map { $_ => $text{$_} || $_ } qw(
     analytics_last_handshake analytics_handshake_ip analytics_no_handshake
     analytics_event_endpoint_ip_observed analytics_event_endpoint_ip_changed
     analytics_graph_rx analytics_graph_tx analytics_graph_empty analytics_graph_scale
+    analytics_filters_heading analytics_summary_heading analytics_interface
+    analytics_all_interfaces analytics_peer_open analytics_maintenance_warning
 );
 my $strings = json_encode_utf8(\%labels);
 print <<HTML;
 <div id="wg-analytics" data-url="$url">
+ <section class="panel panel-default wg-analytics-section">
+  <div class="panel-heading"><strong>$text{'analytics_filters_heading'}</strong></div>
+  <div class="panel-body">
  <div class="wg-analytics-filters">
+  <label>$text{'analytics_interface'} <select data-interface><option value="">$text{'analytics_all_interfaces'}</option></select></label>
   <label>$text{'analytics_peer'} <select data-peer></select></label>
   <label>$text{'analytics_period'} <select data-period>
    <option value="86400">$text{'analytics_24h'}</option>
@@ -48,9 +54,23 @@ print <<HTML;
   <button class="btn btn-default" data-apply type="button">$text{'analytics_apply'}</button>
  </div>
  <div data-error class="alert alert-warning" hidden></div>
- <div class="wg-analytics-totals"><strong data-rx></strong><strong data-tx></strong><small data-db-size></small></div>
- <div class="wg-analytics-totals"><strong data-last-handshake></strong><strong data-handshake-ip></strong></div>
- <h3>$text{'analytics_chart'}</h3>
+  </div>
+ </section>
+ <section class="panel panel-default wg-analytics-section">
+  <div class="panel-heading"><strong>$text{'analytics_summary_heading'}</strong></div>
+  <div class="panel-body">
+   <div class="wg-analytics-summary">
+    <div class="wg-analytics-summary-item" data-rx></div>
+    <div class="wg-analytics-summary-item" data-tx></div>
+    <div class="wg-analytics-summary-item" data-last-handshake></div>
+    <div class="wg-analytics-summary-item" data-handshake-ip></div>
+   </div>
+   <p class="help-block" data-db-size></p>
+  </div>
+ </section>
+ <section class="panel panel-default wg-analytics-section">
+  <div class="panel-heading"><strong>$text{'analytics_chart'}</strong></div>
+  <div class="panel-body">
  <div class="wg-analytics-chart-legend">
    <span class="wg-analytics-dot wg-analytics-rx-dot"></span> $text{'analytics_graph_rx'}
    <span class="wg-analytics-dot wg-analytics-tx-dot"></span> $text{'analytics_graph_tx'}
@@ -60,22 +80,47 @@ print <<HTML;
    <div class="wg-analytics-chart-bars" data-chart-bars></div>
  </div>
  <div class="wg-analytics-chart-axis"><span data-chart-from></span><span data-chart-to></span></div>
- <div data-notes class="wg-analytics-notes"></div>
- <p><small>$text{'analytics_bucket_note'}</small></p>
- <h3>$text{'analytics_events'}</h3>
- <div class="wg-analytics-table"><table class="table table-striped">
+ <div data-notes class="wg-analytics-notes help-block"></div>
+ <p class="help-block">$text{'analytics_bucket_note'}</p>
+  </div>
+ </section>
+ <section class="panel panel-default wg-analytics-section">
+  <div class="panel-heading"><strong>$text{'analytics_events'}</strong></div>
+  <div class="panel-body">
+ <div class="table-responsive wg-analytics-table"><table class="table table-striped table-hover">
  <thead><tr><th>$text{'analytics_event_time'}</th><th>$text{'analytics_peer'}</th><th>$text{'analytics_event_type'}</th><th>$text{'analytics_event_endpoint'}</th><th>$text{'analytics_event_previous'}</th></tr></thead>
  <tbody data-events></tbody></table></div>
- <p><small>$text{'analytics_warning'}</small></p>
+ <p class="help-block">$text{'analytics_warning'}</p>
+  </div>
+ </section>
 </div>
 <style>
-.wg-analytics-filters,.wg-analytics-totals{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:12px 0}
-.wg-analytics-filters label{display:inline-flex;gap:6px;align-items:center}
+/* Theme-native panels, form controls and responsive tables; only layout
+   dimensions are local. No independent analytics color palette. */
+.wg-analytics-section{margin:12px 0}
+.wg-analytics-section>.panel-heading{padding:8px 10px}
+.wg-analytics-section>.panel-body{padding:12px}
+.wg-analytics-filters{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.wg-analytics-filters label{display:flex;flex-direction:column;gap:4px;margin:0}
+.wg-analytics-filters select,.wg-analytics-filters input{min-width:150px;max-width:100%}
+.wg-analytics-filters [data-peer]{min-width:260px}
+.wg-analytics-filters [data-custom]{display:flex;flex-wrap:wrap;gap:10px}
 .wg-analytics-filters [hidden],#wg-analytics [hidden]{display:none!important}
-.wg-analytics-totals strong{padding:5px 8px;border:1px solid #8885;border-radius:4px}
-.wg-analytics-notes{margin-top:8px;opacity:.9}
+.wg-analytics-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.wg-analytics-summary-item{padding:9px 12px;border:1px solid rgba(127,127,127,.25);border-radius:3px}
+.wg-analytics-summary-item:empty::after{content:'—'}
+.wg-analytics-notes{margin-top:8px}
 .wg-analytics-table{overflow:auto;max-height:420px}
-.wg-analytics-table table{width:100%}
+.wg-analytics-table table{width:100%;margin:0}
+.wg-analytics-table td,.wg-analytics-table th{vertical-align:middle}
+.wg-analytics-peer-link{color:inherit;text-decoration:underline}
+.wg-analytics-steps{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.wg-analytics-steps form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;margin:4px 0}
+.wg-analytics-steps label{display:flex;flex-direction:column;gap:4px;margin:0}
+.wg-analytics-steps input,.wg-analytics-steps select{max-width:260px}
+.wg-analytics-danger{border-color:rgba(190,50,40,.45)}
+@media(max-width:700px){.wg-analytics-filters label,.wg-analytics-filters [data-peer],
+.wg-analytics-steps label{width:100%;min-width:0}}
 .wg-analytics-chart{display:block!important;width:100%;height:286px;min-height:286px;overflow:hidden;
   padding:8px 10px 4px;border:1px solid rgba(127,127,127,.45);border-radius:4px}
 .wg-analytics-chart-bars{display:flex!important;align-items:stretch;height:264px;min-height:264px;
@@ -99,7 +144,8 @@ print <<HTML;
   const root=document.getElementById('wg-analytics');
   if (!root)return;
   const labels=$strings, initial=$selected_json;
-  const peer=root.querySelector('[data-peer]'), period=root.querySelector('[data-period]');
+  const peer=root.querySelector('[data-peer]'), iface=root.querySelector('[data-interface]');
+  const period=root.querySelector('[data-period]');
   const custom=root.querySelector('[data-custom]'), start=root.querySelector('[data-from]');
   const end=root.querySelector('[data-to]'), output=root.querySelector('[data-error]');
   const graph=root.querySelector('[data-chart]'), graphBars=root.querySelector('[data-chart-bars]');
@@ -187,7 +233,18 @@ print <<HTML;
   }
   function render(result) {
     const previous=peer.value;
-    const options=[{id:'',public_key:labels.analytics_all_peers},...(result.peers||[])];
+    const allPeers=result.peers||[];
+    const selectedInterface=iface.value;
+    const interfaces=[...new Set(allPeers.map(p=>p.interface).filter(Boolean))].sort();
+    iface.replaceChildren();
+    for(const name of ['',...interfaces]){
+      const opt=document.createElement('option');
+      opt.value=name;opt.textContent=name||labels.analytics_all_interfaces;
+      iface.append(opt);
+    }
+    iface.value=interfaces.includes(selectedInterface)?selectedInterface:'';
+    const filtered=allPeers.filter(p=>!iface.value||p.interface===iface.value);
+    const options=[{id:'',public_key:labels.analytics_all_peers},...filtered];
     peer.replaceChildren();
     for(const p of options) {
       const opt=document.createElement('option');
@@ -232,8 +289,21 @@ print <<HTML;
         peerData?peerLabel(peerData):e.peer_id.slice(0,16)+'…',
         labels['analytics_event_'+e.type]||e.type,e.endpoint||'—',e.previous||'—'
       ];
-      for(const cell of columns){
-        const td=document.createElement('td');td.textContent=cell;row.append(td);
+      for(let i=0;i<columns.length;i++){
+        const td=document.createElement('td');
+        if(i===1 && peerData && peerData.peer_url){
+          const url=new URL(peerData.peer_url,window.location.href);
+          if(url.origin===window.location.origin && /\/wireguard\/edit_peer\.cgi$/.test(url.pathname)){
+            const link=document.createElement('a');
+            link.href=url.toString();
+            link.textContent=columns[i];
+            link.className='wg-analytics-peer-link';
+            link.setAttribute('data-wg-module-navigation','1');
+            link.title=labels.analytics_peer_open;
+            td.append(link);
+          }else td.textContent=columns[i];
+        }else td.textContent=columns[i];
+        row.append(td);
       }
       body.append(row);
     }
@@ -248,6 +318,7 @@ print <<HTML;
       const dates=range();
       const url=new URL(root.dataset.url,window.location.href);
       url.searchParams.set('from',String(dates.from));url.searchParams.set('to',String(dates.to));
+      if(iface.value)url.searchParams.set('interface',iface.value);
       if(peer.value)url.searchParams.set('peer_id',peer.value);
       const res=await fetch(url.toString(),{signal:controller.signal,
         cache:'no-store',credentials:'same-origin',redirect:'error',
@@ -265,6 +336,7 @@ print <<HTML;
   period.addEventListener('change',()=>{custom.hidden=period.value!=='custom';if(!custom.hidden){
     end.value=localInput(Date.now());start.value=localInput(Date.now()-86400000);
   }else refresh()});
+  iface.addEventListener('change',()=>{peer.value='';refresh()});
   peer.addEventListener('change',refresh);
   root.querySelector('[data-apply]').addEventListener('click',refresh);
   // The HTML bar chart scales to the available width without Canvas.
@@ -277,8 +349,11 @@ print <<HTML;
 HTML
 
 if ($access{'manage'}) {
-    print '<hr><h3>'.html_escape($text{'analytics_maintenance'}).'</h3>';
-    print '<p>'.html_escape($text{'analytics_maintenance_help'}).'</p>';
+    print '<section class="panel panel-default wg-analytics-section wg-analytics-danger wg-danger-zone">'.
+          '<div class="panel-heading"><strong>'.html_escape($text{'danger_zone'}).
+          ' — '.html_escape($text{'analytics_maintenance'}).'</strong></div>'.
+          '<div class="panel-body"><p class="help-block">'.html_escape($text{'analytics_maintenance_help'}).
+          '</p><div class="wg-analytics-steps">';
     for my $item (
         [ 'delete_before', 'analytics_delete_before' ],
         [ 'delete_peer', 'analytics_delete_peer' ],
@@ -290,20 +365,22 @@ if ($access{'manage'}) {
         print ui_hidden('action',$action);
         if ($action eq 'delete_before') {
             print '<label>'.html_escape($text{'analytics_to'}).
-                ' <input type="datetime-local" data-maintenance-before></label> ';
+                ' <input type="datetime-local" class="form-control" data-maintenance-before></label> ';
             print '<input type="hidden" name="before" data-maintenance-epoch>';
         }
         if ($action eq 'delete_peer') {
             print '<label>'.html_escape($text{'analytics_peer'}).
-                ' <select name="peer_id" data-maintenance-peer></select></label> ';
+                ' <select name="peer_id" class="form-control" data-maintenance-peer></select></label> ';
         }
         if ($action ne 'vacuum') {
             print '<label>'.html_escape($text{'analytics_confirm'}).
-                ' <input name="confirm" autocomplete="off" placeholder="DELETE" required></label> ';
+                ' <input name="confirm" class="form-control" autocomplete="off" placeholder="DELETE" required></label> ';
         }
-        print '<button type="submit" class="btn btn-default">'.html_escape($text{$key}).'</button>';
+        my $button_class = $action eq 'vacuum' ? 'btn btn-default' : 'btn btn-danger';
+        print '<button type="submit" class="'.$button_class.'">'.html_escape($text{$key}).'</button>';
         print '</form>';
     }
+    print '</div></div></section>';
     print <<'SCRIPT';
 <script>
 (function(){
