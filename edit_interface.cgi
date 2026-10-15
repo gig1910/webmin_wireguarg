@@ -41,7 +41,7 @@ print ui_table_row($text{'interface_client_endpoint'}, html_escape(get_meta_valu
 print ui_table_row($text{'interface_client_allowed'}, html_escape($client_allowed_display));
 print ui_table_end();
 
-print '<p>'.direct_link_button('analytics.cgi', $text{'analytics_interface_link'}, {}).'</p>';
+print '<p>'.direct_link_button('analytics.cgi', $text{'analytics_interface_link'}, { interface => $name }).'</p>';
 print graph_html($name, '', text('graph_interface_title', $name));
 print '<div class="wg-runtime-toolbar">'.
     '<button type="button" class="btn btn-default" data-wg-runtime-refresh>'.html_escape($text{'journal_refresh'}).'</button> '.

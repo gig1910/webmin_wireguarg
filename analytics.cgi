@@ -15,6 +15,9 @@ my $url = html_escape(module_script_url('analytics_data.cgi'));
 my $selected = $in{'peer_id'} || '';
 $selected = '' if ($selected !~ /^[a-f0-9]{64}$/);
 my $selected_json = json_encode_utf8($selected);
+my $initial_interface = $in{'interface'} || '';
+$initial_interface = '' if $initial_interface && !valid_interface_name($initial_interface);
+my $initial_interface_json = json_encode_utf8($initial_interface);
 my %labels = map { $_ => $text{$_} || $_ } qw(
     analytics_all_peers analytics_empty analytics_loading analytics_rx analytics_tx
     analytics_truncated analytics_partial analytics_warning analytics_first_seen
@@ -143,7 +146,7 @@ print <<HTML;
   'use strict';
   const root=document.getElementById('wg-analytics');
   if (!root)return;
-  const labels=$strings, initial=$selected_json;
+  const labels=$strings, initial=$selected_json, initialInterface=$initial_interface_json;
   const peer=root.querySelector('[data-peer]'), iface=root.querySelector('[data-interface]');
   const period=root.querySelector('[data-period]');
   const custom=root.querySelector('[data-custom]'), start=root.querySelector('[data-from]');
@@ -341,6 +344,11 @@ print <<HTML;
   root.querySelector('[data-apply]').addEventListener('click',refresh);
   // The HTML bar chart scales to the available width without Canvas.
   window.addEventListener('pagehide',()=>{if(controller)controller.abort();});
+  if(initialInterface){
+    const option=document.createElement('option');
+    option.value=initialInterface;option.textContent=initialInterface;
+    iface.append(option);iface.value=initialInterface;
+  }
   const originalOption=document.createElement('option');originalOption.value=initial;
   originalOption.textContent=labels.analytics_loading;peer.append(originalOption);
   refresh().then(()=>{if(initial && peer.querySelector('option[value="'+initial+'"]')){peer.value=initial;refresh();}});

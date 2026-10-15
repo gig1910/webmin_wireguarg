@@ -322,6 +322,45 @@ class AnalyticsTest(unittest.TestCase):
             row[1] for row in self.conn.execute("PRAGMA table_info(peers)")})
         self.assertEqual(self.conn.execute("SELECT COUNT(*) FROM peers").fetchone()[0],0)
 
+
+    def test_interface_filter_is_applied_by_sqlite(self):
+        self.sample(self.a,1200,100,100,handshake=1199)
+        self.sample(self.a,1205,120,130,handshake=1204)
+        # Same time bucket, distinct peer attached to another interface.
+        store.ingest(self.conn,{"timestamp":1200,"interval":5,
+            "interfaces":{"wg_other":{"peer_list":[{
+                "public_key":self.b,"endpoint":"203.0.113.3:1234",
+                "latest_handshake":1199,"rx_bytes":500,"tx_bytes":500
+            }]}}})
+        store.ingest(self.conn,{"timestamp":1205,"interval":5,
+            "interfaces":{"wg_other":{"peer_list":[{
+                "public_key":self.b,"endpoint":"203.0.113.3:1234",
+                "latest_handshake":1204,"rx_bytes":530,"tx_bytes":540
+            }]}}})
+        # Both histories remain retained, but interface scoping must isolate.
+        all_peers=store.query(self.conn,{"from":1150,"to":1800})
+        wg0=store.query(self.conn,{"from":1150,"to":1800,
+                                   "interface":"wg0"})
+        other=store.query(self.conn,{"from":1150,"to":1800,
+                                    "interface":"wg_other"})
+        self.assertEqual(all_peers["totals"]["rx"],50)
+        self.assertEqual(wg0["totals"]["rx"],20)
+        self.assertEqual(wg0["totals"]["tx"],30)
+        self.assertEqual(other["totals"]["rx"],30)
+        self.assertEqual(other["totals"]["tx"],40)
+        self.assertEqual({b["peer_id"] for b in wg0["buckets"]},{self.key_a})
+        self.assertEqual({e["peer_id"] for e in other["events"]},{self.key_b})
+        with self.assertRaises(ValueError):
+            store.query(self.conn,{"from":1150,"to":1800,
+                                  "interface":"../wg0"})
+        with self.assertRaises(ValueError):
+            store.query(self.conn,{"from":1150,"to":1800,
+                                  "interface":"wg_other","peer_id":self.key_a})
+        # Historical records survive a peer being removed from runtime dump.
+        store.ingest(self.conn,{"timestamp":1210,"interfaces":{}})
+        self.assertEqual(store.query(self.conn,{"from":1150,"to":1800,
+                                               "interface":"wg0"})["totals"]["rx"],20)
+
     def test_prometheus_text_contains_only_fingerprints(self):
         self.sample(self.a,1000,100,200,endpoint="192.0.2.5:12345")
         self.sample(self.a,1005,200,300)

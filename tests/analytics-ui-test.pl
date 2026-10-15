@@ -30,6 +30,18 @@ die "new compact IP event translations missing\n"
 
 die "analytics entry point missing on interface\n"
     unless $interface =~ /direct_link_button\('analytics\.cgi'/;
+die "interface analytics link does not select current interface\n"
+    unless $interface =~ /interface => \$name/;
+die "analytics interface selector or backend filter missing\n"
+    unless $ui =~ /data-interface/ && $ui =~ /searchParams\.set\('interface'/ &&
+           $ui =~ /initialInterface/;
+die "theme panel sections and history table missing\n"
+    unless $ui =~ /panel panel-default wg-analytics-section/ &&
+           $ui =~ /table table-striped table-hover/ &&
+           $ui =~ /wg-analytics-danger/;
+die "peer history link lost Webmin navigation\n"
+    unless $ui =~ /data-wg-module-navigation/ && $ui =~ /peerData\.peer_url/;
+
 die "per-peer analytics link must use public-key fingerprint\n"
     unless $interface =~ /analytics\.cgi\?peer_id=/ &&
            $interface =~ /sha256_hex\(\$public_key\)/;
