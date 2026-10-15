@@ -25,3 +25,7 @@ Back up a live database with SQLite's online backup rather than copying only the
 Webmin module settings expose metric selection (`traffic`, `peer_state`, `handshake`, `events`, `collector`), refresh interval, and the target `.prom` file under either `/var/lib/node_exporter/textfile_collector/` or `/var/lib/prometheus/node-exporter/`. Paths are allowlisted; the directory must exist. The exporter writes atomically, with peer public-key fingerprints as labels and no private keys/endpoints. Retained traffic is a **gauge** because deletion can decrease it.
 
 Requires `/usr/bin/python3` with its built-in `sqlite3` module; no Perl DBI dependency. Settings require restarting the collector, not the live VPN. Verify using `python3 tests/analytics-store-test.py`, `./tests/run-tests.sh` and `stats/health.json` (`analytics_error`).
+
+## Finding the history in Webmin
+
+Open **Networking → WireGuard VPN → Analytics** to inspect all peers, including archived peers. An interface page has a prominent analytics link, each peer row has a **History** link bound to that peer's public-key fingerprint, and the peer editor links to the same filtered analytics view. Reinstall the newly built Webmin package to update the UI and CGI files; restarting the metrics collector alone does not update them.

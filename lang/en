@@ -414,3 +414,5 @@ analytics_event_legacy_history_imported=Legacy history imported
 collector_config_pending=Collector started. Waiting for fresh configuration confirmation (the previous health snapshot is still on disk).
 collector_config_unverified=The running collector did not report a configuration fingerprint. Inspect its service status and journal.
 collector_config_different=Settings that differ
+analytics_interface_link=View all peer analytics and history
+analytics_peer_short=History

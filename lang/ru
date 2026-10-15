@@ -414,3 +414,5 @@ analytics_event_legacy_history_imported=Перенос старой истори
 collector_config_pending=Сборщик запущен. Ожидается новое подтверждение настроек (предыдущее состояние ещё не обновлено).
 collector_config_unverified=Запущенный сборщик не сообщил отпечаток настроек. Проверьте состояние службы и её журнал.
 collector_config_different=Различающиеся параметры
+analytics_interface_link=Просмотреть аналитику и историю всех пиров
+analytics_peer_short=История

@@ -40,6 +40,7 @@ print ui_table_row($text{'interface_client_endpoint'}, html_escape(get_meta_valu
 print ui_table_row($text{'interface_client_allowed'}, html_escape($client_allowed_display));
 print ui_table_end();
 
+print '<p>'.direct_link_button('analytics.cgi', $text{'analytics_interface_link'}, {}).'</p>';
 print graph_html($name, '', text('graph_interface_title', $name));
 print '<div class="wg-runtime-toolbar">'.
     '<button type="button" class="btn btn-default" data-wg-runtime-refresh>'.html_escape($text{'journal_refresh'}).'</button> '.
@@ -57,6 +58,13 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
     my $short_allowed = shorten_text($allowed, 55);
     my $id = substr(sha256_hex($public_key), 0, 16);
     my $name_link = '<a href="edit_peer.cgi?name='.urlize($name).'&peer='.$i.'"><b>'.html_escape(peer_display_name($peer, $i)).'</b></a>';
+    # Analytics is addressed solely by public-key fingerprint. Neither a
+    # peer's name nor its AllowedIPs participates in historical identity.
+    if (length($public_key)) {
+        $name_link .= ' <small>&middot; <a href="analytics.cgi?peer_id='.
+            urlize(sha256_hex($public_key)).'" data-wg-module-navigation="1">'.
+            html_escape($text{'analytics_peer_short'}).'</a></small>';
+    }
     my $handshake = $disabled ? $text{'peer_disabled'} : $text{'runtime_loading'};
     my $state_class = $disabled ? 'label-default wg-peer-state-disabled' : 'label-success wg-peer-state-enabled';
     my $state_html = '<span class="label '.$state_class.'" data-wg-peer-state="'.$id.'" data-disabled="'.($disabled ? '1' : '0').'">'.
