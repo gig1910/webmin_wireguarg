@@ -27,6 +27,7 @@ while ($template =~ /\$text\{'([A-Za-z0-9_]+)'\}/g) {
 my $url='/wireguard/analytics_data.cgi';
 my $strings='{}';
 my $selected_json='""';
+my $initial_interface_json='""';
 my $generator=eval "sub { return <<HTML;\n$template\nHTML\n}";
 die "cannot compile analytics HTML heredoc: $@" if $@ || !$generator;
 my $html=$generator->();
@@ -42,4 +43,10 @@ if($node) {
         or die "rendered analytics JavaScript syntax invalid";
 }
 die "rendered chart does not reference labels" unless $html =~ /analytics_graph_rx/;
+die "responsive CSS media query lost during template interpolation"
+    unless $html =~ /\@media\(max-width:700px\)/;
+die "unsafe peer edit link code generated" if $js =~ m{/\/wireguard/};
+die "peer link URL must be same-origin"
+    unless $js =~ /url\.origin===window\.location\.origin/;
+
 print "rendered analytics chart and peer label tests passed\n";

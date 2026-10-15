@@ -122,7 +122,7 @@ print <<HTML;
 .wg-analytics-steps label{display:flex;flex-direction:column;gap:4px;margin:0}
 .wg-analytics-steps input,.wg-analytics-steps select{max-width:260px}
 .wg-analytics-danger{border-color:rgba(190,50,40,.45)}
-@media(max-width:700px){.wg-analytics-filters label,.wg-analytics-filters [data-peer],
+\@media(max-width:700px){.wg-analytics-filters label,.wg-analytics-filters [data-peer],
 .wg-analytics-steps label{width:100%;min-width:0}}
 .wg-analytics-chart{display:block!important;width:100%;height:286px;min-height:286px;overflow:hidden;
   padding:8px 10px 4px;border:1px solid rgba(127,127,127,.45);border-radius:4px}
@@ -296,7 +296,7 @@ print <<HTML;
         const td=document.createElement('td');
         if(i===1 && peerData && peerData.peer_url){
           const url=new URL(peerData.peer_url,window.location.href);
-          if(url.origin===window.location.origin && /\/wireguard\/edit_peer\.cgi$/.test(url.pathname)){
+          if(url.origin===window.location.origin && url.pathname.endsWith('/wireguard/edit_peer.cgi')){
             const link=document.createElement('a');
             link.href=url.toString();
             link.textContent=columns[i];
