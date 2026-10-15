@@ -38,6 +38,7 @@ perl tests/security-regression-test.pl
 perl tests/service-hardening-test.pl
 perl tests/collector-config-test.pl
 perl tests/ui-ux-test.pl
+perl tests/analytics-ui-test.pl
 ./tests/diagnostic-test.sh
 ./tests/collector-test.sh
 

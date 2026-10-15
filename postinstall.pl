@@ -98,7 +98,7 @@ sub _wg_unit_content
         "LimitNOFILE=64\n".
         "Nice=10\n".
         "IOSchedulingClass=idle\n".
-        "ReadWritePaths=$state_dir\n\n".
+        "ReadWritePaths=$state_dir -/var/lib/node_exporter/textfile_collector -/var/lib/prometheus/node-exporter\n\n".
         "[Install]\n".
         "WantedBy=multi-user.target\n";
 }

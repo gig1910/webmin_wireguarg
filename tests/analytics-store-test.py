@@ -79,6 +79,17 @@ class AnalyticsTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             store.maintain(self.conn,{"action":"purge"},str(self.db))
 
+    def test_retention_and_clear(self):
+        self.sample(self.a,1000,10,10)
+        self.sample(self.a,1600,50,50)
+        store.maintain(self.conn,{"action":"prune","before":1500},str(self.db))
+        self.assertEqual(self.conn.execute("SELECT COUNT(*) FROM peers").fetchone()[0],1)
+        self.assertGreater(self.conn.execute("SELECT COUNT(*) FROM buckets").fetchone()[0],0)
+        result=store.maintain(self.conn,{"action":"purge","confirm":"DELETE"},str(self.db))
+        self.assertTrue(Path(result["backup"]).is_file())
+        self.assertEqual(self.conn.execute("SELECT COUNT(*) FROM peers").fetchone()[0],0)
+        self.assertEqual(self.conn.execute("SELECT COUNT(*) FROM events").fetchone()[0],0)
+
     def test_legacy_mapping(self):
         legacy=Path(self.tmp.name)
         filename="wg0-peer-"+store.hashlib.sha256(self.a.encode()).hexdigest()+".jsonl"

@@ -15,6 +15,8 @@ for my $setting (qw(
 )) {
     die "systemd hardening missing $setting\n" if $unit_source !~ /\Q$setting\E=/;
 }
+die "Prometheus textfile paths missing from collector sandbox\n"
+    unless $unit_source =~ /ReadWritePaths=\$state_dir -\/var\/lib\/node_exporter\/textfile_collector -\/var\/lib\/prometheus\/node-exporter/;
 die "collector stop timeout is not bounded to five seconds\n"
     if $unit_source !~ /TimeoutStopSec=5/;
 

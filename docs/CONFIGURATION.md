@@ -83,7 +83,9 @@ metric groups (traffic, peer_state, handshake, events, collector) using
 per-group Webmin settings, interval,
 and target file under either
 `/var/lib/node_exporter/textfile_collector/` or
-`/var/lib/prometheus/node-exporter/`. The directory must exist.
+`/var/lib/prometheus/node-exporter/`. The directory must exist. The installed systemd collector unit grants
+write access to those directories only when present (besides its own state
+directory), preserving its otherwise strict filesystem sandbox.
 Output is an atomic UTF-8 `.prom` replacement; peer labels are public-key
 fingerprints, never private keys, IPs, endpoints, or human-readable peer names.
 Retained traffic is exported as a **gauge** (not a lifetime counter), since
