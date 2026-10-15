@@ -5,7 +5,9 @@ use FindBin;
 use File::Temp qw(tempfile);
 my $path="$FindBin::Bin/../analytics.cgi";
 open(my $fh,'<',$path) or die $!;
-local $/; my $source=<$fh>; close($fh);
+my $source;
+{ local $/; $source = <$fh>; }
+close($fh);
 die "HTML chart missing" unless $source =~ /data-chart-bars/ &&
     $source =~ /class="wg-analytics-chart"/;
 die "per-bucket aggregation missing" unless $source =~ /totals\[slot\]\.rx\+=/ &&
@@ -30,7 +32,9 @@ die "cannot compile analytics HTML heredoc: $@" if $@ || !$generator;
 my $html=$generator->();
 my ($js)=$html =~ m{<script>\n(\(function\(\)\{.*?)</script>}s;
 die "rendered analytics JavaScript missing" unless defined $js;
-my $node=qx(command -v node 2>/dev/null); chomp $node;
+my $node=qx(command -v node 2>/dev/null);
+$node =~ s/[\r\n]+\z//; # independent of Perl's record separator ($/)
+die "Node.js path is not executable: $node\n" if $node && !-x $node;
 if($node) {
     my ($tmp,$name)=tempfile(SUFFIX=>'.js',UNLINK=>1);
     print {$tmp} $js;close $tmp;
