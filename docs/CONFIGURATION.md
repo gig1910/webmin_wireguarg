@@ -41,6 +41,24 @@ standard WireGuard configuration remains the source of truth.
 
 Neither field provisions a DNS server or changes system DNS automatically.
 
+## Peer traffic consumption by time
+
+The peer details page offers rolling 15-minute, 1-hour, 6-hour, 24-hour and
+custom start/end date-time filters. It reads the existing collector JSONL
+history by peer public key via `history.cgi?name=...&peer=...&from=...&to=...`.
+Times in API requests are UNIX epoch seconds; the browser displays local time.
+Custom ranges are bounded to 90 days, but data availability is limited by
+the configured collector retention (24 hours by default), point and byte
+ceilings. A response is capped at 10,000 samples and marked truncated when
+the cap is reached. No new database or collection processes are introduced.
+
+Period totals are sums of monotonic, consecutive RX/TX counter changes within
+the recorded samples. They do *not* represent the lifetime counters displayed
+by WireGuard. After a peer counter reset, the unknown gap is excluded and a
+warning is shown. The observed first and last sample timestamps are displayed
+so incomplete coverage or an empty interval is never mistaken for exact billing
+data. Period filtering is read-only and never changes retention settings.
+
 ## Automatic UFW port lifecycle (opt-in)
 
 An interface may opt into UFW firewall management. For example, with

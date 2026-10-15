@@ -106,7 +106,7 @@ sub stats_history_path
 }
 sub read_stats_history
 {
-    my ($name, $peer, $since, $limit) = @_;
+    my ($name, $peer, $since, $limit, $until) = @_;
     my $path = stats_history_path($name, $peer);
     return [] if (!-r $path);
     $limit ||= 5000;
@@ -138,12 +138,14 @@ sub read_stats_history
             next if (!$data);
             my $timestamp = $data->{'timestamp'} || 0;
             if ($timestamp < $since) { $done = 1; last; }
+            next if (defined($until) && $timestamp > $until);
             push(@reversed, $data);
         }
     }
     if (!$done && length($buffer) && @reversed < $limit) {
         my $data = eval { decode_json($buffer) };
-        push(@reversed, $data) if ($data && ($data->{'timestamp'} || 0) >= $since);
+        push(@reversed, $data) if ($data && ($data->{'timestamp'} || 0) >= $since &&
+            (!defined($until) || ($data->{'timestamp'} || 0) <= $until));
     }
     close($fh);
     return [ reverse(@reversed) ];
