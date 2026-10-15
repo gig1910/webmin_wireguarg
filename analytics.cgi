@@ -42,17 +42,17 @@ print <<HTML;
   <div class="panel-heading"><strong>$text{'analytics_filters_heading'}</strong></div>
   <div class="panel-body">
  <div class="wg-analytics-filters">
-  <label>$text{'analytics_interface'} <select data-interface><option value="">$text{'analytics_all_interfaces'}</option></select></label>
-  <label>$text{'analytics_peer'} <select data-peer></select></label>
-  <label>$text{'analytics_period'} <select data-period>
+  <label>$text{'analytics_interface'} <select class="form-control" data-interface><option value="">$text{'analytics_all_interfaces'}</option></select></label>
+  <label>$text{'analytics_peer'} <select class="form-control" data-peer></select></label>
+  <label>$text{'analytics_period'} <select class="form-control" data-period>
    <option value="86400">$text{'analytics_24h'}</option>
    <option value="604800">$text{'analytics_7d'}</option>
    <option value="2592000">$text{'analytics_30d'}</option>
    <option value="custom">$text{'analytics_custom'}</option>
   </select></label>
   <span data-custom hidden>
-   <label>$text{'analytics_from'} <input type="datetime-local" data-from></label>
-   <label>$text{'analytics_to'} <input type="datetime-local" data-to></label>
+   <label>$text{'analytics_from'} <input type="datetime-local" class="form-control" data-from></label>
+   <label>$text{'analytics_to'} <input type="datetime-local" class="form-control" data-to></label>
   </span>
   <button class="btn btn-default" data-apply type="button">$text{'analytics_apply'}</button>
  </div>
