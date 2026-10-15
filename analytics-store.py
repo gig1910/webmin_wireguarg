@@ -240,7 +240,7 @@ def query(conn, request):
                       row)) for row in conn.execute(
             "SELECT id,public_key,first_seen,last_seen,active,interface,endpoint,handshake "
             "FROM peers ORDER BY last_seen DESC LIMIT 2000")]
-    if ident and not any(p["id"] == ident for p in peers):
+    if ident and not conn.execute("SELECT 1 FROM peers WHERE id=?",(ident,)).fetchone():
         raise ValueError("peer not found")
     # Windows are 10-minute quantized; include intersecting buckets.
     bfrom = (since//600)*600
@@ -260,9 +260,13 @@ def query(conn, request):
     events = conn.execute(
         "SELECT peer_id,at,type,interface,endpoint,previous_endpoint,detail "
         "FROM events WHERE "+condition+"at>=? AND at<=? "
-        "ORDER BY at DESC,id DESC LIMIT 2000",eargs).fetchall()
+        "ORDER BY at DESC,id DESC LIMIT 2001",eargs).fetchall()
+    events_truncated=len(events)>2000
+    events=events[:2000]
     report = {"ok":True,"from":since,"to":until,"bucket_seconds":600,
-              "truncated":truncated,"peers":peers,"buckets":buckets,
+              "truncated":truncated,"events_truncated":events_truncated,
+              "db_bytes":os.stat(conn.execute("PRAGMA database_list").fetchone()[2]).st_size,
+              "peers":peers,"buckets":buckets,
               "events":[dict(zip(("peer_id","at","type","interface","endpoint","previous","detail"),e))
                         for e in events],
               "totals":{"rx":sum(b["rx"] for b in buckets),

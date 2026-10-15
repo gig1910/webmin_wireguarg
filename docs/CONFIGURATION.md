@@ -68,7 +68,11 @@ The endpoint is the observed remote IP:port, not verified geographic location.
 An endpoint change alone cannot prove a connection or disconnection.
 
 Persistent retention defaults to 365 days and is independent of high-frequency
-JSONL retention. SQLite WAL transactions serialize writes and maintenance,
+JSONL retention. The analytics page displays up to 20,000 traffic buckets and 2,000 events
+per query and explicitly warns when results are truncated. Narrow the requested
+period to inspect earlier activity. The page also displays database size.
+
+SQLite WAL transactions serialize writes and maintenance,
 including browser-initiated deletions. The SQLite backend uses only Python 3
 standard-library modules and does not require Perl DBI/DBD::SQLite.
 

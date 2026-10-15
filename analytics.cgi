@@ -18,6 +18,12 @@ my %labels = map { $_ => $text{$_} || $_ } qw(
     analytics_all_peers analytics_empty analytics_loading analytics_rx analytics_tx
     analytics_truncated analytics_partial analytics_warning analytics_first_seen
     analytics_last_seen analytics_peer_active analytics_peer_inactive
+    analytics_events_limited analytics_db_size
+    analytics_event_first_seen analytics_event_endpoint_observed
+    analytics_event_endpoint_changed analytics_event_handshake_observed
+    analytics_event_active analytics_event_inactive analytics_event_interface_changed
+    analytics_event_counter_reset analytics_event_sample_gap
+    analytics_event_legacy_history_imported
 );
 my $strings = json_encode_utf8(\%labels);
 print <<HTML;
@@ -37,7 +43,7 @@ print <<HTML;
   <button class="btn btn-default" data-apply type="button">$text{'analytics_apply'}</button>
  </div>
  <div data-error class="alert alert-warning" hidden></div>
- <div class="wg-analytics-totals"><strong data-rx></strong><strong data-tx></strong></div>
+ <div class="wg-analytics-totals"><strong data-rx></strong><strong data-tx></strong><small data-db-size></small></div>
  <h3>$text{'analytics_chart'}</h3>
  <canvas data-chart width="900" height="270" style="width:100%;height:270px;border:1px solid #8885;border-radius:4px"></canvas>
  <div data-notes class="wg-analytics-notes"></div>
@@ -139,10 +145,17 @@ print <<HTML;
     peer.value=options.some(o=>o.id===previous)?previous:'';
     root.querySelector('[data-rx]').textContent=labels.analytics_rx+': '+bytes(Number(result.totals.rx));
     root.querySelector('[data-tx]').textContent=labels.analytics_tx+': '+bytes(Number(result.totals.tx));
+    root.querySelector('[data-db-size]').textContent=labels.analytics_db_size+': '+
+      bytes(Number(result.db_bytes));
     const notes=[];
     if(!result.buckets.length && !result.events.length)notes.push(labels.analytics_empty);
-    else notes.push(labels.analytics_partial);
+    else {
+      const covered=new Set((result.buckets||[]).map(b=>Number(b.period)));
+      const expected=Math.ceil((result.to-result.from)/600);
+      if(covered.size<expected)notes.push(labels.analytics_partial);
+    }
     if(result.truncated)notes.push(labels.analytics_truncated);
+    if(result.events_truncated)notes.push(labels.analytics_events_limited);
     root.querySelector('[data-notes]').textContent=notes.join(' ');
     const body=root.querySelector('[data-events]');
     body.replaceChildren();
@@ -152,7 +165,7 @@ print <<HTML;
       const columns=[
         new Date(e.at*1000).toLocaleString(),
         peerData?peerData.public_key.slice(0,16)+'…':e.peer_id.slice(0,16)+'…',
-        e.type,e.endpoint||'—',e.previous||'—'
+        labels['analytics_event_'+e.type]||e.type,e.endpoint||'—',e.previous||'—'
       ];
       for(const cell of columns){
         const td=document.createElement('td');td.textContent=cell;row.append(td);

@@ -99,6 +99,14 @@ class AnalyticsTest(unittest.TestCase):
             "SELECT SUM(rx_bytes) FROM buckets WHERE peer_id=?",
             (self.key_a,)).fetchone()[0],100)
 
+    def test_filtered_events_and_db_size(self):
+        self.sample(self.a,1000,100,100)
+        self.sample(self.a,1005,110,130,"192.0.2.2:40404")
+        result=store.query(self.conn,{"peer_id":self.key_a,"from":900,"to":1100})
+        self.assertTrue(result["db_bytes"]>0)
+        self.assertEqual(result["totals"]["rx"],10)
+        self.assertTrue(any(e["type"]=="endpoint_changed" for e in result["events"]))
+
     def test_prometheus_rejects_unapproved_path(self):
         with self.assertRaises(ValueError):
             store.prometheus(self.conn,{"path":str(self.db)+".prom",
