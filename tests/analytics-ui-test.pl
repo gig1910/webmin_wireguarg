@@ -23,6 +23,9 @@ die "historical range presets incomplete or shorter than 6 hours\n"
            $ui =~ /value="quarter"/ && $ui =~ /value="halfyear"/ &&
            $ui =~ /value="year"/ && $ui =~ /value="custom"/ &&
            $ui !~ /value="2592000"/ && $ui =~ /to-from<21600/;
+die "calendar periods may overflow at month-end\n"
+    unless $ui =~ /d\.setDate\(1\)/ &&
+           $ui =~ /Math\.min\(day,new Date\(d\.getFullYear\(\),d\.getMonth\(\)\+1,0\)\.getDate\(\)\)/;
 die "auto refresh cadence must be off, 10m or 30m only\n"
     unless $ui =~ /data-auto-refresh/ && $ui =~ /value="0" selected/ &&
            $ui =~ /value="600"/ && $ui =~ /value="1800"/ &&

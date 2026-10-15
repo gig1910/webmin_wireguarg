@@ -195,8 +195,13 @@ print <<HTML;
       to=Math.floor(new Date(end.value).getTime()/1000);
     }else if(['month','quarter','halfyear','year'].includes(period.value)){
       const d=new Date(to*1000);
+      const day=d.getDate();
+      // Clamp month/year subtraction at the last day of the target month
+      // (e.g., March 31 -> February 28, leap day -> February 28).
+      d.setDate(1);
       if(period.value==='year')d.setFullYear(d.getFullYear()-1);
       else d.setMonth(d.getMonth()-({month:1,quarter:3,halfyear:6})[period.value]);
+      d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));
       from=Math.floor(d.getTime()/1000);
     }else from=to-Number(period.value);
     if(!Number.isFinite(from) || !Number.isFinite(to) ||
