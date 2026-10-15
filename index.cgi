@@ -4,6 +4,7 @@ ReadParse();
 assert_view_access();
 
 ui_print_header(undef, $text{'index_title'}, '', undef, 1, 1);
+print wg_build_banner();
 my ($items, $list_error) = list_configured_interfaces();
 if ($list_error) {
     print ui_alert_box(html_escape($list_error), 'danger');

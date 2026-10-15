@@ -25,6 +25,7 @@ perl tests/peer-usage-test.pl
 python3 tests/analytics-store-test.py
 perl tests/install-check-test.pl
 perl tests/version-consistency-test.pl
+perl tests/build-info-test.pl
 perl tests/postinstall-fresh-test.pl
 perl tests/uninstall-preservation-test.pl
 perl tests/async-js-test.pl

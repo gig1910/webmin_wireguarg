@@ -17,6 +17,7 @@ my $public_key = $peer ? (get_section_value($peer, 'PublicKey') || '') : '';
 my $title = $new ? $text{'peer_add_title'} : text('peer_title', peer_display_name($peer, $in{'peer'}));
 
 ui_print_header(undef, $title, '', undef, 1, 1);
+print wg_build_banner();
 print '<div id="wg-peer-runtime-error" class="alert alert-warning" style="display:none"></div>' if ($peer);
 
 if ($peer) {
