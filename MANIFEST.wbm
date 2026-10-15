@@ -40,6 +40,7 @@ stats.cgi
 journal.cgi
 collector_status.cgi
 stats-collector.pl
+analytics-store.py
 diagnostic.cgi
 diagnostic_status.cgi
 diagnostic_stop.cgi

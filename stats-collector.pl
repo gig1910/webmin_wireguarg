@@ -10,6 +10,8 @@ use Fcntl qw(:DEFAULT :flock F_GETFL F_SETFL O_NONBLOCK SEEK_SET);
 use POSIX qw(:sys_wait_h);
 use IO::Select;
 use Errno qw(EAGAIN EWOULDBLOCK EINTR);
+use IPC::Open3;
+use Symbol qw(gensym);
 
 require "$FindBin::Bin/lib/collector-config-lib.pl";
 
@@ -30,7 +32,15 @@ my $history_enabled = $effective->{'stats_history_enabled'};
 my $wg = $effective->{'wg_cmd'};
 my $dir = $effective->{'stats_dir'};
 my $interval = $effective->{'stats_refresh_interval'};
-my $retention = $effective->{'stats_history_retention'};
+# High-resolution JSONL is a short-lived cache for the existing live graph.
+# Long-term traffic and events are stored in ten-minute SQLite buckets.
+my $retention = $effective->{'stats_history_retention'} < $effective->{'stats_live_retention'}
+    ? $effective->{'stats_history_retention'} : $effective->{'stats_live_retention'};
+my $analytics_enabled = $effective->{'analytics_enabled'};
+my $analytics_db = "$dir/analytics.sqlite3";
+my $last_prometheus = 0;
+my $last_prune = 0;
+my $analytics_error = '';
 my $runtime_timeout = $effective->{'runtime_timeout'};
 my $max_points = $effective->{'stats_max_points'};
 my $max_file_bytes = $effective->{'stats_effective_file_bytes'};
@@ -219,6 +229,31 @@ sub atomic_json_write {
     return 1;
 }
 
+sub analytics_call
+{
+    my ($action, $payload) = @_;
+    my $python = '/usr/bin/python3';
+    my $script = "$FindBin::Bin/analytics-store.py";
+    return (0, 'Python3 analytics backend missing') if (!-x $python || !-r $script);
+    my ($writer, $reader);
+    my $stderr = gensym();
+    my $pid;
+    eval {
+        $pid = open3($writer, $reader, $stderr, $python, $script, $action, $analytics_db);
+        print {$writer} encode_json($payload);
+        close($writer);
+    };
+    return (0, $@ || 'cannot launch analytics backend') if ($@);
+    my $result = do { local $/; <$reader> };
+    my $error_output = do { local $/; <$stderr> };
+    close($reader); close($stderr);
+    waitpid($pid, 0);
+    my $response = eval { decode_json($result || '') };
+    return (0, $error_output || $result || 'backend failed')
+        if (!$response || !$response->{'ok'} || $? != 0);
+    return (1, $response);
+}
+
 sub history_storage_stats
 {
     my $bytes = 0;
@@ -260,6 +295,9 @@ sub write_health
         max_file_bytes => $max_file_bytes,
         max_points => $max_points,
         retention => $retention,
+        analytics_enabled => $analytics_enabled ? JSON::PP::true() : JSON::PP::false(),
+        analytics_db => $analytics_enabled ? $analytics_db : '',
+        analytics_error => $analytics_error,
         config_fingerprint => $config_fingerprint,
         effective_settings => $effective,
         (%last_compaction_summary ? (last_compaction => \%last_compaction_summary) : ()),
@@ -433,6 +471,32 @@ while (!$stop_requested) {
             interfaces => $interfaces,
         });
 
+        if ($analytics_enabled) {
+            my ($analytics_ok, $result) = analytics_call('ingest', {
+                timestamp => $now, interval => $interval, interfaces => $interfaces,
+            });
+            $analytics_error = $analytics_ok ? '' : "$result";
+            $last_error = join('; ', grep { length($_) } ($last_error,$analytics_error));
+            if ($analytics_ok && $now - $last_prune >= 86400) {
+                my ($clean_ok,$clean_result) = analytics_call('maintain', {
+                    action => 'prune',
+                    before => $now - $effective->{'analytics_retention_days'} * 86400,
+                });
+                $analytics_error = "$clean_result" if (!$clean_ok);
+                $last_prune = $now if ($clean_ok);
+            }
+            if ($analytics_ok && $effective->{'prometheus_enabled'} &&
+                $now - $last_prometheus >= $effective->{'prometheus_interval'}) {
+                my @metrics = grep { /^(?:traffic|peer_state|handshake|events|collector)$/ }
+                    split(/,/, $effective->{'prometheus_metrics'});
+                my ($export_ok,$export_result) = analytics_call('prometheus', {
+                    path => $effective->{'prometheus_textfile_path'},
+                    metrics => \@metrics,
+                });
+                $analytics_error = "$export_result" if (!$export_ok);
+                $last_prometheus = $now if ($export_ok);
+            }
+        }
         if ($history_enabled) {
             foreach my $name (keys(%$interfaces)) {
                 last if ($stop_requested);
@@ -454,6 +518,7 @@ while (!$stop_requested) {
         }
     }
     else { $last_error = join('; ', grep { length($_) } ($maintenance_error, 'wg show all dump failed or timed out')); }
+    $last_error = join('; ',grep { length($_) } ($last_error,$analytics_error));
 
     last if ($stop_requested);
     if ($now - $last_compact >= 600) {

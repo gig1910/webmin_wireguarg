@@ -41,6 +41,40 @@ standard WireGuard configuration remains the source of truth.
 
 Neither field provisions a DNS server or changes system DNS automatically.
 
+## Persistent peer analytics and Prometheus
+
+The collector still takes live snapshots and maintains a short high-frequency
+JSONL cache (one hour by default, capped by `stats_history_retention`) for the
+original runtime interface graph. Independently, the standard-library
+`analytics-store.py` backend writes a persistent SQLite database at
+`stats_dir/analytics.sqlite3`, with restrictive permissions. Each peer is
+identified by the SHA-256 fingerprint of its WireGuard **public** key, never
+by its name, IP address, or a private key. Disabling or deleting a configured
+peer does not delete its records. Replacing the key creates a distinct identity.
+
+Every collector sample updates 10-minute traffic buckets from cumulative
+counter deltas. Small sample intervals crossing bucket boundaries are allocated
+proportionally (an approximation). Counter resets and missing samples are
+recorded as events. Activity events include first observation, inactive/active
+transitions, endpoint changes and newly observed handshake timestamps.
+The endpoint is the observed remote IP:port, not verified geographic location.
+An endpoint change alone cannot prove a connection or disconnection.
+
+Persistent retention defaults to 365 days and is independent of high-frequency
+JSONL retention. SQLite WAL transactions serialize writes and maintenance,
+including browser-initiated deletions. The SQLite backend uses only Python 3
+standard-library modules and does not require Perl DBI/DBD::SQLite.
+
+Prometheus textfile export is **off by default**. Configure the supported
+metric groups (traffic, peer_state, handshake, events, collector), interval,
+and target file under either
+`/var/lib/node_exporter/textfile_collector/` or
+`/var/lib/prometheus/node-exporter/`. The directory must exist.
+Output is an atomic UTF-8 `.prom` replacement; peer labels are public-key
+fingerprints, never private keys, IPs, endpoints, or human-readable peer names.
+Retained traffic is exported as a **gauge** (not a lifetime counter), since
+purging history can decrease it. A collector restart applies changes.
+
 ## Peer traffic consumption by time
 
 The peer details page offers rolling 15-minute, 1-hour, 6-hour, 24-hour and

@@ -328,6 +328,7 @@ def prometheus(conn, request):
 
 
 def main():
+    os.umask(0o077)
     if len(sys.argv)!=3 or sys.argv[1] not in ("ingest","query","maintain","prometheus","health"):
         raise ValueError("usage: analytics-store.py ACTION /absolute/path.sqlite3")
     action,path=sys.argv[1:]
