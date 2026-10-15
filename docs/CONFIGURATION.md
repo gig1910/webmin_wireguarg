@@ -57,6 +57,13 @@ counter deltas. Small sample intervals crossing bucket boundaries are allocated
 proportionally (an approximation). Counter resets and missing samples are
 recorded as events. Activity events include first observation, inactive/active
 transitions, endpoint changes and newly observed handshake timestamps.
+On first sight of a known public key, pre-existing raw JSONL samples are
+imported into the SQLite buckets once, without deleting the source file.
+Unrecognized historical JSONL files belonging to peers deleted before migration
+cannot be mapped back to a public key from their irreversible filename hashes;
+these files must be retained separately by an administrator if historical
+recovery is required. Never map historical data by reused addresses or names.
+
 The endpoint is the observed remote IP:port, not verified geographic location.
 An endpoint change alone cannot prove a connection or disconnection.
 

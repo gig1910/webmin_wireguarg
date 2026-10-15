@@ -109,6 +109,48 @@ def split_delta(conn, ident, before, after, rx, tx, gap=0):
                samples=1 if last else 0, gaps=gap if last else 0)
 
 
+def migrate_legacy(conn, ident, public, interface, directory, stamp, interval):
+    """Import once for a known key. Old JSONL filenames contain SHA256(key).
+
+    The irreversible old filename hash cannot identify already deleted peers.
+    We intentionally do not guess based on reused IP addresses or names.
+    """
+    marker="legacy_import:"+ident
+    if conn.execute("SELECT 1 FROM properties WHERE key=?",(marker,)).fetchone():
+        return
+    imported=0
+    if directory:
+        filename=interface+"-peer-"+hashlib.sha256(public.encode("ascii")).hexdigest()+".jsonl"
+        old=Path(directory)/filename
+        if old.is_file() and not old.is_symlink():
+            last=None
+            with old.open("r",encoding="utf-8") as stream:
+                for line in stream:
+                    try:
+                        record=json.loads(line)
+                        t=int(record["timestamp"])
+                        rx=int(record["rx"])
+                        tx=int(record["tx"])
+                        if t <= 0 or rx < 0 or tx < 0:
+                            continue
+                    except (ValueError,KeyError,TypeError,OverflowError):
+                        continue
+                    if last and t > last[0]:
+                        before,old_rx,old_tx=last
+                        if rx < old_rx or tx < old_tx:
+                            bucket(conn,ident,t,0,0,resets=1)
+                        else:
+                            gap=int(t-before > max(60,3*interval))
+                            split_delta(conn,ident,before,t,rx-old_rx,tx-old_tx,gap)
+                            imported+=1
+                    last=(t,rx,tx)
+    if imported:
+        event(conn,ident,stamp,"legacy_history_imported",interface,
+              detail=str(imported))
+    conn.execute("INSERT INTO properties(key,value) VALUES(?,?)",
+                 (marker,str(imported)))
+
+
 def ingest(conn, request):
     now = int(request.get("timestamp") or time.time())
     interval = max(2, min(3600, int(request.get("interval") or 5)))
@@ -135,6 +177,8 @@ def ingest(conn, request):
                 previous = conn.execute("SELECT active,endpoint,handshake,sample_at,rx,tx,interface "
                                         "FROM peers WHERE id=?", (ident,)).fetchone()
                 if previous is None:
+                    migrate_legacy(conn,ident,public,interface,request.get("legacy_dir"),
+                                   now,interval)
                     conn.execute("INSERT INTO peers(id,public_key,first_seen,last_seen,active,interface,"
                                  "endpoint,handshake,sample_at,rx,tx) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
                                  (ident,public,now,now,1,interface,endpoint,handshake,now,rx,tx))

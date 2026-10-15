@@ -22,6 +22,7 @@ perl tests/json-boolean-literals-test.pl
 perl tests/dependency-test.pl
 perl tests/runtime-async-test.pl
 perl tests/peer-usage-test.pl
+python3 tests/analytics-store-test.py
 perl tests/install-check-test.pl
 perl tests/version-consistency-test.pl
 perl tests/postinstall-fresh-test.pl

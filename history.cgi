@@ -39,7 +39,8 @@ eval {
 
     my $effective = collector_effective_settings(\%config);
     my $usage = peer_usage_summary($history, $from, $to, $effective->{'stats_refresh_interval'});
-    my $retention = $effective->{'stats_history_retention'};
+    my $retention = $effective->{'stats_history_retention'} < $effective->{'stats_live_retention'}
+        ? $effective->{'stats_history_retention'} : $effective->{'stats_live_retention'};
     json_response({
         ok => JSON::PP::true(),
         timestamp => $now, from => $from, to => $to,

@@ -474,6 +474,7 @@ while (!$stop_requested) {
         if ($analytics_enabled) {
             my ($analytics_ok, $result) = analytics_call('ingest', {
                 timestamp => $now, interval => $interval, interfaces => $interfaces,
+                legacy_dir => $dir,
             });
             $analytics_error = $analytics_ok ? '' : "$result";
             $last_error = join('; ', grep { length($_) } ($last_error,$analytics_error));
