@@ -164,8 +164,8 @@ print <<HTML;
         group.className='wg-analytics-bar-group';
         const intervalStart=first+i*step, intervalEnd=Math.min(last,intervalStart+step);
         group.title=new Date(intervalStart*1000).toLocaleString()+' — '+
-           new Date(intervalEnd*1000).toLocaleString()+'\n'+
-           labels.analytics_graph_rx+': '+bytes(item.rx)+'\n'+
+           new Date(intervalEnd*1000).toLocaleString()+'\\n'+
+           labels.analytics_graph_rx+': '+bytes(item.rx)+'\\n'+
            labels.analytics_graph_tx+': '+bytes(item.tx);
         for(const [kind,value] of [['rx',item.rx],['tx',item.tx]]){
           const bar=document.createElement('span');
@@ -195,7 +195,7 @@ print <<HTML;
       opt.textContent=p.id ? peerLabel(p)+
            (p.active?' • '+labels.analytics_peer_active:' • '+labels.analytics_peer_inactive) :
            labels.analytics_all_peers;
-      if(p.id)opt.title='PublicKey: '+p.public_key+'\nSHA256: '+p.id;
+      if(p.id)opt.title='PublicKey: '+p.public_key+'\\nSHA256: '+p.id;
       peer.append(opt);
     }
     peer.value=options.some(o=>o.id===previous)?previous:'';
