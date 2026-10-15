@@ -107,6 +107,22 @@ class AnalyticsTest(unittest.TestCase):
         self.assertEqual(result["totals"]["rx"],10)
         self.assertTrue(any(e["type"]=="endpoint_changed" for e in result["events"]))
 
+    def test_prometheus_text_contains_only_fingerprints(self):
+        self.sample(self.a,1000,100,200,endpoint="192.0.2.5:12345")
+        self.sample(self.a,1005,200,300)
+        output=store.render_prometheus_text(self.conn,{"traffic","peer_state","handshake"})
+        self.assertIn('peer="'+self.key_a+'"',output)
+        self.assertIn("# TYPE webmin_wg_peer_stored_rx_bytes gauge",output)
+        self.assertNotIn(self.a,output)
+        self.assertNotIn("192.0.2.5",output)
+        self.assertNotIn("PrivateKey",output)
+
+    def test_reopen_preserves_records(self):
+        self.sample(self.a,1000,10,10)
+        self.conn.close()
+        self.conn=store.connect(str(self.db))
+        self.assertEqual(self.conn.execute("SELECT COUNT(*) FROM peers").fetchone()[0],1)
+
     def test_prometheus_rejects_unapproved_path(self):
         with self.assertRaises(ValueError):
             store.prometheus(self.conn,{"path":str(self.db)+".prom",

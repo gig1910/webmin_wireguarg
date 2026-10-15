@@ -334,6 +334,21 @@ def prometheus(conn, request):
     enabled=set(request.get("metrics") or [])
     if not enabled.issubset(VALID_METRICS):
         raise ValueError("invalid metrics selection")
+    output=render_prometheus_text(conn,enabled)
+    fd,tmp=tempfile.mkstemp(dir=str(dest.parent),prefix=".webmin-wg-",suffix=".tmp")
+    try:
+        with os.fdopen(fd,"w",encoding="utf-8") as f:
+            f.write(output)
+            f.flush()
+            os.fsync(f.fileno())
+        os.chmod(tmp,0o644)
+        os.replace(tmp,path)
+    finally:
+        if os.path.exists(tmp): os.unlink(tmp)
+    return {"ok":True,"metrics":len(output.splitlines())}
+
+
+def render_prometheus_text(conn,enabled):
     out=[]
     def metric(name,description,kind,rows):
         out.append("# HELP "+name+" "+description)
@@ -362,18 +377,7 @@ def prometheus(conn, request):
     if "collector" in enabled:
         metric("webmin_wg_analytics_export_timestamp_seconds","Last successful exporter run","gauge",
                ["webmin_wg_analytics_export_timestamp_seconds "+str(int(time.time()))])
-    fd,tmp=tempfile.mkstemp(dir=str(dest.parent),prefix=".webmin-wg-",suffix=".tmp")
-    try:
-        with os.fdopen(fd,"w",encoding="utf-8") as f:
-            f.write("\n".join(out)+"\n")
-            f.flush()
-            os.fsync(f.fileno())
-        os.chmod(tmp,0o644)
-        os.replace(tmp,path)
-    finally:
-        if os.path.exists(tmp): os.unlink(tmp)
-    return {"ok":True,"metrics":len(out)}
-
+    return "\n".join(out)+"\n"
 
 def main():
     os.umask(0o077)
