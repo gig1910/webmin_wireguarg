@@ -17,6 +17,25 @@ my $peer_page=slurp("$FindBin::Bin/../edit_peer.cgi");
 my $manifest=slurp("$FindBin::Bin/../MANIFEST.wbm");
 die "analytics tab missing\n" if $ui !~ /nav nav-tabs/ || $index !~ /analytics\.cgi/;
 die "date and peer filters missing\n" if $ui !~ /data-peer/ || $ui !~ /data-from/ || $ui !~ /data-to/;
+die "historical range presets incomplete or shorter than 6 hours\n"
+    unless $ui =~ /value="21600"/ && $ui =~ /value="86400"/ &&
+           $ui =~ /value="604800"/ && $ui =~ /value="month"/ &&
+           $ui =~ /value="quarter"/ && $ui =~ /value="halfyear"/ &&
+           $ui =~ /value="year"/ && $ui =~ /value="custom"/ &&
+           $ui !~ /value="2592000"/ && $ui =~ /to-from<21600/;
+die "auto refresh cadence must be off, 10m or 30m only\n"
+    unless $ui =~ /data-auto-refresh/ && $ui =~ /value="0" selected/ &&
+           $ui =~ /value="600"/ && $ui =~ /value="1800"/ &&
+           $ui !~ /value="300"/ && $ui !~ /value="5"/;
+die "auto refresh must pause for hidden and fixed custom periods\n"
+    unless $ui =~ /document\.hidden/ && $ui =~ /period\.value==='custom'/ &&
+           $ui =~ /clearTimeout\(autoTimer\)/ &&
+           $ui =~ /visibilitychange/ && $ui =~ /pagehide/;
+die "mirrored analytics graph or runtime theme colors missing\n"
+    unless $ui =~ /wg-analytics-half\.tx/ && $ui =~ /wg-analytics-half\.rx/ &&
+           $ui =~ /--primary-color/ && $ui =~ /--success-color/ &&
+           $ui =~ /data-chart-ymax/ && $ui =~ /data-chart-ymin/;
+
 die "traffic chart HTML bar rendering missing\n"
     if $ui !~ /data-chart-bars/ || $ui !~ /wg-analytics-bar-group/ ||
        $ui !~ /totals\[slot\]\.rx\+=/ || $ui =~ /canvas\.getContext/;
