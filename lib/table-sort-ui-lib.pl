@@ -45,21 +45,31 @@ function ip(t){
   const middle=halves.length===2?Array(8-left.length-right.length).fill('0'):[];
   return [6,...left.concat(middle,right).map(v=>parseInt(v,16))];
 }
+// NULL is greater than every present value for *all* column types.
+ // Thus ASC: NULL last; DESC: NULL first. Zero bytes is NOT NULL.
+function missing(v){
+  return v===null||v===undefined||v===''||
+    (typeof v==='number'&&!Number.isFinite(v));
+}
 function compare(a,b,kind){
+  if(missing(a))return missing(b)?0:1;
+  if(missing(b))return -1;
   if(kind==='ip'||kind==='endpoint'){
-    if(!a||!b)return a?(b?0:-1):(b?1:0);
     for(let i=0;i<Math.max(a.length,b.length);i++){
       const n=(a[i]||0)-(b[i]||0);if(n)return Math.sign(n);
-    }return 0;
+    }
+    return 0;
   }
-  if(a==null||a==='')return b==null||b===''?0:1;
-  if(b==null||b==='')return -1;
   if(typeof a==='number'&&typeof b==='number')return Math.sign(a-b);
   return collator.compare(String(a),String(b));
 }
 function value(row,i,kind){
   const cell=row.cells[i];if(!cell)return null;
   const t=cell.textContent.trim();
+  // Webmin uses localized "Never" for missing handshakes, not a date.
+  // Treat placeholders as missing values, not as alphabetic strings.
+  if(kind!=='name' && /^(?:null|never|никогда|—|-|\(none\))$/i.test(t))
+    return null;
   if(kind==='name')return (cell.querySelector('a')||cell).textContent.trim();
   if(kind==='state'){
     const el=cell.querySelector('[data-wg-peer-state]');
@@ -77,7 +87,8 @@ function value(row,i,kind){
   }
   if(kind==='time'){
     const d=t.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4}),?\s+(\d{1,2}):(\d\d)(?::(\d\d))?/);
-    return d?new Date(+d[3],+d[2]-1,+d[1],+d[4],+d[5],+(d[6]||0)).getTime():Date.parse(t);
+    const time=d?new Date(+d[3],+d[2]-1,+d[1],+d[4],+d[5],+(d[6]||0)).getTime():Date.parse(t);
+    return Number.isFinite(time)?time:null;
   }
   return t;
 }
@@ -119,7 +130,7 @@ function attach(wrapper,kinds){
   });
   return {apply};
 }
-window.WireGuardTableSort={version:1,attach,ip};
+window.WireGuardTableSort={version:1,attach,ip,compare,value};
 })();
 </script>
 SORTABLE

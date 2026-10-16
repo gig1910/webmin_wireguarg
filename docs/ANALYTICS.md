@@ -51,3 +51,7 @@ Select **6h, day, week, calendar month, quarter, half-year, year** or a custom r
 ### Unified charts, tabs and sorting
 
 The history plot uses SVG lines and translucent fills with the same theme colors, grid and centered zero axis as runtime charts (**TX up, RX down**). It shows bytes per rollup interval, not speed; missing intervals are not connected. **Graph** and **Events** are exclusive inner tabs, while filters and summary stay shared. Clicking an informational table heading toggles ascending/descending sort for peers and events. The **first AllowedIPs address** is compared numerically for IPv4/IPv6. RX/TX and handshakes sort using raw runtime numbers and update with refreshes; action controls are unaffected.
+
+### Missing-value order
+
+`NULL`, Never, absent handshake/measurement and other missing cells compare as **greater than every present value**, across dates, IPs and numeric columns. Ascending sorts place them last; descending sorts place them first. Zero bytes remains the real value `0`, not NULL.
