@@ -60,6 +60,7 @@ lib/firewall-ufw-lib.pl
 lib/config-lib.pl
 lib/runtime-lib.pl
 lib/api-ui-lib.pl
+lib/table-sort-ui-lib.pl
 lib/collector-config-lib.pl
 lib/metrics-lib.pl
 lib/analytics-api-lib.pl

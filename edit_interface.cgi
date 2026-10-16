@@ -100,12 +100,14 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
 
 if (@rows) {
     print '<div class="wg-runtime-time">'.$text{'runtime_updated'}.': <span data-wg-runtime-time>'.$text{'runtime_loading'}.'</span></div>';
+    print '<div data-wg-peer-sort-table="1">';
     print ui_columns_start(
         [$text{'interface_peer_name'}, $text{'interface_peer_state'}, $text{'interface_peer_allowed'}, $text{'interface_peer_endpoint'}, $text{'interface_peer_handshake'}, $text{'interface_peer_rx'}, $text{'interface_peer_tx'}, $text{'interface_peer_actions'}],
         100, 0, undef, $text{'interface_peers'}
     );
     print ui_columns_row($_) for @rows;
     print ui_columns_end();
+    print '</div>';
 }
 else {
     print ui_alert_box($text{'interface_no_peers'}, 'info');
@@ -145,6 +147,7 @@ my $js_refresh = json_encode_utf8($text{'journal_refresh'});
 my $runtime_error_prefix = $text{'index_runtime_error'};
 $runtime_error_prefix =~ s/\$1//g;
 my $js_runtime_error_prefix = json_encode_utf8($runtime_error_prefix);
+print wg_table_sort_script();
 print <<SCRIPT;
 <style>
 .wg-peer-toggle { margin: 0; display: inline-block; }
@@ -183,6 +186,9 @@ print <<SCRIPT;
     const refreshText = $js_refresh;
     const runtimeErrorPrefix = $js_runtime_error_prefix;
     const requestControllers = new Set();
+    const tableSort = window.WireGuardTableSort && window.WireGuardTableSort.attach(
+        root.querySelector('[data-wg-peer-sort-table]'),
+        ['name','state','ip','endpoint','handshake','bytes','bytes','actions']);
     let destroyed = false;
 
     function findById(id) {
@@ -245,9 +251,11 @@ print <<SCRIPT;
         const tx = root.querySelector('[data-wg-tx="' + CSS.escape(id) + '"]');
         if (handshake) handshake.textContent = disabled ? peerDisabledText : runtimeLoadingText;
         if (disabled) {
-            if (rx) rx.textContent = '—';
-            if (tx) tx.textContent = '—';
+            if (rx) { rx.textContent = '—'; rx.dataset.sortBytes = ''; }
+            if (tx) { tx.textContent = '—'; tx.dataset.sortBytes = ''; }
+            if (handshake) handshake.dataset.sortEpoch = '0';
         }
+        if (tableSort) tableSort.apply();
     }
 
     function showPeerResult(message, kind) {
@@ -421,22 +429,26 @@ print <<SCRIPT;
             }
             const peer = peers.get(id);
             element.textContent = peer ? (peer.handshake_text || '-') : (active ? '-' : notRunningText);
+            element.dataset.sortEpoch = peer ? String(peer.handshake || 0) : '0';
         });
         root.querySelectorAll('[data-wg-rx]').forEach(function(element) {
             const id = element.dataset.wgRx;
             if (isPeerDisabled(id)) { element.textContent = '—'; return; }
             const peer = peers.get(id);
             element.textContent = peer ? formatBytes(peer.rx) : '—';
+            element.dataset.sortBytes = peer ? String(peer.rx || 0) : '';
         });
         root.querySelectorAll('[data-wg-tx]').forEach(function(element) {
             const id = element.dataset.wgTx;
             if (isPeerDisabled(id)) { element.textContent = '—'; return; }
             const peer = peers.get(id);
             element.textContent = peer ? formatBytes(peer.tx) : '—';
+            element.dataset.sortBytes = peer ? String(peer.tx || 0) : '';
         });
         root.querySelectorAll('[data-wg-runtime-time]').forEach(function(element) {
             element.textContent = new Date((data.timestamp || Date.now() / 1000) * 1000).toLocaleString();
         });
+        if (tableSort) tableSort.apply();
         const error = findById('wg-interface-runtime-error');
         if (error) error.style.display = 'none';
     }

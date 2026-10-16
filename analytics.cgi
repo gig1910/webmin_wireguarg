@@ -39,6 +39,7 @@ my %labels = map { $_ => $text{$_} || $_ } qw(
     analytics_auto_custom_note analytics_graph_zero analytics_error_time
 );
 my $strings = json_encode_utf8(\%labels);
+print wg_table_sort_script();
 print <<HTML;
 <div id="wg-analytics" data-url="$url">
  <section class="panel panel-default wg-analytics-section">
@@ -104,7 +105,7 @@ print <<HTML;
  <section class="panel panel-default wg-analytics-section">
   <div class="panel-heading"><strong>$text{'analytics_events'}</strong></div>
   <div class="panel-body">
- <div class="table-responsive wg-analytics-table"><table class="table table-striped table-hover">
+ <div class="table-responsive wg-analytics-table" data-wg-event-sort-table><table class="table table-striped table-hover">
  <thead><tr><th>$text{'analytics_event_time'}</th><th>$text{'analytics_peer'}</th><th>$text{'analytics_event_type'}</th><th>$text{'analytics_event_endpoint'}</th><th>$text{'analytics_event_previous'}</th></tr></thead>
  <tbody data-events></tbody></table></div>
  <p class="help-block">$text{'analytics_warning'}</p>
@@ -175,6 +176,8 @@ print <<HTML;
   const custom=root.querySelector('[data-custom]'), start=root.querySelector('[data-from]');
   const end=root.querySelector('[data-to]'), output=root.querySelector('[data-error]');
   const graph=root.querySelector('[data-chart]'), graphBars=root.querySelector('[data-chart-bars]');
+  const eventSort=window.WireGuardTableSort && window.WireGuardTableSort.attach(
+    root.querySelector('[data-wg-event-sort-table]'),['time','name','text','ip','ip']);
   let data=null, seq=0, controller=null, autoTimer=null;
   function localInput(t) {
     const d=new Date(t), pad=x=>String(x).padStart(2,'0');
@@ -349,6 +352,7 @@ print <<HTML;
       }
       body.append(row);
     }
+    if(eventSort)eventSort.apply();
     draw();
   }
   function scheduleAuto(){
