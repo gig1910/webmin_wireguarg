@@ -8,16 +8,15 @@ open(my $fh,'<',$path) or die $!;
 my $source;
 { local $/; $source = <$fh>; }
 close($fh);
-die "HTML chart missing" unless $source =~ /data-chart-bars/ &&
+die "SVG chart missing" unless $source =~ /data-chart-svg/ &&
     $source =~ /class="wg-analytics-chart"/;
-die "per-bucket aggregation missing" unless $source =~ /totals\[slot\]\.rx\+=/ &&
-    $source =~ /totals\[slot\]\.tx\+=/;
-die "historical chart must use server-bounded grouped intervals"
-    unless $source =~ /data\.bucket_seconds/;
-die "runtime-style TX above RX zero line missing"
-    unless $source =~ /\['tx',item\.tx\],\['rx',item\.rx\]/ &&
-           $source =~ /wg-analytics-half/;
-
+die "historical graph must use SQLite display intervals" unless $source =~ /data\.bucket_seconds/;
+die "SVG line/area TX-above/RX-below rendering missing"
+    unless $source =~ /series\('tx',-1\);series\('rx',1\)/ &&
+           $source =~ /fill-opacity/ && $source =~ /stroke-width/ &&
+           $source =~ /createElementNS\(svgNs/;
+die "theme colors lost" unless $source =~ /--primary-color/ &&
+    $source =~ /--success-color/;
 die "canvas still used" if $source =~ /getContext\('2d'\)/;
 die "names not used" unless $source =~ /peerLabel\(p\)/;
 

@@ -34,14 +34,19 @@ die "auto refresh must pause for hidden and fixed custom periods\n"
     unless $ui =~ /document\.hidden/ && $ui =~ /period\.value==='custom'/ &&
            $ui =~ /clearTimeout\(autoTimer\)/ &&
            $ui =~ /visibilitychange/ && $ui =~ /pagehide/;
-die "mirrored analytics graph or runtime theme colors missing\n"
-    unless $ui =~ /wg-analytics-half\.tx/ && $ui =~ /wg-analytics-half\.rx/ &&
+die "SVG mirrored graph or theme colors missing"
+    unless $ui =~ /series\('tx',-1\);series\('rx',1\)/ &&
+           $ui =~ /createElementNS\(svgNs/ && $ui =~ /fill-opacity/ &&
            $ui =~ /--primary-color/ && $ui =~ /--success-color/ &&
-           $ui =~ /data-chart-ymax/ && $ui =~ /data-chart-ymin/;
-
-die "traffic chart HTML bar rendering missing\n"
-    if $ui !~ /data-chart-bars/ || $ui !~ /wg-analytics-bar-group/ ||
-       $ui !~ /totals\[slot\]\.rx\+=/ || $ui =~ /canvas\.getContext/;
+           $ui =~ /data-chart-svg/;
+die "two exclusive sub-tabs missing"
+    unless $ui =~ /data-wg-analytics-tab="graph"/ &&
+           $ui =~ /data-wg-analytics-tab="events"/ &&
+           $ui =~ /data-wg-analytics-pane="graph"/ &&
+           $ui =~ /data-wg-analytics-pane="events"/ &&
+           $ui =~ /aria-selected/ && $ui =~ /pane\.hidden/;
+die "event sorting missing"
+    unless $ui =~ /data-wg-event-sort-table/ && $ui =~ /eventSort\.apply\(\)/;
 die "peer name in selector and event list missing\n"
     if $ui !~ /peerLabel\(p\)/ || $ui !~ /peerLabel\(peerData\)/;
 die "last handshake and confirmed IP missing from analytics\n"
@@ -61,6 +66,11 @@ die "theme panel sections and history table missing\n"
     unless $ui =~ /panel panel-default wg-analytics-section/ &&
            $ui =~ /table table-striped table-hover/ &&
            $ui =~ /wg-analytics-danger/;
+die "live peer sorting or updated counter keys missing"
+    unless $interface =~ /data-wg-peer-sort-table/ &&
+           $interface =~ /WireGuardTableSort\.attach/ &&
+           $interface =~ /tableSort\.apply\(\)/ &&
+           $interface =~ /sortEpoch/ && $interface =~ /sortBytes/;
 die "peer history link lost Webmin navigation\n"
     unless $ui =~ /data-wg-module-navigation/ && $ui =~ /peerData\.peer_url/;
 
