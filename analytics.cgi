@@ -37,6 +37,7 @@ my %labels = map { $_ => $text{$_} || $_ } qw(
     analytics_6h analytics_month analytics_quarter analytics_halfyear analytics_year
     analytics_auto_refresh analytics_auto_off analytics_auto_10m analytics_auto_30m
     analytics_auto_custom_note analytics_graph_zero analytics_error_time
+    analytics_tab_graph analytics_tab_events
 );
 my $strings = json_encode_utf8(\%labels);
 print wg_table_sort_script();
@@ -85,6 +86,11 @@ print <<HTML;
    <p class="help-block" data-db-size></p>
   </div>
  </section>
+ <ul class="nav nav-tabs wg-analytics-subtabs" role="tablist" aria-label="$text{'analytics_title'}">
+  <li class="active" role="presentation"><a href="#wg-analytics-chart-pane" role="tab" aria-controls="wg-analytics-chart-pane" aria-selected="true" data-wg-analytics-tab="graph">$text{'analytics_tab_graph'}</a></li>
+  <li role="presentation"><a href="#wg-analytics-events-pane" role="tab" aria-controls="wg-analytics-events-pane" aria-selected="false" data-wg-analytics-tab="events">$text{'analytics_tab_events'}</a></li>
+ </ul>
+ <div id="wg-analytics-chart-pane" data-wg-analytics-pane="graph" role="tabpanel">
  <section class="panel panel-default wg-analytics-section">
   <div class="panel-heading"><strong>$text{'analytics_chart'}</strong></div>
   <div class="panel-body">
@@ -102,6 +108,8 @@ print <<HTML;
  <p class="help-block">$text{'analytics_bucket_note'}</p>
   </div>
  </section>
+ </div>
+ <div id="wg-analytics-events-pane" data-wg-analytics-pane="events" role="tabpanel" hidden>
  <section class="panel panel-default wg-analytics-section">
   <div class="panel-heading"><strong>$text{'analytics_events'}</strong></div>
   <div class="panel-body">
@@ -111,10 +119,13 @@ print <<HTML;
  <p class="help-block">$text{'analytics_warning'}</p>
   </div>
  </section>
+ </div>
 </div>
 <style>
 /* Theme-native panels, form controls and responsive tables; only layout
    dimensions are local. No independent analytics color palette. */
+.wg-analytics-subtabs{margin:14px 0 0}
+.wg-analytics-subtabs>li>a{cursor:pointer}
 .wg-analytics-section{margin:12px 0}
 .wg-analytics-section>.panel-heading{padding:8px 10px}
 .wg-analytics-section>.panel-body{padding:12px}
@@ -401,6 +412,21 @@ print <<HTML;
   });
   iface.addEventListener('change',()=>{peer.value='';refresh()});
   peer.addEventListener('change',refresh);
+  root.querySelectorAll('[data-wg-analytics-tab]').forEach(button=>{
+    button.addEventListener('click',event=>{
+      event.preventDefault();
+      const selected=button.dataset.wgAnalyticsTab;
+      root.querySelectorAll('[data-wg-analytics-pane]').forEach(pane=>{
+        pane.hidden=pane.dataset.wgAnalyticsPane!==selected;
+      });
+      root.querySelectorAll('[data-wg-analytics-tab]').forEach(item=>{
+        const active=item===button;
+        item.setAttribute('aria-selected',active?'true':'false');
+        item.parentElement.classList.toggle('active',active);
+      });
+      if(selected==='graph')draw();
+    });
+  });
   root.querySelector('[data-apply]').addEventListener('click',refresh);
   auto.addEventListener('change',scheduleAuto);
   document.addEventListener('visibilitychange',()=>{
