@@ -297,8 +297,8 @@ print <<HTML;
         for(const point of segment){
           const dot=element('circle',{cx:point.x,cy:point.y,r:3,fill:color,'fill-opacity':.01});
           element('title',{},new Date(point.time*1000).toLocaleString()+
-            '\n'+labels.analytics_graph_tx+': '+bytes(point.tx)+
-            '\n'+labels.analytics_graph_rx+': '+bytes(point.rx),dot);
+            '\\n'+labels.analytics_graph_tx+': '+bytes(point.tx)+
+            '\\n'+labels.analytics_graph_rx+': '+bytes(point.rx),dot);
         }
       }
     }
