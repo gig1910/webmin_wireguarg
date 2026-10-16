@@ -100,10 +100,8 @@ print <<HTML;
    <small data-chart-scale></small>
  </div>
  <div class="wg-analytics-chart" data-chart role="img" aria-label="$text{'analytics_chart'}">
-   <div class="wg-analytics-y-axis"><span data-chart-ymax></span><span>$text{'analytics_graph_zero'}</span><span data-chart-ymin></span></div>
-   <div class="wg-analytics-chart-bars" data-chart-bars></div>
+   <svg class="wg-traffic-canvas wg-analytics-svg" data-chart-svg width="100%" height="300" role="presentation"></svg>
  </div>
- <div class="wg-analytics-chart-axis"><span data-chart-from></span><span data-chart-to></span></div>
  <div data-notes class="wg-analytics-notes help-block"></div>
  <p class="help-block">$text{'analytics_bucket_note'}</p>
   </div>
@@ -150,24 +148,9 @@ print <<HTML;
 .wg-analytics-danger{border-color:rgba(190,50,40,.45)}
 \@media(max-width:700px){.wg-analytics-filters label,.wg-analytics-filters [data-peer],
 .wg-analytics-steps label{width:100%;min-width:0}}
-.wg-analytics-chart{display:flex!important;width:100%;height:286px;min-height:286px;overflow:hidden;
-  padding:8px 10px 4px;border:1px solid rgba(127,127,127,.45);border-radius:4px}
-.wg-analytics-y-axis{display:flex;flex-direction:column;justify-content:space-between;flex:0 0 72px;
-  text-align:right;padding:0 8px 0 0;font-size:11px;opacity:.85}
-.wg-analytics-chart-bars{display:flex!important;align-items:stretch;position:relative;flex:1 1 auto;
-  min-width:0;height:264px;min-height:264px;gap:1px;
-  background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(12.5% - 1px),
-  rgba(127,127,127,.20) calc(12.5% - 1px),rgba(127,127,127,.20) 12.5%)}
-.wg-analytics-chart-bars::after{content:'';position:absolute;top:50%;left:0;right:0;
-  border-top:1px solid rgba(127,127,127,.7);pointer-events:none}
-.wg-analytics-bar-group{display:flex;flex:1 1 0;min-width:0;flex-direction:column;align-items:stretch;height:100%}
-.wg-analytics-half{height:50%;min-height:0;display:flex;flex-direction:column;align-items:stretch}
-.wg-analytics-half.tx{justify-content:flex-end}
-.wg-analytics-half.rx{justify-content:flex-start}
-.wg-analytics-bar{display:block;flex:0 0 auto;width:100%;min-height:0;max-height:100%}
-.wg-analytics-bar.tx{background-color:var(--primary-color,#4f8dd6)}
-.wg-analytics-bar.rx{background-color:var(--success-color,#42a878)}
-.wg-analytics-chart-empty{margin:auto;align-self:center;text-align:center;opacity:.8}
+.wg-analytics-chart{display:block;width:100%;min-height:300px}
+.wg-analytics-svg{display:block;width:100%;height:300px;border:1px solid rgba(127,127,127,.25);
+  border-radius:4px;overflow:hidden}
 .wg-analytics-chart-legend,.wg-analytics-chart-axis{display:flex;align-items:center;gap:8px;margin:8px 0}
 .wg-analytics-chart-legend small{margin-left:auto;opacity:.85}
 .wg-analytics-chart-axis{justify-content:space-between;font-size:12px;opacity:.85}
@@ -186,7 +169,7 @@ print <<HTML;
   const auto=root.querySelector('[data-auto-refresh]');
   const custom=root.querySelector('[data-custom]'), start=root.querySelector('[data-from]');
   const end=root.querySelector('[data-to]'), output=root.querySelector('[data-error]');
-  const graph=root.querySelector('[data-chart]'), graphBars=root.querySelector('[data-chart-bars]');
+  const graph=root.querySelector('[data-chart]'), chartSvg=root.querySelector('[data-chart-svg]');
   const eventSort=window.WireGuardTableSort && window.WireGuardTableSort.attach(
     root.querySelector('[data-wg-event-sort-table]'),['time','name','text','ip','ip']);
   let data=null, seq=0, controller=null, autoTimer=null;
@@ -229,63 +212,105 @@ print <<HTML;
     return (name||key)+' ('+(p.interface||'—')+' · '+key+')';
   }
   function draw() {
-    if(!data||!graphBars)return;
-    const raw=data.buckets||[];
-    const first=Math.floor(data.from/600)*600;
-    const last=data.to;
-    const span=Math.max(600,last-first);
-    // The backend groups long histories without discarding source 10m data.
+    if(!data||!chartSvg||graph.closest('[data-wg-analytics-pane]').hidden)return;
+    const rows=data.buckets||[];
     const step=Math.max(600,Number(data.bucket_seconds)||600);
+    const first=Math.floor(data.from/600)*600;
+    const span=Math.max(600,data.to-first);
     const slots=Math.max(1,Math.ceil(span/step));
-    const totals=Array.from({length:slots},()=>({rx:0,tx:0}));
-    for(const b of raw){
-      const slot=Math.floor((Number(b.period)-first)/step);
-      if(slot<0||slot>=slots)continue;
-      // Sum same-timestamp samples for all peers, rather than overplotting.
-      totals[slot].rx+=Math.max(0,Number(b.rx)||0);
-      totals[slot].tx+=Math.max(0,Number(b.tx)||0);
+    const values=Array.from({length:slots},()=>({tx:0,rx:0,observed:false}));
+    for(const row of rows){
+      const pos=Math.floor((Number(row.period)-first)/step);
+      if(pos<0||pos>=slots)continue;
+      values[pos].tx+=Math.max(0,Number(row.tx)||0);
+      values[pos].rx+=Math.max(0,Number(row.rx)||0);
+      values[pos].observed=true;
     }
-    graphBars.replaceChildren();
-    const maximum=Math.max(1,...totals.map(s=>Math.max(s.rx,s.tx)));
-    if(!raw.length){
-      const empty=document.createElement('div');
-      empty.className='wg-analytics-chart-empty';
-      empty.textContent=labels.analytics_graph_empty;
-      graphBars.append(empty);
-    }else{
-      const fragment=document.createDocumentFragment();
-      for(let i=0;i<slots;i++){
-        const item=totals[i];
-        const group=document.createElement('div');
-        group.className='wg-analytics-bar-group';
-        const intervalStart=first+i*step, intervalEnd=Math.min(last,intervalStart+step);
-        group.title=new Date(intervalStart*1000).toLocaleString()+' — '+
-           new Date(intervalEnd*1000).toLocaleString()+'\\n'+
-           labels.analytics_graph_rx+': '+bytes(item.rx)+'\\n'+
-           labels.analytics_graph_tx+': '+bytes(item.tx);
-        // Runtime-matched layout: TX up from zero, RX down from zero.
-        for(const [kind,value] of [['tx',item.tx],['rx',item.rx]]){
-          const half=document.createElement('div');
-          half.className='wg-analytics-half '+kind;
-          const bar=document.createElement('span');
-          bar.className='wg-analytics-bar '+kind;
-          bar.style.height=value>0?Math.max(0.5,100*value/maximum)+'%':'0%';
-          half.append(bar);group.append(half);
-        }
-        fragment.append(group);
+    const style=getComputedStyle(document.documentElement);
+    const colors={
+      tx:style.getPropertyValue('--primary-color').trim()||'#4f8dd6',
+      rx:style.getPropertyValue('--success-color').trim()||'#42a878',
+      grid:'rgba(127,127,127,.22)',zero:'rgba(190,190,190,.8)',
+      text:style.color||'#aaa'
+    };
+    const width=Math.max(320,Math.round(chartSvg.clientWidth||graph.clientWidth||900));
+    const height=300,pad={l:76,r:12,t:18,b:28};
+    const pw=width-pad.l-pad.r,half=(height-pad.t-pad.b)/2,zero=pad.t+half;
+    const max=Math.max(1024,...values.map(v=>Math.max(v.tx,v.rx)));
+    const power=Math.pow(1024,Math.floor(Math.log(max)/Math.log(1024)));
+    const scaled=Math.ceil(max/power),tickStep=scaled<=2?.5:scaled<=5?1:2;
+    const limit=Math.max(power,Math.ceil(scaled/tickStep)*tickStep*power);
+    const svgNs='http://www.w3.org/2000/svg';
+    chartSvg.setAttribute('viewBox','0 0 '+width+' '+height);
+    chartSvg.replaceChildren();
+    function element(tag,attrs,text,parent){
+      const node=document.createElementNS(svgNs,tag);
+      for(const [key,value] of Object.entries(attrs||{}))node.setAttribute(key,String(value));
+      if(text!==undefined&&text!==null)node.textContent=text;
+      (parent||chartSvg).append(node);
+      return node;
+    }
+    function line(x1,y1,x2,y2,stroke,weight){
+      element('line',{x1,y1,x2,y2,stroke,'stroke-width':weight||1});
+    }
+    function label(text,x,y,anchor){
+      element('text',{x,y,fill:colors.text,'font-size':12,
+        'text-anchor':anchor||'end','dominant-baseline':'middle'},text);
+    }
+    for(let i=0;i<=4;i++){
+      const offset=half*i/4,upper=zero-offset,lower=zero+offset;
+      if(i){
+        line(pad.l,upper,width-pad.r,upper,colors.grid);
+        line(pad.l,lower,width-pad.r,lower,colors.grid);
       }
-      graphBars.append(fragment);
+      label(bytes(limit*i/4),pad.l-7,upper);
+      if(i)label(bytes(limit*i/4),pad.l-7,lower);
     }
+    line(pad.l,zero,width-pad.r,zero,colors.zero,1.5);
+    label('TX',pad.l+5,pad.t+8,'start');
+    label('RX',pad.l+5,height-pad.b-8,'start');
+    if(!rows.length){
+      label(labels.analytics_graph_empty,width/2,zero-8,'middle');
+    }
+    function series(kind,sign){
+      const color=colors[kind],segments=[];let current=[];
+      for(let i=0;i<slots;i++){
+        const v=values[i];
+        if(!v.observed){
+          if(current.length){segments.push(current);current=[];}
+          continue;
+        }
+        const x=pad.l+pw*Math.max(0,Math.min(1,(first+(i+.5)*step-data.from)/(data.to-data.from)));
+        const y=zero+sign*half*Math.min(1,v[kind]/limit);
+        current.push({x,y,v:v[kind],time:first+i*step,rx:v.rx,tx:v.tx});
+      }
+      if(current.length)segments.push(current);
+      for(const segment of segments){
+        const firstPt=segment[0],lastPt=segment[segment.length-1];
+        const coords=segment.map(p=>p.x.toFixed(2)+','+p.y.toFixed(2));
+        const lineD='M'+coords.join(' L');
+        const areaD='M'+firstPt.x.toFixed(2)+','+zero.toFixed(2)+
+          ' L'+coords.join(' L')+' L'+lastPt.x.toFixed(2)+','+zero.toFixed(2)+' Z';
+        element('path',{d:areaD,fill:color,'fill-opacity':.22,stroke:'none'});
+        element('path',{d:lineD,fill:'none',stroke:color,'stroke-width':2,
+          'stroke-linejoin':'round'});
+        for(const point of segment){
+          const dot=element('circle',{cx:point.x,cy:point.y,r:3,fill:color,'fill-opacity':.01});
+          element('title',{},new Date(point.time*1000).toLocaleString()+
+            '\n'+labels.analytics_graph_tx+': '+bytes(point.tx)+
+            '\n'+labels.analytics_graph_rx+': '+bytes(point.rx),dot);
+        }
+      }
+    }
+    series('tx',-1);series('rx',1);
+    label(new Date(data.from*1000).toLocaleString(),pad.l,height-8,'start');
+    label(new Date(data.to*1000).toLocaleString(),width-pad.r,height-8,'end');
     root.querySelector('[data-chart-scale]').textContent=
-       labels.analytics_graph_scale+': '+bytes(maximum)+
-       (step>600?' / '+Math.round(step/600)+' × 10m':' / 10m');
-    root.querySelector('[data-chart-ymax]').textContent=bytes(maximum);
-    root.querySelector('[data-chart-ymin]').textContent=bytes(maximum);
-    root.querySelector('[data-chart-from]').textContent=new Date(data.from*1000).toLocaleString();
-    root.querySelector('[data-chart-to]').textContent=new Date(data.to*1000).toLocaleString();
+      labels.analytics_graph_scale+': '+bytes(limit)+
+      (step>600?' / '+Math.round(step/600)+' × 10m':' / 10m');
     graph.setAttribute('aria-label',labels.analytics_chart+'; '+
-        labels.analytics_graph_rx+': '+bytes(Number(data.totals.rx))+'; '+
-        labels.analytics_graph_tx+': '+bytes(Number(data.totals.tx)));
+      labels.analytics_graph_rx+': '+bytes(Number(data.totals.rx))+'; '+
+      labels.analytics_graph_tx+': '+bytes(Number(data.totals.tx)));
   }
   function render(result) {
     const previous=peer.value;
@@ -435,7 +460,9 @@ print <<HTML;
       if(controller)controller.abort();
     }else if(auto.value!=='0'&&period.value!=='custom'&&root.isConnected)refresh();
   });
+  window.addEventListener('resize',draw);
   window.addEventListener('pagehide',()=>{
+    window.removeEventListener('resize',draw);
     if(autoTimer!==null){clearTimeout(autoTimer);autoTimer=null;}
     if(controller)controller.abort();
   });
