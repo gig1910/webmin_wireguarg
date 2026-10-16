@@ -448,3 +448,5 @@ analytics_auto_10m=10 минут
 analytics_auto_30m=30 минут
 analytics_auto_custom_note=Автообновление приостанавливается для фиксированного диапазона дат.
 analytics_graph_zero=0
+analytics_tab_graph=График
+analytics_tab_events=События

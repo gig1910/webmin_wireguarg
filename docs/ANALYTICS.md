@@ -47,3 +47,7 @@ Analytics uses native Webmin/Bootstrap panels, tables, buttons and navigation ta
 ### Range presets and auto refresh
 
 Select **6h, day, week, calendar month, quarter, half-year, year** or a custom range of 6 hours to 366 days. Auto-refresh is **off by default**, with only 10m and 30m options, paused in hidden tabs or for fixed custom dates. No changes to runtime chart refresh or base 10-minute storage. The historical graph uses runtime-matched theme colors and mirrored zero axis: **TX above, RX below**. Values are **bytes per displayed interval**, not bytes/second. SQLite aggregates long ranges into at most 180 chart points while returning complete totals.
+
+### Unified charts, tabs and sorting
+
+The history plot uses SVG lines and translucent fills with the same theme colors, grid and centered zero axis as runtime charts (**TX up, RX down**). It shows bytes per rollup interval, not speed; missing intervals are not connected. **Graph** and **Events** are exclusive inner tabs, while filters and summary stay shared. Clicking an informational table heading toggles ascending/descending sort for peers and events. The **first AllowedIPs address** is compared numerically for IPv4/IPv6. RX/TX and handshakes sort using raw runtime numbers and update with refreshes; action controls are unaffected.

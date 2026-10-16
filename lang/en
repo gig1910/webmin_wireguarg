@@ -448,3 +448,5 @@ analytics_auto_10m=10 minutes
 analytics_auto_30m=30 minutes
 analytics_auto_custom_note=Auto-refresh pauses for a fixed date range.
 analytics_graph_zero=0
+analytics_tab_graph=Graph
+analytics_tab_events=Events
