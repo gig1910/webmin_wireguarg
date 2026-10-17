@@ -155,9 +155,18 @@ while (1) {
     if ($stop_reason) {
         select(undef, undef, undef, 0.25);
         my $still = waitpid($child, WNOHANG);
-        if ($still == 0) {
+        if ($still == $child) {
+            # This second waitpid can reap the process before the normal
+            # top-of-loop check. Retain its status to avoid waiting forever.
+            $child_status = $?;
+        }
+        elsif ($still == 0) {
             kill('KILL', -$child);
             kill('KILL', $child);
+        }
+        elsif ($still == -1 && !defined($child_status)) {
+            # The child was already reaped by another wait path.
+            $child_status = 1 << 8;
         }
     }
 }
