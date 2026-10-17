@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Shared browser components
+
+- Consolidate chart units, Authentic Theme palette and mirrored-axis scaling
+  across live interface traffic, peer usage and SQLite analytics, while
+  preserving their distinct rate, sample and aggregate data models.
+- Reuse text-only DOM table-row construction alongside the existing accessible
+  shared sorter for peer activities and analytics event rows.
+- Extract interface peer-list controller into `lib/interface-page-ui-lib.pl`
+  with its existing root-scoped lifecycle, badges and peer actions.
+- Extend build gates to syntax-check all `lib/*.pl`, exercise chart/table
+  primitives and test the packaged controller via the WBM smoke test.
+- Describe frontend module responsibilities and further reuse opportunities in
+  `docs/UI-ARCHITECTURE.md`.
+
+
 ### UI controller isolation and legacy API retirement
 
 - Extract analytics chart/filter/events controller into `lib/analytics-page-ui-lib.pl`
