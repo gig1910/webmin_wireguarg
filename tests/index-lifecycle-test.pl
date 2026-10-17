@@ -38,6 +38,7 @@ global.MutationObserver=class {
   disconnect(){}
 };
 global.window.addEventListener=()=>{};
+global.window.removeEventListener=()=>{};
 vm.runInThisContext(js1);
 if(window.__wgIndexRuntimeController.root!==roots.page1)
   throw Error('First dashboard not bound');
