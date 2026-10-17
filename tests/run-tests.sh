@@ -2,7 +2,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 export PERL5LIB="tests/stub"
-for file in wireguard-lib.pl wg-firewall-hook.pl ./*.cgi acl_security.pl install_check.pl stats-collector.pl diagnostic-worker.pl postinstall.pl postuninstall.pl uninstall.pl; do
+for file in wireguard-lib.pl wg-firewall-hook.pl ./*.cgi acl_security.pl install_check.pl stats-collector.pl diagnostic-worker.pl dependency-worker.pl postinstall.pl postuninstall.pl uninstall.pl; do
     perl -c "$file"
 done
 perl tests/parser-test.pl
