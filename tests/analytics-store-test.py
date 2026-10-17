@@ -427,6 +427,67 @@ class AnalyticsTest(unittest.TestCase):
         self.sample(self.b,1020,1,2,endpoint="10.66.66.1:1234",handshake=1018)
         self.assertFalse(store.peer_handshake_ip(self.conn,{"peer_id":self.key_b})["public"])
 
+
+    def test_network_cache_only_manual_and_range_aware(self):
+        from ipaddress import ip_address
+        sample_ip="8.8.8.8"
+        self.sample(self.a,1200,1,2,endpoint="8.8.8.8:443",handshake=1199)
+        # Passive collection must NEVER create a new WHOIS prefix.
+        self.assertEqual(self.conn.execute("SELECT COUNT(*) FROM network_cache").fetchone()[0],0)
+        result=store.network_record(self.conn,{"ip":sample_ip,"whois_fields":[
+            {"label":"Network range","value":"8.8.8.0 - 8.8.8.255"},
+            {"label":"Organization","value":"Network Example"},
+            {"label":"Country","value":"US"}]})
+        self.assertEqual(result["cidr"],"8.8.8.0/24")
+        got=store.network_lookup(self.conn,{"ips":["8.8.8.8","8.8.8.9","8.8.4.4"]})["results"]
+        self.assertEqual(got["8.8.8.9"]["cidr"],"8.8.8.0/24")
+        self.assertEqual(got["8.8.8.8"]["label"],"Network Example")
+        self.assertEqual(got["8.8.8.8"]["icon"],"?")
+        self.assertFalse(got["8.8.4.4"]["cached"])
+        # CIDR is only accepted if it contains the verified request address.
+        result=store.network_record(self.conn,{"ip":"8.8.4.4","whois_fields":[
+            {"label":"CIDR","value":"1.1.1.0/24"}]})
+        self.assertEqual(result["cidr"],"8.8.4.4/32")
+        for invalid in ["192.168.1.5","127.0.0.1","2001:db8::1","not-an-ip"]:
+            with self.assertRaises(ValueError):
+                store.network_record(self.conn,{"ip":invalid,"whois_fields":[]})
+
+    def test_network_icons_longest_match_and_independent_reset(self):
+        store.network_record(self.conn,{"ip":"8.8.8.8","whois_fields":[
+            {"label":"CIDR","value":"8.8.8.0/24"}]})
+        for cidr,icon,label in [
+            ("8.0.0.0/8","☁","Provider"),("8.8.8.0/24","★","Special"),
+            ("2001:4860::/32","⌂","IPv6")]:
+            store.network_manage(self.conn,{"action":"set_icon",
+                "cidr":cidr,"icon":icon,"label":label})
+        got=store.network_lookup(self.conn,{"ips":["8.8.8.8","8.1.2.3",
+            "2001:4860:4860::8888","9.9.9.9"]})["results"]
+        self.assertEqual(got["8.8.8.8"]["icon"],"★")
+        self.assertEqual(got["8.8.8.8"]["label"],"Special")
+        self.assertEqual(got["8.1.2.3"]["icon"],"☁")
+        self.assertEqual(got["2001:4860:4860::8888"]["icon"],"⌂")
+        self.assertEqual(got["9.9.9.9"]["icon"],"?")
+        with self.assertRaises(ValueError):
+            store.network_manage(self.conn,{"action":"clear_cache"})
+        result=store.network_manage(self.conn,{"action":"clear_cache","confirm":"CLEAR"})
+        self.assertEqual(result["deleted"],1)
+        self.assertEqual(self.conn.execute("SELECT COUNT(*) FROM network_cache").fetchone()[0],0)
+        self.assertEqual(self.conn.execute("SELECT COUNT(*) FROM network_icons").fetchone()[0],3)
+        after=store.network_lookup(self.conn,{"ips":["8.8.8.8"]})["results"]["8.8.8.8"]
+        self.assertEqual(after["icon"],"★")
+        self.assertFalse(after["cached"])
+        store.network_manage(self.conn,{"action":"delete_icon","cidr":"8.8.8.0/24"})
+        self.assertEqual(store.network_lookup(self.conn,{"ips":["8.8.8.8"]})
+                         ["results"]["8.8.8.8"]["icon"],"☁")
+        for invalid in ["8.8.8.1/24","foo","../etc/passwd"]:
+            with self.assertRaises(ValueError):
+                store.network_manage(self.conn,{"action":"set_icon","cidr":invalid})
+        with self.assertRaises(ValueError):
+            store.network_manage(self.conn,{"action":"set_icon",
+                                           "cidr":"8.8.8.0/24","icon":"X"*100})
+        with self.assertRaises(ValueError):
+            store.network_lookup(self.conn,{"ips":["1.1.1.1"]*129})
+
     def test_prometheus_text_contains_only_fingerprints(self):
         self.sample(self.a,1000,100,200,endpoint="192.0.2.5:12345")
         self.sample(self.a,1005,200,300)
