@@ -40,6 +40,8 @@ if ($peer) {
         ' &nbsp; <b>'.$text{'peer_endpoint'}.':</b> <span data-peer-endpoint>'.
         html_escape(get_section_value($peer, 'Endpoint') || '-').'</span>'.
         ' &nbsp; <b>'.$text{'runtime_updated'}.':</b> <span data-wg-runtime-time>'.$text{'runtime_loading'}.'</span></div>';
+    print '<p>'.direct_link_button('network_icons.cgi',$text{'network_icons_title'},{}).'</p>'
+        if $access{'manage'};
     # On-demand IP investigation; no automatic WHOIS/network side effects.
     my $ip_dom_id='wg-peer-ip-'.time().'-'.int(rand(1000000000));
     my $ip_dom_json=json_encode_utf8($ip_dom_id);

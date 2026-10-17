@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- On-demand WHOIS CIDR cache and independent manually assigned IPv4/IPv6 subnet icons. Live endpoint badges read local data only; a protected cache reset preserves icon assignments.
+- Three peer-detail tabs for settings, consumption history, and confirmed IP activities.
+
 ### Fixed
 
 - Corrected GeoIP/QR dependency installation confirmation to use the complete

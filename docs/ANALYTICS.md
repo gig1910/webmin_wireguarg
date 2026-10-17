@@ -67,3 +67,9 @@ Use the OS-provided `geoipupdate` and `geoipupdate.timer` (Ubuntu/Debian) rather
 ### Installing WHOIS and GeoIP dependencies from Webmin
 
 If any tools are missing, authorized module users can click **Install WHOIS and GeoIP components** on peer details, confirm a fixed apt package set, and view the command output. It installs `geoipupdate mmdb-bin geoip-bin geoip-database whois` with `--no-install-recommends`. This is never triggered merely by viewing a peer. The distribution's legacy `geoip-database` supplies offline country lookup without MaxMind credentials and is refreshed by OS package updates. Modern GeoLite2 City still requires a MaxMind account/license key and the distribution's `geoipupdate.timer`. No secret keys are committed or stored by the module installer.
+
+### Network badges and three peer-detail tabs
+
+The interface peer list renders an IP network badge next to the current runtime endpoint (unknown prefixes show a white outlined `?`). No external WHOIS queries are triggered by page loading or polling. Explicit manual WHOIS/GeoIP lookup fills `network_cache` with the confirmed IP's verified CIDR and owner/country, falling back to /32 or /128 if the registry supplies no useful prefix. Admins use **Network icons and range cache** to manually assign short Unicode icons and labels to IPv4/IPv6 prefixes. Longest-prefix match wins. **Clear range cache** requires the word `CLEAR` and retains manual icon overrides. Write access requires manage ACL plus POST/CSRF.
+
+Existing peer details have three tabs: **Settings** (editor, WHOIS and diagnostic controls), **Consumption history** (existing peer history chart), and **Activities** (sortable confirmed handshake IP event table). Unsaved new peers retain the simple editor view.

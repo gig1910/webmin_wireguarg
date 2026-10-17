@@ -115,6 +115,7 @@ else {
 }
 
 if ($access{'manage'}) {
+    print '<p>'.direct_link_button('network_icons.cgi', $text{'network_icons_title'}, {}).'</p>';
     print '<p>'.ui_link_button('interface_form.cgi?name='.urlize($name), $text{'interface_edit'}).' '.
         ui_link_button('edit_peer.cgi?name='.urlize($name), $text{'interface_add_peer'}).'</p>';
     print '<div class="wg-actions">'.
