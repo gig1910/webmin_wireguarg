@@ -3,7 +3,8 @@ use warnings;
 use Cwd qw(abs_path);
 use File::Basename qw(dirname);
 use File::Path qw(make_path);
-require abs_path(dirname(__FILE__)).'/lib/subprocess-lib.pl';
+my $subprocess_lib = abs_path(dirname(__FILE__)).'/lib/subprocess-lib.pl';
+require $subprocess_lib;
 
 sub _wg_first_executable
 {
