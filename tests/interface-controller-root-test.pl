@@ -25,10 +25,22 @@ die "manual runtime refresh does not use forced poller refresh\n"
 
 my ($block) = $source =~ /print <<SCRIPT;\n(.*?)\nSCRIPT/s;
 die "interface JavaScript block missing\n" if !defined $block;
-my ($script) = $block =~ m{<script>\s*(.*?)\s*</script>}s;
-die "interface JavaScript content missing\n" if !defined $script;
-$script =~ s/\$js_[A-Za-z0-9_]+/"test"/g;
-$script =~ s/'\$csrf'/'csrf-test'/g;
+# Render the actual interpolating Perl heredoc. Syntax checks against the
+# raw source miss Perl's treatment of '$/' at the end of JS regexes.
+my %symbols;
+$symbols{$_}=1 for ($block =~ /\$(js_[A-Za-z0-9_]+)/g);
+{
+    no strict 'refs';
+    for my $symbol (keys %symbols) {
+        ${"main::$symbol"} = '"test"';
+    }
+    ${'main::csrf'} = 'csrf-test';
+}
+my $rendered=eval "sub { return <<WG_RENDER;\n$block\nWG_RENDER\n}";
+die "Cannot interpolate interface page JavaScript: $@\n" if !$rendered || $@;
+my $html=$rendered->();
+my ($script) = $html =~ m{<script>\s*(.*?)\s*</script>}s;
+die "rendered interface JavaScript content missing\n" if !defined $script;
 
 my $node = `command -v node 2>/dev/null`;
 chomp($node);
