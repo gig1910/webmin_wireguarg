@@ -41,7 +41,7 @@ die "management operation must have manage ACL, CSRF and rate-limit\n"
            $icons =~ /assert_post_and_csrf\(\)/ &&
            $icons =~ /request_rate_limit\('network_icons'/;
 die "explicit CLEAR confirmation missing\n"
-    unless $backend=~/get\("confirm"\) != "CLEAR"/;
+    unless $network=~/get\("confirm"\) != "CLEAR"/;
 die "network icon display missing from current endpoint cell\n"
     unless $iface=~/data-wg-net-icon/ &&
            $iface=~/data-wg-endpoint/ &&
