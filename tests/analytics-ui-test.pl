@@ -8,6 +8,12 @@ sub slurp {
     return <$fh>;
 }
 my $ui=slurp("$FindBin::Bin/../analytics.cgi");
+my $controller=slurp("$FindBin::Bin/../lib/analytics-page-ui-lib.pl");
+die "analytics CGI does not load the isolated controller\n"
+    unless $ui =~ m{require './lib/analytics-page-ui-lib.pl'} &&
+           $ui =~ /wg_analytics_controller_script\(/;
+$ui .= "\n".$controller;  # Verify the composed page and its controller contract.
+
 my $api=slurp("$FindBin::Bin/../analytics_data.cgi");
 my $maintenance=slurp("$FindBin::Bin/../analytics_maintenance.cgi");
 my $collector=slurp("$FindBin::Bin/../stats-collector.pl");
@@ -82,6 +88,7 @@ die "peer detail analytics link missing\n"
            $peer_page =~ /sha256_hex\(\$public_key\)/;
 for my $path (qw(analytics.cgi analytics_data.cgi analytics_maintenance.cgi
                  analytics-store.py lib/analytics-api-lib.pl
+                 lib/analytics-page-ui-lib.pl
                  collector_status.cgi lib/collector-config-lib.pl)) {
     die "analytics or collector component omitted from Webmin package: $path\n"
         unless $manifest =~ /^\Q$path\E$/m;
