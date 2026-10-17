@@ -538,6 +538,7 @@ print <<SCRIPT;
         document.removeEventListener('wg-runtime-error', onRuntimeError);
         document.removeEventListener('wg-runtime-warning', onRuntimeWarning);
         requestControllers.forEach(function(controller) { controller.abort(); });
+        if(networkRequest)networkRequest.abort();
         requestControllers.clear();
         detachObserver.disconnect();
         if (window.__wgInterfacePageController && window.__wgInterfacePageController.root === root) {

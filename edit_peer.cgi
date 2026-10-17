@@ -22,13 +22,13 @@ my $peer_tabs_id='wg-peer-tabs-'.substr(sha256_hex(join('|',time(),rand())),0,12
 if ($peer) {
     print '<div id="'.html_escape($peer_tabs_id).'" class="wg-peer-detail-tabs">';
     print '<ul class="nav nav-tabs" role="tablist">'.
-        '<li class="active"><a href="#wg-peer-settings" data-wg-peer-tab="settings" role="tab" aria-selected="true">'.
+        '<li class="active"><a href="#'.html_escape($peer_tabs_id).'-settings" data-wg-peer-tab="settings" role="tab" aria-selected="true" aria-controls="'.html_escape($peer_tabs_id).'-settings">'.
         html_escape($text{'peer_tab_settings'}).'</a></li>'.
-        '<li><a href="#wg-peer-usage" data-wg-peer-tab="usage" role="tab" aria-selected="false">'.
+        '<li><a href="#'.html_escape($peer_tabs_id).'-usage" data-wg-peer-tab="usage" role="tab" aria-selected="false" aria-controls="'.html_escape($peer_tabs_id).'-usage">'.
         html_escape($text{'peer_tab_usage'}).'</a></li>'.
-        '<li><a href="#wg-peer-activity" data-wg-peer-tab="activity" role="tab" aria-selected="false">'.
+        '<li><a href="#'.html_escape($peer_tabs_id).'-activity" data-wg-peer-tab="activity" role="tab" aria-selected="false" aria-controls="'.html_escape($peer_tabs_id).'-activity">'.
         html_escape($text{'peer_tab_activity'}).'</a></li></ul>';
-    print '<div data-wg-peer-pane="settings" role="tabpanel">';
+    print '<div id="'.html_escape($peer_tabs_id).'-settings" data-wg-peer-pane="settings" role="tabpanel">';
 }
 print '<div id="wg-peer-runtime-error" class="alert alert-warning" style="display:none"></div>' if ($peer);
 
@@ -731,13 +731,13 @@ SCRIPT
 
 if ($peer) {
     print '</div>'; # End settings
-    print '<div data-wg-peer-pane="usage" role="tabpanel" hidden>';
+    print '<div id="'.html_escape($peer_tabs_id).'-usage" data-wg-peer-pane="usage" role="tabpanel" hidden>';
     print graph_html($name, $public_key,
         text('graph_peer_title',peer_display_name($peer,$in{'peer'})));
     print '<p>'.direct_link_button('analytics.cgi',$text{'analytics_peer_link'},
         {peer_id=>sha256_hex($public_key)}).'</p>';
     print '</div>';
-    print '<div data-wg-peer-pane="activity" role="tabpanel" hidden>';
+    print '<div id="'.html_escape($peer_tabs_id).'-activity" data-wg-peer-pane="activity" role="tabpanel" hidden>';
     print '<div class="wg-peer-activity-toolbar"><label>'.
         html_escape($text{'analytics_period'}).' <select data-wg-peer-activity-period class="form-control">'.
         '<option value="21600">'.html_escape($text{'analytics_6h'}).'</option>'.
@@ -802,7 +802,7 @@ if ($peer) {
    if(tab==='activity')load();
    if(tab==='usage'){
      // A hidden Canvas measures zero width; redraw when visible.
-     window.dispatchEvent(new Event('resize'));
+     requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')));
    }
  }
  async function load(){
