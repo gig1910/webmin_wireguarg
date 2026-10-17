@@ -110,6 +110,8 @@ if(endpointIp('[2001:4860:4860::8888]:443')!=='2001:4860:4860::8888')
   throw new Error('Bracketed IPv6 endpoint was not parsed');
 if(endpointIp('10.66.66.1')!=='10.66.66.1')
   throw new Error('Plain IPv4 endpoint was not parsed');
+if(endpointIp('2001:4860:4860::8888')!=='2001:4860:4860::8888')
+  throw new Error('Bare IPv6 endpoint was not parsed');
 if(endpointIp('hostname.example:55822')!=='')
   throw new Error('Network icons must not resolve hostname endpoints');
 CHECK
