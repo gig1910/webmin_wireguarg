@@ -10,12 +10,13 @@ sub read_file {
 my $peer=read_file("$FindBin::Bin/../edit_peer.cgi");
 my $iface=read_file("$FindBin::Bin/../edit_interface.cgi");
 my $backend=read_file("$FindBin::Bin/../analytics-store.py");
+my $network=read_file("$FindBin::Bin/../network_store.py");
 my $api=read_file("$FindBin::Bin/../peer_ip_info.cgi");
 my $icons=read_file("$FindBin::Bin/../network_icons.cgi");
 my $read=read_file("$FindBin::Bin/../network_icon_data.cgi");
 my $manifest=read_file("$FindBin::Bin/../MANIFEST.wbm");
 my $sort=read_file("$FindBin::Bin/../lib/table-sort-ui-lib.pl");
-for my $file (qw(network_icons.cgi network_icon_data.cgi)) {
+for my $file (qw(network_icons.cgi network_icon_data.cgi network_store.py)) {
     die "$file omitted from module release\n" unless $manifest=~/^\Q$file\E$/m;
 }
 die "on-demand lookup must cache confirmed WHOIS facts only\n"
@@ -28,10 +29,10 @@ die "ingest function not found\n" if !defined $ingest_body;
 die "network cache wrongly tied to peer samples\n"
     if $ingest_body =~ /network_record\(/;
 die "network cache and manual assignments not independent\n"
-    unless $backend=~/CREATE TABLE IF NOT EXISTS network_cache/ &&
-           $backend=~/CREATE TABLE IF NOT EXISTS network_icons/ &&
-           $backend=~/DELETE FROM network_cache/ &&
-           $backend=~/INSERT INTO network_icons/;
+    unless $network=~/CREATE TABLE IF NOT EXISTS network_cache/ &&
+           $network=~/CREATE TABLE IF NOT EXISTS network_icons/ &&
+           $network=~/DELETE FROM network_cache/ &&
+           $network=~/INSERT INTO network_icons/;
 die "server API must validate IP literals, never resolve hostnames\n"
     unless $read =~ /assert_view_access\(\)/ &&
            $read =~ /Too many IPs/ && $read =~ /analytics_backend\('network_lookup'/;
