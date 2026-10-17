@@ -91,6 +91,7 @@ print '<table class="table table-striped table-hover"><thead><tr><th>'.
     '</th><th>'.html_escape($text{'network_icons_label'}).'</th><th>'.
     html_escape($text{'network_icons_owner'}).'</th><th>'.
     html_escape($text{'network_icons_country'}).'</th><th>'.
+    html_escape($text{'network_icons_geoip_samples'}).'</th><th>'.
     html_escape($text{'interface_peer_actions'}).'</th></tr></thead><tbody>';
 for my $cidr (sort keys %ranges) {
     my $item=$ranges{$cidr};
@@ -99,13 +100,15 @@ for my $cidr (sort keys %ranges) {
     my $label=$manual ? ($manual->{'label'}||'') : '';
     my $country=$item->{'country'} || '';
     my $owner=$item->{'owner'} || '';
+    my $geoip_codes=join(',', @{$item->{'geoip_countries'}||[]});
     print '<tr><td><button type="button" class="wg-network-edit-link" data-wg-edit-range="1"'.
         ' data-cidr="'.html_escape($cidr).'"'.
         ' data-icon="'.html_escape($icon).'"'.
         ' data-label="'.html_escape($label).'">'.html_escape($cidr).'</button></td>'.
         '<td>'.html_escape($icon).'</td><td>'.html_escape($label).'</td>'.
         '<td>'.html_escape($owner).'</td>'.
-        '<td><span data-wg-country="'.html_escape($country).'">'.html_escape($country).'</span></td><td>';
+        '<td><span data-wg-country="'.html_escape($country).'">'.html_escape($country).'</span></td>'.
+        '<td><span data-wg-geoip-codes="'.html_escape($geoip_codes).'" title="'.html_escape($text{'network_icons_geoip_help'}).'">'.html_escape($geoip_codes).'</span></td><td>';
     if ($manual) {
         print ui_form_start(module_script_url('network_icons.cgi'),'post');
         print csrf_hidden();
@@ -149,10 +152,18 @@ print <<'NETWORK_UI';
             icon.focus({preventScroll:true});
         });
     });
+    function flagFor(code){
+        return String.fromCodePoint(...Array.from(code,c=>127397+c.charCodeAt(0)));
+    }
+    document.querySelectorAll('[data-wg-geoip-codes]').forEach(function(node){
+        const codes=(node.dataset.wgGeoipCodes||'').split(',').map(s=>s.trim().toUpperCase())
+            .filter(s=>/^[A-Z]{2}$/.test(s));
+        node.textContent=codes.map(code=>flagFor(code)+' '+code).join(', ');
+    });
     document.querySelectorAll('[data-wg-country]').forEach(function(node){
         const code=(node.dataset.wgCountry||'').trim().toUpperCase();
         if(!/^[A-Z]{2}$/.test(code))return;
-        const flag=String.fromCodePoint(...Array.from(code,c=>127397+c.charCodeAt(0)));
+        const flag=flagFor(code);
         node.textContent=flag+' '+code;
     });
 })();
