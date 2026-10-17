@@ -185,7 +185,7 @@ sub optional_dependency_status
                 $dpkg, '-W', '-f=${Status}\t${Version}\n', $package
             ], 1, 10, 4096);
             if ($ok && $out =~ /^install\s+ok\s+installed\t([^\r\n]+)$/m) {
-                push(@versions, $package.' '._trim($1));
+                push(@versions, @{$spec->{'packages'}} == 1 ? _trim($1) : $package.' '._trim($1));
             }
             else {
                 $all_installed=0;
