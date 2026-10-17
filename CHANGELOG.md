@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### Browser UI consolidation and SPA reliability
+
+- Add `lib/ui-transport-lib.pl` for shared same-origin JSON transport,
+  Content-Type validation and non-JSON error classification. Runtime, analytics,
+  diagnostics, peer activity and traffic charts retain their independent
+  polling, cancellation and authorization semantics.
+- Move collector/dashboard UI to `lib/index-page-ui-lib.pl` and manual network
+  directory UI to `lib/network-icons-ui-lib.pl`. Keep CGI entry points focused
+  on ACL, server-side HTML and persistence.
+- Scope dashboard and network directory DOM to unique page instances. Dispose
+  runtime event listeners, collector timers and button handlers when Authentic
+  Theme replaces a page.
+- Add transport, rendered dashboard, dashboard/collector SPA lifecycle,
+  network-editor and packaged-WBM smoke regressions.
+
+
 ### Shared browser components
 
 - Consolidate chart units, Authentic Theme palette and mirrored-axis scaling
