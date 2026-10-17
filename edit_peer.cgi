@@ -31,7 +31,7 @@ if ($peer) {
     print graph_html($name, $public_key, text('graph_peer_title', peer_display_name($peer, $in{'peer'})));
     print '<p>'.direct_link_button('analytics.cgi', $text{'analytics_peer_link'},
         { peer_id => sha256_hex($public_key) }).'</p>';    # On-demand IP investigation; no automatic WHOIS/network side effects.
-    my $ip_dom_id='wg-peer-ip-'.time().'-'.$.'-'.int(rand(1000000));
+    my $ip_dom_id='wg-peer-ip-'.time().'-'.int(rand(1000000000));
     my $ip_dom_json=json_encode_utf8($ip_dom_id);
     my $ip_name_json=json_encode_utf8($name);
     my $ip_index_json=json_encode_utf8("$in{'peer'}");

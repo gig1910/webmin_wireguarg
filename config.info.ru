@@ -45,3 +45,7 @@ stats_max_total_bytes=Максимальный суммарный размер �
 stats_health_interval=Интервал записи состояния сборщика в секундах (требуется перезапуск сборщика),0
 diagnostic_max_jobs_per_user=Максимальное число параллельных диагностических задач пользователя,0
 systemctl_cmd=Полный путь к systemctl для управления сборщиком,0
+whois_cmd=Путь к whois (запрос по нажатию),0
+geoiplookup_cmd=Путь к локальному geoiplookup,0
+mmdblookup_cmd=Путь к локальному mmdblookup для GeoLite2,0
+geoip_city_db=Путь к локальной базе GeoLite2 City/Country .mmdb (необязательно),0
