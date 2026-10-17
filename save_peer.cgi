@@ -108,7 +108,11 @@ my %data = (
     disabled => $in{'disabled'} ? 1 : 0,
 );
 
-my $block = build_peer_block(\%data, $old);
+my ($block, $psk_error) = build_peer_block_with_preshared_key(
+    \%data, $old,
+    $in{'preshared_key'}, $in{'generate_preshared_key'}, $in{'remove_preshared_key'}
+);
+error($psk_error) if (!defined($block));
 my $contents = $is_new ? append_peer($cfg, $block) : replace_section($cfg, $old, $block);
 my ($write_ok, $write_error) = atomic_write_config(conf_path($name), $contents, $cfg->{'digest'});
 error(text('error_write', conf_path($name), $write_error)) if (!$write_ok);

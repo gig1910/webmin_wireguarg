@@ -109,31 +109,20 @@ sub rewrite_peer_block_preshared_key
     return ($block, undef);
 }
 
-our $WG_PSK_ORIGINAL_BUILD_PEER_BLOCK;
-if (defined(&build_peer_block)) {
-    $WG_PSK_ORIGINAL_BUILD_PEER_BLOCK = \&build_peer_block;
-    no warnings qw(redefine prototype);
-    *build_peer_block = sub {
-        my ($data, $old_peer) = @_;
-        my $block = $WG_PSK_ORIGINAL_BUILD_PEER_BLOCK->(@_);
-        return $block if (($0 || '') !~ /(?:^|\/)save_peer\.cgi$/);
+# Explicitly called by save_peer.cgi. Never infer write semantics from $0:
+# under MiniServ the executable name is not guaranteed to be save_peer.cgi.
+sub build_peer_block_with_preshared_key
+{
+    my ($data, $old_peer, $input, $generate, $remove) = @_;
+    my ($preshared_key, $error) = resolve_submitted_preshared_key(
+        $old_peer, $input, $generate, $remove
+    );
+    return (undef, $error) if !defined($preshared_key);
 
-        my ($preshared_key, $resolve_error) = resolve_submitted_preshared_key(
-            $old_peer,
-            $in{'preshared_key'} || '',
-            $in{'generate_preshared_key'},
-            $in{'remove_preshared_key'}
-        );
-        error($resolve_error) if (!defined($preshared_key));
-
-        my ($rewritten, $rewrite_error) = rewrite_peer_block_preshared_key(
-            $block,
-            $preshared_key,
-            $data->{'disabled'}
-        );
-        error($rewrite_error) if (!defined($rewritten));
-        return $rewritten;
-    };
+    my $block = build_peer_block($data, $old_peer);
+    return rewrite_peer_block_preshared_key(
+        $block, $preshared_key, $data->{'disabled'}
+    );
 }
 
 sub preshared_key_form_rows_for_state
@@ -150,15 +139,15 @@ sub preshared_key_form_rows_for_state
             ' data-confirm="'.html_escape(preshared_key_text('remove_confirm')).'"'.
             ' onclick="return window.confirm(this.getAttribute(\'data-confirm\'))">'.
             html_escape(preshared_key_text('remove')).'</button>';
-        return $WG_PSK_ORIGINAL_UI_TABLE_ROW->('PresharedKey', $notice.$remove);
+        return ui_table_row('PresharedKey', $notice.$remove);
     }
 
-    $html .= $WG_PSK_ORIGINAL_UI_TABLE_ROW->(
+    $html .= ui_table_row(
         preshared_key_text('input'),
         '<input type="password" name="preshared_key" size="48" autocomplete="new-password">'.
         '<br><small>'.html_escape(preshared_key_text('input_help')).'</small>'
     );
-    $html .= $WG_PSK_ORIGINAL_UI_TABLE_ROW->(
+    $html .= ui_table_row(
         preshared_key_text('generate'),
         ui_checkbox('generate_preshared_key', 1, preshared_key_text('generate'), 0)
     );
@@ -178,22 +167,6 @@ sub preshared_key_form_rows
     }
     my $present = $peer && length(get_section_value($peer, 'PresharedKey') || '');
     return preshared_key_form_rows_for_state($present ? 1 : 0);
-}
-
-our $WG_PSK_ORIGINAL_UI_TABLE_ROW;
-if (defined(&ui_table_row)) {
-    $WG_PSK_ORIGINAL_UI_TABLE_ROW = \&ui_table_row;
-    no warnings qw(redefine prototype);
-    *ui_table_row = sub {
-        my $html = $WG_PSK_ORIGINAL_UI_TABLE_ROW->(@_);
-        my $label = defined($_[0]) ? $_[0] : '';
-        if (($0 || '') =~ /(?:^|\/)edit_peer\.cgi$/ &&
-            length($text{'peer_public_key'} || '') &&
-            $label eq $text{'peer_public_key'}) {
-            $html .= preshared_key_form_rows();
-        }
-        return $html;
-    };
 }
 
 1;

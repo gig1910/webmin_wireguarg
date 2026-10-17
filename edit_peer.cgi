@@ -277,6 +277,10 @@ if ($access{'manage'}) {
         $text{'peer_public_key'},
         ui_textbox('public_key', $public_key, 52).'<br><small>'.$text{'key_public_ignored'}.'</small>'
     );
+    # Render PSK controls explicitly; do not intercept ui_table_row by $0.
+    print preshared_key_form_rows_for_state(
+        $peer && length(get_section_value($peer, 'PresharedKey') || '') ? 1 : 0
+    );
 
     if ($peer && $access{'export_clients'}) {
         my $issues = client_config_static_issues($cfg, $peer);
