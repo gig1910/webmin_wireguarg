@@ -56,7 +56,7 @@ tar -xzf "$PACKAGE" -C "$TMP"
         my $index=wg_index_runtime_script(q{"page"},(map { q{"test"} } 1..4));
         die "Packaged dashboard runtime controller missing\n"
             unless $index =~ /wg-runtime/;
-        my $network=wg_network_icons_page_script();
+        my $network=wg_network_icons_page_script(q{"test-network-page"});
         die "Packaged network icon editor controller missing\n"
             unless $network =~ /data-wg-edit-range/ && $network =~ /flagFor/;
         die "Packaged transport missing\n"
