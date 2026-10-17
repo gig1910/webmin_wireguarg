@@ -92,4 +92,29 @@ if($node){
     print {$fh} $js;close($fh);
     system($node,'--check',$path)==0 or die "generated peer tabs JS invalid\n";
 }
+# Unlike direct Node syntax checks of CGI source, evaluate the interpolation
+# performed by MiniServ's Perl heredoc. JS regex '$/' is otherwise swallowed by
+# Perl's input-record separator and produces a broken endpoint parser.
+my ($ip_body)=$iface=~/(    function endpointIp\(value\) \{.*?\n    \})/s;
+die "IPv4/IPv6 icon endpoint parser missing\n" if !defined $ip_body;
+my $ip_render=eval "sub {return <<NETWORK_IP;\n$ip_body\nNETWORK_IP\n}";
+die "IP endpoint interpolation failed: $@\n" if !$ip_render || $@;
+my $ip_js=$ip_render->();
+if($node){
+    my ($fh,$path)=tempfile(SUFFIX=>'.js',UNLINK=>1);
+    print {$fh} $ip_js."\n";
+    print {$fh} <<'CHECK';
+if(endpointIp('8.8.8.8:58142')!=='8.8.8.8')
+  throw new Error('IPv4 endpoint regex was destroyed by Perl interpolation');
+if(endpointIp('[2001:4860:4860::8888]:443')!=='2001:4860:4860::8888')
+  throw new Error('Bracketed IPv6 endpoint was not parsed');
+if(endpointIp('10.66.66.1')!=='10.66.66.1')
+  throw new Error('Plain IPv4 endpoint was not parsed');
+if(endpointIp('hostname.example:55822')!=='')
+  throw new Error('Network icons must not resolve hostname endpoints');
+CHECK
+    close($fh);
+    system($node,'--check',$path)==0 or die "rendered network icon IP parser syntax invalid\n";
+    system($node,$path)==0 or die "rendered network icon IP parser behavior invalid\n";
+}
 print "network badge/cache and peer three-tab UI tests passed\n";
