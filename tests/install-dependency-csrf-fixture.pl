@@ -23,7 +23,7 @@ for my $k (qw(qrencode_cmd geoipupdate_cmd mmdblookup_cmd geoiplookup_cmd whois_
     *main::ui_hidden=sub {
         my ($key,$value)=@_;
         return '<input type="hidden" name="'.html_escape($key).
-            '" value="'.html_escape($value||'').'">'."\n";
+            '" value="'.html_escape(defined($value) ? $value : '').'">'."\n";
     };
     *main::ui_link_button=sub {
         my ($path,$label)=@_;
