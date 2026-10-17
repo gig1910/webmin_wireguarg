@@ -1,0 +1,18 @@
+# Local editor files and caches
+.idea/
+.vscode/
+__pycache__/
+*.py[cod]
+
+# Generated release artifacts and test output
+/build/
+/dist/
+/tests/async-script-*.js
+/tests/interface-controller-root-*.js
+
+# Local secrets and state must never be committed
+*.pem
+*.key
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
