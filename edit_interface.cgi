@@ -231,7 +231,7 @@ print <<SCRIPT;
                     ?info.country.trim().toUpperCase():'';
                 country.textContent=code;
                 country.hidden=!code;
-                country.title=code ? 'GeoIP: '+code : '';
+                country.title=code ? ((info.country_source==='geoip'?'GeoIP':'WHOIS')+': '+code) : '';
             }
         });
     }
