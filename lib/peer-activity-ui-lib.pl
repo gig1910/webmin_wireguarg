@@ -51,13 +51,8 @@ sub wg_peer_activity_tabs_script
    requestUrl.searchParams.set('from',String(now-span));
    requestUrl.searchParams.set('to',String(now));
    try{
-     const response=await fetch(requestUrl.toString(),{
-       credentials:'same-origin',cache:'no-store',signal:request.signal,headers:{Accept:'application/json'}
-     });
-     if(!(response.headers.get('content-type')||'').includes('application/json'))
-       throw new Error('HTTP '+response.status);
-     const result=await response.json();
-     if(!result.ok)throw new Error(result.error||'HTTP '+response.status);
+     const result=await window.WireGuardTransport.requestJson(
+       requestUrl.toString(),{signal:request.signal},{requireOk:true});
      if(serial!==seq||!root.isConnected)return;
      body.replaceChildren();
      for(const event of result.events||[]){
