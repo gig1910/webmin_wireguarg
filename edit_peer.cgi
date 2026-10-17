@@ -30,7 +30,103 @@ if ($peer) {
         ' &nbsp; <b>'.$text{'runtime_updated'}.':</b> <span data-wg-runtime-time>'.$text{'runtime_loading'}.'</span></div>';
     print graph_html($name, $public_key, text('graph_peer_title', peer_display_name($peer, $in{'peer'})));
     print '<p>'.direct_link_button('analytics.cgi', $text{'analytics_peer_link'},
-        { peer_id => sha256_hex($public_key) }).'</p>';
+        { peer_id => sha256_hex($public_key) }).'</p>';    # On-demand IP investigation; no automatic WHOIS/network side effects.
+    my $ip_dom_id='wg-peer-ip-'.time().'-'.$.'-'.int(rand(1000000));
+    my $ip_dom_json=json_encode_utf8($ip_dom_id);
+    my $ip_name_json=json_encode_utf8($name);
+    my $ip_index_json=json_encode_utf8("$in{'peer'}");
+    my $ip_csrf_json=json_encode_utf8($csrf);
+    my $ip_labels_json=json_encode_utf8({
+        busy=>$text{'peer_ip_busy'}, whois=>$text{'peer_ip_whois'},
+        geoip=>$text{'peer_ip_geoip'}, raw=>$text{'peer_ip_raw'},
+        handshake=>$text{'peer_ip_handshake_time'},
+        unavailable=>$text{'peer_ip_unavailable'}
+    });
+    my $ip_url_json=json_encode_utf8(module_script_url('peer_ip_info.cgi'));
+    print '<section id="'.html_escape($ip_dom_id).'" class="panel panel-default">'.
+        '<div class="panel-heading"><strong>'.html_escape($text{'peer_ip_title'}).'</strong></div>'.
+        '<div class="panel-body"><p class="help-block">'.html_escape($text{'peer_ip_help'}).'</p>'.
+        '<button type="button" class="btn btn-default" data-role="lookup">'.
+        html_escape($text{'peer_ip_lookup'}).'</button>'.
+        '<div data-role="output" aria-live="polite"></div></div></section>';
+    print <<IP_LOOKUP_SCRIPT;
+<script>
+(function(){
+  'use strict';
+  const root=document.getElementById($ip_dom_json);
+  if(!root)return;
+  const button=root.querySelector('[data-role="lookup"]');
+  const output=root.querySelector('[data-role="output"]');
+  const detailsLabels=$ip_labels_json;
+  const info={name:$ip_name_json,peer:$ip_index_json,csrf:$ip_csrf_json,url:$ip_url_json};
+  function node(tag,text,parent,className){
+    const el=document.createElement(tag);
+    if(className)el.className=className;
+    if(text!==undefined&&text!==null)el.textContent=String(text);
+    (parent||output).append(el);
+    return el;
+  }
+  function renderSection(label,result){
+    const section=node('section',null,output,'wg-peer-ip-section');
+    node('h4',label,section);
+    if(!result||!result.ok){
+      node('p',(result&&result.detail)||detailsLabels.unavailable,section,'help-block');
+      return;
+    }
+    const table=node('table',null,section,'table table-striped');
+    const body=node('tbody',null,table);
+    for(const entry of result.fields||[]){
+      const tr=node('tr',null,body);
+      node('th',entry.label||'',tr);
+      node('td',entry.value||'',tr);
+    }
+    if(result.source)node('small',result.source,section,'help-block');
+    if(result.raw){
+      const expandable=node('details',null,section);
+      node('summary',detailsLabels.raw,expandable);
+      node('pre',result.raw,expandable);
+    }
+  }
+  button.addEventListener('click',async ()=>{
+    button.disabled=true;
+    output.replaceChildren();
+    node('p',detailsLabels.busy,output,'help-block');
+    try{
+      const params=new URLSearchParams({
+        name:info.name,peer:info.peer,_wg_csrf:info.csrf
+      });
+      const response=await fetch(info.url,{method:'POST',
+        credentials:'same-origin',cache:'no-store',
+        headers:{'Accept':'application/json',
+                 'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+        body:params.toString()});
+      if(!(response.headers.get('content-type')||'').toLowerCase().includes('application/json'))
+        throw new Error('HTTP '+response.status);
+      const data=await response.json();
+      if(!data.ok)throw new Error(data.error||'HTTP '+response.status);
+      if(!root.isConnected)return;
+      output.replaceChildren();
+      if(!data.available){
+        node('p',data.detail||detailsLabels.unavailable,output,'alert alert-info');
+        return;
+      }
+      node('h4',data.ip,output);
+      node('p',detailsLabels.handshake+': '+
+        new Date(Number(data.handshake)*1000).toLocaleString(),output,'help-block');
+      renderSection(detailsLabels.whois,data.whois);
+      renderSection(detailsLabels.geoip,data.geoip);
+    }catch(error){
+      if(root.isConnected){
+        output.replaceChildren();
+        node('p',error.message||String(error),output,'alert alert-warning');
+      }
+    }finally{
+      if(root.isConnected)button.disabled=false;
+    }
+  });
+})();
+</script>
+IP_LOOKUP_SCRIPT
 }
 
 if ($access{'manage'}) {
