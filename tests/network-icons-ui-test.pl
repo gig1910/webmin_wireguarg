@@ -8,6 +8,11 @@ sub read_file {
     local $/;return <$f>;
 }
 my $peer=read_file("$FindBin::Bin/../edit_peer.cgi");
+my $peer_ui=read_file("$FindBin::Bin/../lib/peer-activity-ui-lib.pl");
+die "peer activity script helper not wired" unless $peer =~ m{require './lib/peer-activity-ui-lib.pl'} &&
+    $peer =~ /wg_peer_activity_tabs_script\(/;
+$peer .= "\n".$peer_ui;
+
 my $iface=read_file("$FindBin::Bin/../edit_interface.cgi");
 my $backend=read_file("$FindBin::Bin/../analytics-store.py");
 my $network=read_file("$FindBin::Bin/../network_store.py");
@@ -15,6 +20,8 @@ my $api=read_file("$FindBin::Bin/../peer_ip_info.cgi");
 my $icons=read_file("$FindBin::Bin/../network_icons.cgi");
 my $read=read_file("$FindBin::Bin/../network_icon_data.cgi");
 my $manifest=read_file("$FindBin::Bin/../MANIFEST.wbm");
+die "peer activity UI missing from WBM manifest\n"
+    unless $manifest =~ /^lib\/peer-activity-ui-lib\.pl$/m;
 my $sort=read_file("$FindBin::Bin/../lib/table-sort-ui-lib.pl");
 for my $file (qw(network_icons.cgi network_icon_data.cgi network_store.py)) {
     die "$file omitted from module release\n" unless $manifest=~/^\Q$file\E$/m;
@@ -74,7 +81,7 @@ die "peer activities not sortable\n"
            $peer=~/if\(sort\)sort\.apply\(\)/;
 die "peer tab switch does not set hidden pane state\n"
     unless $peer=~/p\.hidden=p\.dataset\.wgPeerPane!==tab/;
-my ($template)=$peer=~/print <<PEER_TABS_SCRIPT;\n(.*?)\nPEER_TABS_SCRIPT\n/s;
+my ($template)=$peer=~/(?:print|return) <<PEER_TABS_SCRIPT;\n(.*?)\nPEER_TABS_SCRIPT\n/s;
 die "peer tab JS heredoc missing\n" unless defined $template;
 our ($js_tabs_id,$js_analytics_url,$js_peer_id,$js_activity_labels);
 $js_tabs_id='"peer-tabs-fixture"';
