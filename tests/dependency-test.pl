@@ -45,4 +45,55 @@ $status = optional_dependency_status('qrencode');
 die "command not detected\n" if (!$status->{'command_available'});
 
 die "unknown dependency returned status\n" if (defined optional_dependency_status('not-allowed'));
+
+my $geo=optional_dependency_spec('geoip');
+die "GeoIP bundle absent\n" if !$geo || @{$geo->{'packages'}} != 5;
+die "GeoIP bundle must include offline country DB, updater and WHOIS\n"
+    unless join(' ',@{$geo->{'packages'}}) eq
+           'geoipupdate mmdb-bin geoip-bin geoip-database whois';
+for my $pair (@{$geo->{'commands'}}) {
+    my ($key,$fallback)=@$pair;
+    my $exe=File::Spec->catfile($tmp,$key);
+    $config{$key}=$exe;
+}
+my $quick=optional_dependency_quick_status('geoip');
+die "missing GeoIP binaries incorrectly treated as installed\n"
+    if $quick->{'command_available'} || @{$quick->{'missing_commands'}}!=4;
+my $geo_status=optional_dependency_status('geoip');
+die "GeoIP package version inventory failed\n"
+    unless $geo_status->{'package_installed'} &&
+           $geo_status->{'package_version'} =~ /geoip-database/;
+for my $pair (@{$geo->{'commands'}}) {
+    my $exe=$config{$pair->[0]};
+    open(my $f,'>',$exe) or die $!;
+    print {$f} "#!/bin/sh\nexit 0\n";
+    close($f);
+    chmod 0755,$exe;
+}
+$quick=optional_dependency_quick_status('geoip');
+die "installed GeoIP executable bundle not detected\n"
+    unless $quick->{'command_available'} && !@{$quick->{'missing_commands'}};
+$geo_status=optional_dependency_status('geoip');
+die "installed GeoIP bundle still reported unavailable\n"
+    unless $geo_status->{'command_available'} && $geo_status->{'package_installed'};
+die "unexpected package in dependency whitelist\n"
+    if optional_dependency_spec('apt') || optional_dependency_spec('../../etc/passwd');
+
+my $installer=do {
+    open(my $fd,'<','install_dependency.cgi') or die $!;
+    local $/; <$fd>;
+};
+die "installer must build fixed apt argv from the package whitelist\n"
+    unless $installer =~ /\@\{\$spec->\{'packages'\}/ &&
+           $installer =~ /assert_post_and_csrf\(\)/ &&
+           $installer =~ /assert_install_dependencies_access\(\)/ &&
+           $installer =~ /request_rate_limit\('install_dependency'/;
+my $peer=do {
+    open(my $fd,'<','edit_peer.cgi') or die $!;
+    local $/; <$fd>;
+};
+die "GeoIP installer link or ACL gate missing on peer details\n"
+    unless $peer =~ /optional_dependency_quick_status\('geoip'\)/ &&
+           $peer =~ /\$access\{'install_dependencies'\}/ &&
+           $peer =~ /install_dependency\.cgi\?dependency=geoip/;
 print "dependency tests passed\n";
