@@ -119,4 +119,19 @@ CHECK
     system($node,'--check',$path)==0 or die "rendered network icon IP parser syntax invalid\n";
     system($node,$path)==0 or die "rendered network icon IP parser behavior invalid\n";
 }
+# Test country-code regular expression after the same interpolating heredoc
+# expansion used by the CGI. Checking raw Perl source with Node misses '$/'.
+my ($country_body)=$iface=~/(    function showNetworkIcons\(\) \{.*?\n    \})/s;
+die "GeoIP badge renderer missing\n" unless defined $country_body;
+my $country_render=eval "sub { return <<COUNTRY_UI;\n$country_body\nCOUNTRY_UI\n}";
+die "GeoIP badge interpolation failed: $@\n" if !$country_render || $@;
+my $country_js=$country_render->();
+die "GeoIP country regex lost its anchor after Perl interpolation\n"
+    unless $country_js =~ m{\^\[A-Za-z\]\{2\}\$/};
+if($node){
+    my ($fh,$path)=tempfile(SUFFIX=>'.js',UNLINK=>1);
+    print {$fh} $country_js."\n";
+    close($fh);
+    system($node,'--check',$path)==0 or die "rendered GeoIP badge JavaScript invalid\n";
+}
 print "network badge/cache and peer three-tab UI tests passed\n";
