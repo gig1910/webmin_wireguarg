@@ -7,7 +7,13 @@ open(my $fh, '<', "$FindBin::Bin/../edit_peer.cgi") or die $!;
 my $source;
 { local $/; $source = <$fh>; }
 close($fh);
-my ($script) = $source =~ /print <<SCRIPT;\n(<script>.*?async function poll\(\).*?<\/script>)\nSCRIPT/s;
+die "peer CGI does not load diagnostic controller\n"
+    unless $source =~ m{require './lib/peer-diagnostic-ui-lib.pl'} &&
+           $source =~ /wg_peer_diagnostic_script\(/;
+open(my $ui,'<',"$FindBin::Bin/../lib/peer-diagnostic-ui-lib.pl") or die $!;
+{ local $/; $source .= "\n".<$ui>; }
+close($ui);
+my ($script) = $source =~ /(?:print|return) <<SCRIPT;\n(<script>.*?async function poll\(\).*?<\/script>)\nSCRIPT/s;
 die "diagnostic JavaScript block not found\n" if !defined($script);
 $script =~ s/^<script>\n?//;
 $script =~ s/\n?<\/script>$//;
@@ -28,7 +34,7 @@ if ($node) {
     # Then execute the same interpolating Perl heredoc used by edit_peer.cgi.
     # This catches escapes such as \n and \s being consumed by Perl before the
     # JavaScript reaches Authentic Theme.
-    my ($render_block) = $source =~ /print <<SCRIPT;\n(<script>.*?async function poll\(\).*?<\/script>)\nSCRIPT/s;
+    my ($render_block) = $source =~ /(?:print|return) <<SCRIPT;\n(<script>.*?async function poll\(\).*?<\/script>)\nSCRIPT/s;
     die "diagnostic JavaScript render block not found\n" if !defined($render_block);
     my $renderer = "$FindBin::Bin/diagnostic-render-$$.pl";
     my $rendered_html = "$FindBin::Bin/diagnostic-render-$$.html";
