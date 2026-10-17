@@ -19,6 +19,10 @@ my $maintenance=slurp("$FindBin::Bin/../analytics_maintenance.cgi");
 my $collector=slurp("$FindBin::Bin/../stats-collector.pl");
 my $index=slurp("$FindBin::Bin/../index.cgi");
 my $interface=slurp("$FindBin::Bin/../edit_interface.cgi");
+die "interface CGI must delegate to isolated page controller\n"
+    unless $interface =~ m{require './lib/interface-page-ui-lib.pl'} &&
+           $interface =~ /wg_interface_page_script\(/;
+$interface .= "\n".slurp("$FindBin::Bin/../lib/interface-page-ui-lib.pl");
 my $peer_page=slurp("$FindBin::Bin/../edit_peer.cgi");
 my $manifest=slurp("$FindBin::Bin/../MANIFEST.wbm");
 die "analytics tab missing\n" if $ui !~ /nav nav-tabs/ || $index !~ /analytics\.cgi/;
