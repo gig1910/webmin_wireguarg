@@ -60,9 +60,11 @@ my $show_job = sub {
     my ($id)=@_;
     my $url=module_script_url('install_dependency.cgi',
         job=>$id, dependency=>$dependency, format=>'json');
+    my $running_label=$text{'dependency_install_running'}
+        ? text('dependency_install_running',$spec->{'package'}) : 'Installation running';
     ui_print_header(undef,$title,'',undef,1,1);
     print '<div id="wg-dependency-job" data-status-url="'.html_escape($url).'"'.
-        ' data-running="'.html_escape($text{'dependency_install_running'}||'Installation running').'"'.
+        ' data-running="'.html_escape($running_label).'"'.
         ' data-success="'.html_escape($text{'dependency_install_success_short'}||'Installation completed').'"'.
         ' data-failed="'.html_escape($text{'dependency_install_failed_short'}||'Installation failed').'">';
     print '<p><strong data-role="status">'.html_escape(
