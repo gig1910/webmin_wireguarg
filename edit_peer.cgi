@@ -20,6 +20,7 @@ my $title = $new ? $text{'peer_add_title'} : text('peer_title', peer_display_nam
 
 ui_print_header(undef, $title, '', undef, 1, 1);
 print wg_build_banner();
+print wg_ui_transport_script();
 my $peer_tabs_id='wg-peer-tabs-'.substr(sha256_hex(join('|',time(),rand())),0,12);
 if ($peer) {
     print '<div id="'.html_escape($peer_tabs_id).'" class="wg-peer-detail-tabs">';
