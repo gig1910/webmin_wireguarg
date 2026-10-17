@@ -208,10 +208,10 @@ print <<SCRIPT;
             const end=value.indexOf(']');
             return end>1?value.slice(1,end).toLowerCase():'';
         }
-        const m=value.match(/^(\d{1,3}(?:\.\d{1,3}){3}):\d{1,5}$/);
+        const m=value.match(/^(\\d{1,3}(?:\\.\\d{1,3}){3}):\\d{1,5}$/);
         if(m)return m[1];
         if(/^[0-9a-f:]+$/i.test(value)&&value.includes(':'))return value.toLowerCase();
-        if(/^\d{1,3}(?:\.\d{1,3}){3}$/.test(value))return value;
+        if(/^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(value))return value;
         return '';
     }
     function showNetworkIcons() {
