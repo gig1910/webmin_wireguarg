@@ -16,6 +16,7 @@ use IPC::Open3;
 use Symbol qw(gensym);
 
 require "$FindBin::Bin/lib/collector-config-lib.pl";
+require "$FindBin::Bin/lib/subprocess-lib.pl";
 # Reuse the same WireGuard comment/name parser as the Webmin editor.
 require "$FindBin::Bin/lib/config-lib.pl";
 
@@ -266,22 +267,15 @@ sub analytics_call
     my $python = '/usr/bin/python3';
     my $script = "$FindBin::Bin/analytics-store.py";
     return (0, 'Python3 analytics backend missing') if (!-x $python || !-r $script);
-    my ($writer, $reader);
-    my $stderr = gensym();
-    my $pid;
-    eval {
-        $pid = open3($writer, $reader, $stderr, $python, $script, $action, $analytics_db);
-        print {$writer} encode_json($payload);
-        close($writer);
-    };
-    return (0, $@ || 'cannot launch analytics backend') if ($@);
-    my $result = do { local $/; <$reader> };
-    my $error_output = do { local $/; <$stderr> };
-    close($reader); close($stderr);
-    waitpid($pid, 0);
+    my ($ok, $result, $error_output) = wg_capture_subprocess(
+        [$python, $script, $action, $analytics_db], encode_json($payload),
+        timeout => 60,
+        max_stdout => 8_388_608,
+        max_stderr => 65_536,
+    );
     my $response = eval { decode_json($result || '') };
     return (0, $error_output || $result || 'backend failed')
-        if (!$response || !$response->{'ok'} || $? != 0);
+        if (!$ok || !$response || !$response->{'ok'});
     return (1, $response);
 }
 
