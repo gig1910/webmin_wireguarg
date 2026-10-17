@@ -10,10 +10,12 @@ git status --short
 ./tests/run-tests.sh
 ./scripts/check-release.sh
 ./scripts/build-release.sh
+sh ./scripts/smoke-release.sh
 ```
 
-The `Regression and Release Gate` GitHub Actions workflow runs the same
-checks on pushes to `main` and on pull requests. Inspect its result before
+The `Regression and Release Gate` GitHub Actions workflow runs these checks,
+then extracts the WBM and smoke-tests its bundled Perl UI modules and Python
+SQLite backend, on pushes to `main` and on pull requests. Inspect its result before
 deploying a newly built module. The build writes release packages into
 `dist/`, not into the running Webmin installation.
 
@@ -44,3 +46,8 @@ Set `SOURCE_DATE_EPOCH` to reproduce an intentionally fixed build timestamp.
 
 Use the new timestamped `.wbm.gz` on upgrade and verify the identity shown
 by Webmin. A successful build does **not** deploy or activate the package.
+
+The WBM smoke test validates package contents and isolated startup but does
+**not** install the module into a running Webmin instance, operate systemd or
+perform an actual apt/dpkg transaction. Test deployment remains a separate
+pre-production requirement.
