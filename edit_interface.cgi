@@ -91,7 +91,7 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
         $name_link,
         $state_html,
         '<span title="'.html_escape($allowed).'">'.html_escape($short_allowed).'</span>',
-        '<span class="wg-endpoint-with-icon"><span class="wg-network-icon" data-wg-net-icon="'.$id.'" title="'.html_escape($text{'network_icons_unknown'}).'">?</span> '.
+        '<span class="wg-endpoint-with-icon"><span class="wg-network-icon" data-wg-net-icon="'.$id.'" title="'.html_escape($text{'network_icons_unknown'}).'">?</span> <span class="wg-geoip-country" data-wg-geoip-country="'.$id.'" hidden></span> '.
         '<span data-wg-endpoint="'.$id.'">'.html_escape($endpoint).'</span></span>',
         '<span data-wg-handshake="'.$id.'">'.html_escape($handshake).'</span>',
         '<span data-wg-rx="'.$id.'">—</span>',
@@ -164,6 +164,8 @@ print <<SCRIPT;
  border-radius:50%;color:white;background:rgba(35,40,46,.55);font-weight:bold;font-size:12px;
  line-height:1;vertical-align:middle;white-space:nowrap;overflow:hidden; }
 .wg-network-icon[data-custom="1"] { font-size:11px; }
+.wg-geoip-country { font-size:11px; font-weight:600; letter-spacing:.04em; opacity:.9; }
+.wg-geoip-country[hidden] { display:none!important; }
 </style>
 <script>
 (function() {
@@ -223,6 +225,14 @@ print <<SCRIPT;
             icon.textContent=info&&info.icon?info.icon:'?';
             icon.dataset.custom=info&&info.icon&&info.icon!=='?'?'1':'0';
             icon.title=info ? [info.cidr,info.label,info.country].filter(Boolean).join(' — ') : '';
+            const country=root.querySelector('[data-wg-geoip-country="'+CSS.escape(icon.dataset.wgNetIcon)+'"]');
+            if(country){
+                const code=info&&typeof info.country==='string'&&/^[A-Za-z]{2}$/.test(info.country.trim())
+                    ?info.country.trim().toUpperCase():'';
+                country.textContent=code;
+                country.hidden=!code;
+                country.title=code ? 'GeoIP: '+code : '';
+            }
         });
     }
     async function updateNetworkIcons() {
