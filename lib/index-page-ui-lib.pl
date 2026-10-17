@@ -23,6 +23,8 @@ $render .= "const configPendingText=$js_collector_config_pending, configUnverifi
     $render .= <<'COLLECTOR_JS';
     const root = document.getElementById(rootId);
     if (!root || root.dataset.initialized === '1') return;
+    const previous=window.__wgCollectorController;
+    if(previous&&typeof previous.destroy==='function')previous.destroy();
     root.dataset.initialized = '1';
     const status = root.querySelector('[data-role="status"]');
     const details = root.querySelector('[data-role="details"]');
@@ -30,7 +32,7 @@ $render .= "const configPendingText=$js_collector_config_pending, configUnverifi
     const actions = root.querySelector('[data-role="actions"]');
     const consoleWrap = root.querySelector('[data-role="console-wrap"]');
     const consoleOutput = root.querySelector('[data-role="console"]');
-    let busy = false;
+    let busy = false, disposed = false;
     function fmtBytes(value) {
         let n = Number(value || 0), units = ['B','KiB','MiB','GiB']; let i = 0;
         while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
@@ -87,12 +89,14 @@ $render .= "const configPendingText=$js_collector_config_pending, configUnverifi
             options.body = new URLSearchParams({_wg_csrf: root.dataset.csrf, action: action}).toString();
         }
         const data = await window.WireGuardTransport.requestJson(root.dataset.url, options);
+        if(disposed)return data;
         if (method === 'POST' && consoleOutput) consoleOutput.textContent = data.output || '';
         render(data);
         if (!data.ok) throw new Error(data.error || 'Команда не достигла ожидаемого состояния. Подробности показаны в консоли.');
         return data;
     }
-    root.addEventListener('click', async function(event) {
+    const onAction=async function(event) {
+        if(disposed)return;
         const button = event.target.closest('button[data-action]'); if (!button || !root.contains(button) || busy) return;
         const action = button.dataset.action;
         if (action === 'stop' && !confirm(confirmStop)) return;
@@ -103,10 +107,35 @@ $render .= "const configPendingText=$js_collector_config_pending, configUnverifi
         if (consoleOutput) consoleOutput.textContent = runningActionText + '\n';
         try { await request('POST', action); }
         catch (error) { status.textContent = error.message; status.className = 'text-danger'; }
-        finally { busy = false; try { await request('GET'); } catch (e) {} setTimeout(function(){ if(root.isConnected && !busy) request('GET').catch(function(){}); }, 1200); }
+        finally {
+            busy = false;
+            if(!disposed){
+                try { await request('GET'); } catch (e) {}
+                setTimeout(function(){
+                    if(root.isConnected&&!disposed&&!busy)request('GET').catch(function(){});
+                },1200);
+            }
+        }
+    };
+    root.addEventListener('click',onAction);
+    function destroy(){
+        if(disposed)return;
+        disposed=true;
+        clearInterval(refreshTimer);
+        root.removeEventListener('click',onAction);
+        window.removeEventListener('pagehide',destroy);
+        if(window.__wgCollectorController&&window.__wgCollectorController.root===root)
+            delete window.__wgCollectorController;
+    }
+    request('GET').catch(function(error) {
+        if(!disposed){status.textContent=error.message;status.className='text-danger';}
     });
-    request('GET').catch(function(error) { status.textContent = error.message; status.className = 'text-danger'; });
-    const refreshTimer=setInterval(function(){ if(!root.isConnected){clearInterval(refreshTimer);return;} if(!busy && !document.hidden)request('GET').catch(function(){}); },10000);
+    const refreshTimer=setInterval(function(){
+        if(!root.isConnected||disposed){destroy();return;}
+        if(!busy&&!document.hidden)request('GET').catch(function(){});
+    },10000);
+    window.__wgCollectorController={root:root,destroy:destroy};
+    window.addEventListener('pagehide',destroy,{once:true});
 })();
 </script>
 COLLECTOR_JS
@@ -194,6 +223,7 @@ sub wg_index_runtime_script
         document.removeEventListener('wg-runtime-error',onRuntimeError);
         document.removeEventListener('wg-runtime-warning',onRuntimeWarning);
         observer.disconnect();
+        window.removeEventListener('pagehide',destroy);
         if(window.__wgIndexRuntimeController &&
            window.__wgIndexRuntimeController.root===root)
             delete window.__wgIndexRuntimeController;
