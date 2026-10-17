@@ -607,7 +607,9 @@ def network_lookup(conn, req):
                   key=lambda entry: entry[0].prefixlen, default=None)
         manual = max((entry for entry in icons if ip in entry[0]),
                      key=lambda entry: entry[0].prefixlen, default=None)
-        result[str(ip)] = {
+        # Preserve the exact request literal as the map key. Browser runtime
+        # endpoints can use a non-canonical IPv6 spelling (e.g. leading zeros).
+        result[raw] = {
             "icon": manual[1] if manual else "?",
             "label": manual[2] if manual else (hit[1] if hit else ""),
             "cidr": str(manual[0] if manual else hit[0]) if (manual or hit) else "",

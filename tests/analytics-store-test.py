@@ -467,6 +467,9 @@ class AnalyticsTest(unittest.TestCase):
         self.assertEqual(got["8.1.2.3"]["icon"],"☁")
         self.assertEqual(got["2001:4860:4860::8888"]["icon"],"⌂")
         self.assertEqual(got["9.9.9.9"]["icon"],"?")
+        # Runtime IPv6 endpoints may not use Python's canonical spelling.
+        mixed=store.network_lookup(self.conn,{"ips":["2001:4860:0000:0000:0000:0000:0000:8888"]})["results"]
+        self.assertEqual(mixed["2001:4860:0000:0000:0000:0000:0000:8888"]["icon"],"⌂")
         with self.assertRaises(ValueError):
             store.network_manage(self.conn,{"action":"clear_cache"})
         result=store.network_manage(self.conn,{"action":"clear_cache","confirm":"CLEAR"})
