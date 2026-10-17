@@ -4,14 +4,17 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/stub";
 use lib "$FindBin::Bin/..";
-our (%config, %text, %in, $WG_PSK_ORIGINAL_UI_TABLE_ROW);
+our (%config, %text, %in);
 $config{'wg_cmd'} = "$FindBin::Bin/bin/wg";
 require "$FindBin::Bin/../wireguard-lib.pl";
 
-local $WG_PSK_ORIGINAL_UI_TABLE_ROW = sub {
-    my ($label, $value) = @_;
-    return '<tr><th>'.$label.'</th><td>'.$value.'</td></tr>';
-};
+{
+    no warnings qw(redefine);
+    *main::ui_table_row = sub {
+        my ($label, $value) = @_;
+        return '<tr><th>'.$label.'</th><td>'.$value.'</td></tr>';
+    };
+}
 
 {
     no warnings qw(redefine once);

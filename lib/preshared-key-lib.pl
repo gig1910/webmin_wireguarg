@@ -154,19 +154,5 @@ sub preshared_key_form_rows_for_state
     return $html;
 }
 
-sub preshared_key_form_rows
-{
-    return '' if (!$access{'manage'});
-    my $name = $in{'name'} || '';
-    return '' if (!valid_interface_name($name));
-
-    my $peer;
-    if (defined($in{'peer'}) && $in{'peer'} ne '') {
-        my ($cfg) = parse_wireguard_config(conf_path($name));
-        $peer = get_peer_by_index($cfg, $in{'peer'}) if ($cfg);
-    }
-    my $present = $peer && length(get_section_value($peer, 'PresharedKey') || '');
-    return preshared_key_form_rows_for_state($present ? 1 : 0);
-}
 
 1;
