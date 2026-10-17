@@ -36,7 +36,7 @@ sub wg_capture_subprocess
     my $max_err = $options{'max_stderr'} || 65_536;
     my $timeout = $options{'timeout'} || 30;
     $timeout = 1 if $timeout < 1;
-    $timeout = 300 if $timeout > 300;
+    $timeout = 7200 if $timeout > 7200;
 
     my ($stdin, $stdout);
     my $stderr = Symbol::gensym();
@@ -80,11 +80,16 @@ sub wg_capture_subprocess
             if (defined($length) && $length > 0) {
                 my $target = fileno($fh) == $stdout_fd ? \$out : \$err;
                 my $limit = fileno($fh) == $stdout_fd ? $max_out : $max_err;
-                if (length($$target) + $length > $limit) {
+                if (length($target) + $length > $limit) {
+                    if ($options{'truncate_output'}) {
+                        my $remaining = $limit - length($target);
+                        $target .= substr($chunk, 0, $remaining) if $remaining > 0;
+                        next;
+                    }
                     $problem = 'Subprocess output exceeds limit';
                     last;
                 }
-                $$target .= $chunk;
+                $target .= $chunk;
             }
             elsif (defined($length) && $length == 0) {
                 $readers->remove($fh); close($fh);
