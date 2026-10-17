@@ -55,6 +55,8 @@ sub peer_ip_geoip
         my @databases = wg_geoip_database_paths();
         my ($database) = @databases;
         if ($database) {
+            my $country_code=peer_ip_mmdb_value($database, $ip, 'country', 'iso_code') || '';
+            $country_code='' if $country_code !~ /^[A-Z]{2}$/;
             my @fields;
             for my $request (
                 [ 'Country', 'country', 'names', 'en' ],
@@ -72,6 +74,7 @@ sub peer_ip_geoip
             }
             return { ok => @fields ? JSON::PP::true() : JSON::PP::false(),
                      source=>'GeoLite2 / MaxMind (local database)',
+                     country_code=>$country_code,
                      fields=>\@fields, detail=>@fields ? '' : 'IP not found in GeoIP database' };
         }
     }
@@ -80,14 +83,16 @@ sub peer_ip_geoip
         my ($ok, $out) = run_command([$legacy, $ip], 1, 5, 3072);
         $out = substr($out || '',0,3072);
         my @fields;
+        my $country_code='';
         for my $line (split(/\r?\n/,$out)) {
             next if $line !~ /^\s*GeoIP\s+(.+?)\s*:\s*(.*?)\s*$/;
             next if $2 =~ /not found|can't open|cannot open/i;
+            $country_code=uc($1) if !$country_code && $2 =~ /^([A-Z]{2}),/i;
             push(@fields, {label=>substr($1,0,90),value=>substr($2,0,350)});
             last if @fields>=6;
         }
         return { ok => @fields ? JSON::PP::true() : JSON::PP::false(),
-                 source=>'GeoIP (local database)', fields=>\@fields,
+                 source=>'GeoIP (local database)',country_code=>$country_code, fields=>\@fields,
                  detail=>@fields ? '' : ($out || 'No GeoIP data') };
     }
     return { ok=>JSON::PP::false(),source=>'Local GeoIP',
