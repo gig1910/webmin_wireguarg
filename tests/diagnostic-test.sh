@@ -86,7 +86,18 @@ while [ "$i" -lt 50 ]; do
     i=$((i+1))
     sleep 0.1
 done
-[ "$state_inf" = stopped ] || { echo "Continuous diagnostic did not reach stopped state" >&2; exit 1; }
+[ "$state_inf" = stopped ] || {
+    echo "Continuous diagnostic did not reach stopped state: $state_inf" >&2
+    echo "--- status.json ---" >&2
+    cat "$TMP/$job_inf/status.json" >&2 || true
+    echo "--- launcher.log ---" >&2
+    cat "$TMP/$job_inf/launcher.log" >&2 || true
+    echo "--- output.log ---" >&2
+    tail -n 30 "$TMP/$job_inf/output.log" >&2 || true
+    echo "--- process status ---" >&2
+    ps -o pid,ppid,pgid,stat,cmd -p "$child_pid" >&2 || true
+    exit 1
+}
 if kill -0 "$child_pid" 2>/dev/null; then
     echo "Continuous diagnostic child survived Stop" >&2
     exit 1
