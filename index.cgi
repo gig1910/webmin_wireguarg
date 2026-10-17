@@ -14,6 +14,8 @@ if ($list_error) {
     exit;
 }
 
+my $index_page_id='wg-index-'.substr(sha256_hex(time().rand().$),0,16);
+print '<div data-wg-index-page="'.html_escape($index_page_id).'">';
 print '<ul class="nav nav-tabs" style="margin-bottom:15px"><li class="active"><a href="index.cgi">'.html_escape($text{'analytics_interfaces_tab'}).'</a></li><li><a href="analytics.cgi">'.html_escape($text{'analytics_title'}).'</a></li></ul>';
 print '<div id="wg-runtime-error" class="alert alert-warning" style="display:none"></div>';
 print '<div class="wg-runtime-time">'.$text{'runtime_updated'}.': <span id="wg-index-runtime-time">'.$text{'runtime_loading'}.'</span></div>';
@@ -127,14 +129,16 @@ else {
 }
 print '</div></div>';
 
+my $js_index_page_id=json_encode_utf8($index_page_id);
 my $js_active = json_encode_utf8($text{'index_active'});
 my $js_inactive = json_encode_utf8($text{'index_inactive'});
 my $js_orphan = json_encode_utf8($text{'index_orphan'});
 my $runtime_error_prefix = $text{'index_runtime_error'};
 $runtime_error_prefix =~ s/\$1//g;
 my $js_runtime_error_prefix = json_encode_utf8($runtime_error_prefix);
-print wg_index_runtime_script($js_active, $js_inactive, $js_orphan, $js_runtime_error_prefix);
+print wg_index_runtime_script($js_index_page_id, $js_active, $js_inactive, $js_orphan, $js_runtime_error_prefix);
 
 print runtime_poll_html('');
 print ui_config_link('index_config');
+print '</div>';
 ui_print_footer('/', $text{'index_title'});
