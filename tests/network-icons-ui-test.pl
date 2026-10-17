@@ -23,8 +23,10 @@ die "on-demand lookup must cache confirmed WHOIS facts only\n"
            $api =~ /analytics_backend\('network_record'/ &&
            index($api,"analytics_backend('peer_ip'") <
               index($api,"analytics_backend('network_record'");
+my ($ingest_body) = $backend =~ /(^def ingest\(.*?)(?=^def |\z)/ms;
+die "ingest function not found\n" if !defined $ingest_body;
 die "network cache wrongly tied to peer samples\n"
-    if $backend =~ /def ingest[\s\S]*?def query[\s\S]*?network_record\(/;
+    if $ingest_body =~ /network_record\(/;
 die "network cache and manual assignments not independent\n"
     unless $backend=~/CREATE TABLE IF NOT EXISTS network_cache/ &&
            $backend=~/CREATE TABLE IF NOT EXISTS network_icons/ &&
