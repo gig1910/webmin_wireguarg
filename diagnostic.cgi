@@ -76,12 +76,8 @@ foreach my $candidate (glob(File::Spec->catfile($base, '*'))) {
 }
 api_fail($text{'diagnostics_too_many_jobs'} || 'Too many concurrent diagnostic jobs.') if ($running_jobs >= $max_jobs);
 
-my $random = '';
-if (sysopen(my $random_fh, '/dev/urandom', O_RDONLY)) {
-    sysread($random_fh, $random, 32);
-    close($random_fh);
-}
-my $job_id = sha256_hex(join('|', $random, time(), $$, rand(), $target, $operation));
+# An unguessable job identifier is required for every diagnostic request.
+my $job_id = _secure_random_hex(32);
 my $job_dir = diagnostic_job_dir($job_id);
 api_fail('Cannot create diagnostic job directory') if (!mkdir($job_dir, 0700));
 chmod(0700, $job_dir);
