@@ -3,6 +3,7 @@ use warnings;
 use Cwd qw(abs_path);
 use File::Basename qw(dirname);
 use File::Path qw(make_path);
+require abs_path(dirname(__FILE__)).'/lib/subprocess-lib.pl';
 
 sub _wg_first_executable
 {
@@ -173,8 +174,19 @@ sub module_install
         local $ENV{'WEBMIN_WIREGUARD_ONCE'} = 1;
         local $ENV{'WEBMIN_WIREGUARD_CONFIG'} = $ENV{'WEBMIN_WIREGUARD_CONFIG'} || '/etc/webmin/wireguard/config';
         local $ENV{'WEBMIN_WIREGUARD_STATE_DIR'} = $state_dir;
-        my $rc = system($perl, "$module_dir/stats-collector.pl");
-        _wg_install_log($log, "one-shot collector exit=".($rc == -1 ? -1 : ($rc >> 8)));
+        # A first-run compaction must not hold the Webmin installer forever.
+        # The long-running service will retry collecting after installation.
+        my $one_shot_timeout = int($ENV{'WEBMIN_WIREGUARD_ONESHOT_TIMEOUT'} || 120);
+        $one_shot_timeout = 1 if $one_shot_timeout < 1;
+        $one_shot_timeout = 120 if $one_shot_timeout > 120;
+        my ($ok, $out, $err, $rc) = wg_capture_subprocess(
+            [$perl, "$module_dir/stats-collector.pl"], '',
+            timeout => $one_shot_timeout,
+            max_stdout => 65_536, max_stderr => 65_536,
+        );
+        _wg_install_log($log, "one-shot collector exit=".
+            ($rc == -1 ? -1 : ($rc >> 8)).
+            " ok=".($ok ? 1 : 0)." error=".substr($err || '', 0, 512));
     }
 
     if (!$systemctl) {
