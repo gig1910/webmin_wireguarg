@@ -163,7 +163,9 @@ sub runtime_poll_html
     $params{'name'} = $name if (length($name || ''));
     my $url = module_script_url('runtime.cgi', %params);
     my $safe_url = html_escape($url);
+    my $transport=wg_ui_transport_script();
     return <<HTML;
+$transport
 <div id="$id" data-wg-runtime-source="$safe_url" data-wg-runtime-interval="$interval" hidden></div>
 <script>(function(){
  const API_BUILD='1.0.0';
@@ -198,22 +200,6 @@ sub runtime_poll_html
   }
   return true;
  }
- async function decodeJson(response){
-  const body=await response.text();
-  const contentType=(response.headers.get('content-type')||'').toLowerCase();
-  if(!contentType.includes('application/json')){
-   const sample=body.replace(/\s+/g,' ').trim().slice(0,240);
-   const error=new Error('HTTP '+response.status+': сервер вернул не JSON ('+(contentType||'без Content-Type')+')'+(sample?': '+sample:''));
-   error.nonJson=true;
-   throw error;
-  }
-  try{return JSON.parse(body);}catch(parseError){
-   const sample=body.replace(/\s+/g,' ').trim().slice(0,240);
-   const error=new Error('Некорректный JSON-ответ'+(sample?': '+sample:''));
-   error.nonJson=true;
-   throw error;
-  }
- }
  async function tick(force){
   if(state.stopped)return false;
   if(!root.isConnected){cleanup();return false;}
@@ -226,7 +212,7 @@ sub runtime_poll_html
   try{
    const requestUrl=force?url+(url.includes('?')?'&':'?')+'refresh=1&_wg_now='+Date.now():url;
    const response=await fetch(requestUrl,{cache:'no-store',credentials:'same-origin',redirect:'error',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},signal:controller.signal});
-   const data=await decodeJson(response);
+   const data=await window.WireGuardTransport.readJson(response);
    if(!data.ok)throw new Error(data.error||('HTTP '+response.status));
    succeeded=true;
    if(root.isConnected)document.dispatchEvent(new CustomEvent('wg-runtime',{detail:data}));
