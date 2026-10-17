@@ -40,22 +40,13 @@ sub run_command
 sub run_command_stdin
 {
     my ($argv, $stdin) = @_;
-    my ($writer, $reader);
-    my $err = gensym();
-    my $pid;
-    eval {
-        $pid = open3($writer, $reader, $err, @$argv);
-        binmode($writer);
-        print {$writer} $stdin;
-        close($writer);
-    };
-    return (0, '', $@ || 'open3 failed') if ($@);
-    my $out = do { local $/; <$reader> };
-    my $eout = do { local $/; <$err> };
-    close($reader);
-    close($err);
-    waitpid($pid, 0);
-    return ($? == 0, defined($out) ? $out : '', defined($eout) ? $eout : '');
+    my ($ok, $out, $err) = wg_capture_subprocess(
+        $argv, $stdin,
+        timeout => 30,
+        max_stdout => 8_388_608,
+        max_stderr => 65_536,
+    );
+    return ($ok, $out, $err);
 }
 
 sub require_command
