@@ -38,6 +38,7 @@ perl tests/interface-controller-root-test.pl
 perl tests/peer-runtime-refresh-test.pl
 perl tests/diagnostic-js-test.pl
 perl tests/security-regression-test.pl
+perl tests/legacy-stats-references-test.pl
 perl tests/service-hardening-test.pl
 perl tests/collector-config-test.pl
 perl tests/ui-ux-test.pl
