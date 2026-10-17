@@ -5,6 +5,11 @@ my $ru=slurp("$FindBin::Bin/../lang/ru");
 die "broken back label remains\n" if $ru =~ /Вернуться к\s+(?:Отмена|Вернуться)/;
 die "overlong interface restart label remains\n" if $ru =~ /^interface_restart=Полностью/m;
 my $index=slurp("$FindBin::Bin/../index.cgi");
+die "dashboard is not connected to shared controller\n"
+    unless $index =~ m{require './lib/index-page-ui-lib.pl'} &&
+           $index =~ /wg_index_collector_script\(/;
+$index .= "\n".slurp("$FindBin::Bin/../lib/index-page-ui-lib.pl");
+
 die "redundant Open button used in interface list\n" if $index =~ /index_open|interface_peer_open/;
 my $peer=slurp("$FindBin::Bin/../edit_peer.cgi");
 die "peer editor lacks direct save form\n" if $peer !~ /save_peer\.cgi/;
