@@ -147,6 +147,18 @@ def network_manage(conn, req):
                                  "ORDER BY observed_at DESC LIMIT 1000")]
         icons = [dict(zip(("cidr", "icon", "label"), row)) for row in
                  conn.execute("SELECT cidr,icon,label FROM network_icons ORDER BY cidr LIMIT 1000")]
+        observations = [
+            (ipaddress.ip_address(ip), code)
+            for ip, code in conn.execute(
+                "SELECT ip,country_code FROM geoip_cache WHERE observed_at>=? "
+                "ORDER BY observed_at DESC LIMIT 1000", (int(time.time())-30*86400,))]
+        for item in cache:
+            prefix = ipaddress.ip_network(item["cidr"])
+            # These are observed IP countries, NOT a location assigned to
+            # the entire WHOIS prefix. Preserve this distinction in the UI.
+            item["geoip_countries"] = sorted({
+                code for ip, code in observations if ip in prefix
+            })
         return {"ok": True, "cache": cache, "icons": icons}
     if action == "clear_cache":
         if req.get("confirm") != "CLEAR":
