@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### UI controller isolation and legacy API retirement
+
+- Extract analytics chart/filter/events controller into `lib/analytics-page-ui-lib.pl`
+  and peer activity/diagnostics controllers into dedicated UI modules, keeping
+  CGI routing and server-side data authorization independent from browser logic.
+- Retire `stats.cgi`: current Webmin pages use `runtime.cgi` for live state
+  and `history.cgi` for short-interval history. No production code in this
+  repository calls the retired CGI; CI now checks for internal references.
+  **Compatibility:** third-party clients using `stats.cgi` must migrate, as
+  the old URL is no longer shipped. External consumers cannot be inferred from
+  the repository and must be inventoried before server deployment.
+
+
 ### Domain separation
 
 - Move network WHOIS cache and administrator icon logic into `network_store.py`
