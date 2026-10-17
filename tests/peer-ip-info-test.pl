@@ -7,6 +7,7 @@ use JSON::PP ();
 use MIME::Base64 ();
 our %config;
 our ($ip_dom_json,$ip_name_json,$ip_index_json,$ip_csrf_json,$ip_labels_json,$ip_url_json);
+require "$FindBin::Bin/../lib/geoip-update-lib.pl";
 require "$FindBin::Bin/../lib/peer-ip-info-lib.pl";
 
 my $whois_raw="NetRange: 8.8.8.0 - 8.8.8.255\nNetName: DNS-NET\n".
