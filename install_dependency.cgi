@@ -20,7 +20,7 @@ my $back_url = length($name)
     : 'index.cgi';
 my $back_label = length($name) ? text('interface_title', $name) : $text{'index_title'};
 my $title = text('dependency_install_title', $spec->{'package'});
-my $jobs_base = File::Spec->catdir(_state_dir(), 'dependency-jobs');
+our $jobs_base = File::Spec->catdir(_state_dir(), 'dependency-jobs');
 
 sub install_job_dir
 {
