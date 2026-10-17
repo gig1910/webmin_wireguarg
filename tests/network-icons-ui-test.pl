@@ -22,6 +22,16 @@ my $backend=read_file("$FindBin::Bin/../analytics-store.py");
 my $network=read_file("$FindBin::Bin/../network_store.py");
 my $api=read_file("$FindBin::Bin/../peer_ip_info.cgi");
 my $icons=read_file("$FindBin::Bin/../network_icons.cgi");
+my $network_ui=read_file("$FindBin::Bin/../lib/network-icons-ui-lib.pl");
+die "network directory UI helper not used by CGI\n"
+    unless $icons =~ m{require './lib/network-icons-ui-lib.pl'} &&
+           $icons =~ /wg_network_icons_page_script\(\)/;
+die "network directory UI missing from WBM\n"
+    unless read_file("$FindBin::Bin/../MANIFEST.wbm") =~ /^lib\/network-icons-ui-lib\.pl$/m;
+die "network directory editor or flag display lost\n"
+    unless $network_ui =~ /data-wg-edit-range/ &&
+           $network_ui =~ /data-wg-geoip-codes/ &&
+           $network_ui =~ /data-wg-country/;
 my $read=read_file("$FindBin::Bin/../network_icon_data.cgi");
 my $manifest=read_file("$FindBin::Bin/../MANIFEST.wbm");
 die "peer activity UI missing from WBM manifest\n"
@@ -97,9 +107,16 @@ die "peer tab JS template cannot compile: $@" if !$generator || $@;
 my $html=$generator->();
 my ($js)=$html=~m{<script>\n(.*?)</script>}s;
 die "peer tab JS missing\n" if !defined $js;
+require "$FindBin::Bin/../lib/network-icons-ui-lib.pl";
+my $network_markup=wg_network_icons_page_script();
+my ($network_js)=$network_markup=~m{<script>\s*(.*?)\s*</script>}s;
+die "rendered network directory JavaScript missing\n" unless $network_js;
 my $node=qx(command -v node 2>/dev/null);
 $node =~ s/[\r\n]+\z//;
 if($node){
+    my ($netfh,$netpath)=tempfile(SUFFIX=>'.js',UNLINK=>1);
+    print {$netfh} $network_js;close($netfh);
+    system($node,'--check',$netpath)==0 or die "network editor rendered JavaScript invalid\n";
     my ($fh,$path)=tempfile(SUFFIX=>'.js',UNLINK=>1);
     print {$fh} $js;close($fh);
     system($node,'--check',$path)==0 or die "generated peer tabs JS invalid\n";
