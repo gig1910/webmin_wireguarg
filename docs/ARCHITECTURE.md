@@ -11,6 +11,11 @@ The current `main` architecture uses a Webmin compatibility facade and responsib
 - `lib/runtime-lib.pl` — runtime dump parsing and start/stop/apply/restart operations.
 - `lib/api-ui-lib.pl` — JSON transport, Webmin URLs, formatting and action forms.
 - `lib/metrics-lib.pl` — runtime cache, history reads and traffic graph/poller rendering.
+- `lib/analytics-page-ui-lib.pl` — analytics chart, filters, refresh and
+  events UI controller, rendered with JSON-encoded CGI inputs.
+- `lib/peer-activity-ui-lib.pl` — peer activity tab navigation and polling.
+- `lib/peer-diagnostic-ui-lib.pl` — independent diagnostic panel controller,
+  leaving diagnostic authorization and jobs in their dedicated endpoints.
 - `lib/collector-config-lib.pl` — dependency-free normalization and fingerprinting shared by Webmin CGI code and the standalone collector.
 - `stats-collector.pl` — bounded, singleton background metrics collector.
 - `diagnostic-worker.pl` — isolated asynchronous diagnostic job worker.
@@ -29,6 +34,10 @@ The split deliberately keeps functions in the Webmin module package. Existing CG
 - `/var/webmin/wireguard` contains bounded runtime state, history, backups,
   CSRF tokens, rate-limit state and diagnostic jobs.
 - Webmin ACL checks occur in every CGI endpoint.
+- `stats.cgi` was retired after verifying there are no internal callers;
+  live reads use `runtime.cgi`, short history uses `history.cgi`, and
+  long-term history uses `analytics_data.cgi`. Out-of-repository consumers
+  must migrate separately.
 - External commands are invoked through fixed/configured executable paths with
   argument arrays and timeouts.
 
