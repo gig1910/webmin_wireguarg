@@ -34,6 +34,8 @@ my ($report,$err)=analytics_backend('network_manage',{action=>'list'});
 error($err) unless $report;
 ui_print_header(undef,$text{'network_icons_title'},'',undef,1,1);
 print wg_build_banner();
+my $network_page_id='wg-net-'.substr(sha256_hex(time().rand().$),0,16);
+print '<div data-wg-network-page="'.html_escape($network_page_id).'">';
 print '<div class="alert alert-success">'.html_escape($notice).'</div>' if $notice;
 print '<p>'.html_escape($text{'network_icons_help'}).'</p>';
 # Shared network/GeoIP controls live here, independently of any peer.
@@ -128,5 +130,6 @@ print ui_hidden('action','clear_cache');
 print '<label>'.html_escape($text{'network_icons_confirm'}).' <input name="confirm" maxlength="5" autocomplete="off"></label> ';
 print '<button type="submit" class="btn btn-danger">'.html_escape($text{'network_icons_clear'}).'</button>';
 print ui_form_end();
-print wg_network_icons_page_script();
+print wg_network_icons_page_script(json_encode_utf8($network_page_id));
+print '</div>';
 ui_print_footer('index.cgi',$text{'index_title'});
