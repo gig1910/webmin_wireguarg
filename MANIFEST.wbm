@@ -75,3 +75,5 @@ docs/ANALYTICS.ru.md
 docs/ACL.md
 docs/ARCHITECTURE.md
 docs/SECURITY-REVIEW.md
+lib/peer-ip-info-lib.pl
+peer_ip_info.cgi

@@ -1,0 +1,48 @@
+#!/usr/local/bin/perl
+require './wireguard-lib.pl';
+ReadParse();
+assert_view_access();
+
+sub fail_ip_info {
+    my ($message) = @_;
+    json_response({ok=>JSON::PP::false(),error=>"$message"});
+    exit;
+}
+
+eval { assert_post_and_csrf(); request_rate_limit('peer_ip_info',6,60); 1 }
+    or fail_ip_info($@ || $text{'action_post'});
+
+my $name=$in{'name'} || '';
+fail_ip_info($text{'error_invalid_name'}) if !valid_interface_name($name);
+my $peer_index=$in{'peer'};
+fail_ip_info($text{'error_peer'}) if !defined($peer_index) || $peer_index !~ /^\d{1,6}$/;
+my ($cfg,$err)=parse_wireguard_config(conf_path($name));
+fail_ip_info($err || $text{'error_peer'}) if !$cfg;
+my $peer=get_peer_by_index($cfg,$peer_index);
+fail_ip_info($text{'error_peer'}) if !$peer;
+my $public=get_section_value($peer,'PublicKey') || '';
+fail_ip_info($text{'error_peer'}) if $public !~ /^[A-Za-z0-9+\/]{43}=$/;
+
+# A name, tunnel IP or peer index is NEVER the persistent identity.
+# Validate current configuration first, then look up only by public-key hash.
+my $hash=sha256_hex($public);
+fail_ip_info($text{'peer_ip_no_history'}) if !-f analytics_db_path();
+my ($record,$backend_error)=analytics_backend('peer_ip',{peer_id=>$hash});
+fail_ip_info($backend_error || $text{'peer_ip_no_history'}) if !$record;
+if (!$record->{'available'}) {
+    json_response({ok=>JSON::PP::true(),available=>JSON::PP::false(),
+                   detail=>$text{'peer_ip_no_handshake'}});
+    exit;
+}
+my $ip=$record->{'ip'} || '';
+# Only globally routable, canonical numeric IPs may leave the server.
+fail_ip_info($text{'peer_ip_no_handshake'})
+    if !$record->{'public'} || $ip !~ /^[0-9a-f:.]{3,45}$/i;
+my $result={
+    ok=>JSON::PP::true(),
+    available=>JSON::PP::true(),
+    ip=>$ip, handshake=>0+($record->{'handshake'} || 0),
+    whois=>peer_ip_whois($ip),
+    geoip=>peer_ip_geoip($ip),
+};
+json_response($result);
