@@ -50,6 +50,7 @@ diagnostic_status.cgi
 diagnostic_stop.cgi
 diagnostic-worker.pl
 install_dependency.cgi
+dependency-worker.pl
 images/icon.gif
 lang/en
 lang/ru
