@@ -27,3 +27,5 @@ jobs:
         run: ./scripts/check-release.sh
       - name: Build tested release
         run: ./scripts/build-release.sh
+      - name: Smoke-test packaged Webmin module
+        run: sh ./scripts/smoke-release.sh
