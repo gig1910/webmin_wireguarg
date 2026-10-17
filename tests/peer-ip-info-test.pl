@@ -13,8 +13,12 @@ my $whois_raw="NetRange: 8.8.8.0 - 8.8.8.255\nNetName: DNS-NET\n".
               "OrgName: Example ISP\norigin: AS12345\ncountry: US\n".
               "OrgAbuseEmail: abuse\@example.net\n";
 my @calls;
+our $allow_mmdb=0;
 sub command_path { return $_[1]; }
-sub has_command { return 1; }
+sub has_command {
+    return 0 if $_[0] =~ /mmdblookup$/ && !$allow_mmdb;
+    return 1;
+}
 sub run_command {
     my ($argv) = @_;
     push @calls, [@$argv];
@@ -42,6 +46,7 @@ die "offline GeoIP executed unexpected command\n"
     unless @calls==2 && $calls[1][0] eq '/usr/bin/geoiplookup';
 my ($fh,$fake)=tempfile(SUFFIX=>'.mmdb',UNLINK=>1);
 print {$fh} "fake\n"; close($fh);
+$allow_mmdb=1;
 my $country=peer_ip_mmdb_value($fake,'8.8.8.8','country','names','en');
 die "GeoLite2 mmdblookup parsing failed\n" unless $country eq 'Serbia';
 die "GeoLite2 subprocess argument layout invalid\n"
