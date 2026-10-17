@@ -41,7 +41,7 @@ for my $file (qw(client_config.cgi download_client.cgi peer_qr.cgi qr_image.cgi)
     my $src = slurp("$root/$file");
     die "$file exports private material without export ACL\n" if $src !~ /assert_export_access\s*\(/;
 }
-for my $file (qw(runtime.cgi history.cgi stats.cgi index.cgi edit_interface.cgi edit_peer.cgi)) {
+for my $file (qw(runtime.cgi history.cgi index.cgi edit_interface.cgi edit_peer.cgi)) {
     my $src = slurp("$root/$file");
     die "$file lacks view ACL\n" if $src !~ /assert_view_access\s*\(/;
 }
@@ -51,6 +51,8 @@ my $api = slurp("$root/lib/security-lib.pl");
 die "CSRF token is not random\n" if $api !~ m{/dev/urandom};
 die "CSRF comparison is not constant-time style\n" if $api !~ /\$diff\s*\|=/;
 die "request limiter missing file locking\n" if $api !~ /flock\(\$fh,\s*LOCK_EX\)/;
+my $manifest = slurp("$root/MANIFEST.wbm");
+die "retired stats.cgi still bundled\n" if $manifest =~ /^stats\.cgi$/m;
 my $default_acl = slurp("$root/defaultacl");
 for my $key (qw(view manage export_clients diagnostics logs install_dependencies)) {
     die "defaultacl missing $key\n" if $default_acl !~ /^\Q$key\E=/m;
