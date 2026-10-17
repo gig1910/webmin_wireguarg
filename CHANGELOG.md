@@ -23,8 +23,6 @@
 - Require cryptographically strong randomness for CSRF tokens and diagnostic
   job identifiers; do not fall back to a predictable generator.
 
-[Unreleased]
-
 ### Added
 
 - On-demand WHOIS CIDR cache and independent manually assigned IPv4/IPv6 subnet icons. Live endpoint badges read local data only; a protected cache reset preserves icon assignments.
