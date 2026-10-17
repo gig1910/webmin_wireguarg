@@ -450,3 +450,16 @@ analytics_auto_custom_note=Auto-refresh pauses for a fixed date range.
 analytics_graph_zero=0
 analytics_tab_graph=Graph
 analytics_tab_events=Events
+
+peer_ip_title=Last handshake WHOIS and GeoIP
+peer_ip_help=The IP comes from the latest confirmed handshake. WHOIS queries registries only after clicking; GeoIP uses an offline database. Location is approximate.
+peer_ip_lookup=Look up WHOIS and GeoIP
+peer_ip_busy=Looking up IP information…
+peer_ip_whois=WHOIS / network owner
+peer_ip_geoip=GeoIP / geography
+peer_ip_raw=Full WHOIS response
+peer_ip_handshake_time=Confirmed handshake
+peer_ip_unavailable=No information available.
+peer_ip_no_history=No confirmed IP history. Check the analytics collector.
+peer_ip_no_handshake=No handshake-confirmed IP has been observed.
+peer_ip_private=Last handshake IP is private or reserved; external WHOIS is disabled.

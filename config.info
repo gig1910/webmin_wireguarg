@@ -45,3 +45,8 @@ stats_max_total_bytes=Maximum total bytes for all metric history files (collecto
 stats_health_interval=Collector health snapshot interval in seconds (collector restart required),0
 diagnostic_max_jobs_per_user=Maximum concurrent diagnostic jobs per user,0
 systemctl_cmd=Full path to systemctl for collector control,0
+
+whois_cmd=Full path to WHOIS command (on-demand network lookup),0
+geoiplookup_cmd=Legacy local GeoIP lookup command,0
+mmdblookup_cmd=MaxMind local GeoLite2 lookup command,0
+geoip_city_db=Optional absolute path to local GeoLite2 City/Country .mmdb database,0

@@ -55,3 +55,7 @@ The history plot uses SVG lines and translucent fills with the same theme colors
 ### Missing-value order
 
 `NULL`, Never, absent handshake/measurement and other missing cells compare as **greater than every present value**, across dates, IPs and numeric columns. Ascending sorts place them last; descending sorts place them first. Zero bytes remains the real value `0`, not NULL.
+
+### Last-handshake peer WHOIS and GeoIP
+
+On peer details an explicit button looks up the IP in the SQLite `handshake_ip` field bound to SHA256(public key), not the current or statically configured endpoint. ACL, POST CSRF, and rate limiting are enforced. WHOIS is an on-demand outbound registry query via `whois`. GeoIP is offline-only with optional `mmdblookup`/GeoLite2 .mmdb or legacy `geoiplookup`/geoip-database; missing tools and DBs are reported. No automatic external IP lookup on page load, no external HTTP GeoIP providers, and no public lookup of private or reserved addresses.

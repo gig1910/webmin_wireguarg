@@ -46,3 +46,8 @@ stats_max_total_bytes=268435456
 stats_health_interval=30
 diagnostic_max_jobs_per_user=2
 systemctl_cmd=/usr/bin/systemctl
+
+whois_cmd=/usr/bin/whois
+geoiplookup_cmd=/usr/bin/geoiplookup
+mmdblookup_cmd=/usr/bin/mmdblookup
+geoip_city_db=

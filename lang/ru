@@ -450,3 +450,16 @@ analytics_auto_custom_note=Автообновление приостанавли
 analytics_graph_zero=0
 analytics_tab_graph=График
 analytics_tab_events=События
+
+peer_ip_title=WHOIS и GeoIP последнего рукопожатия
+peer_ip_help=IP определяется по последнему рукопожатию. WHOIS обращается к реестрам только по нажатию, GeoIP использует локальную базу. Геолокация приблизительна.
+peer_ip_lookup=Узнать WHOIS и GeoIP
+peer_ip_busy=Выполняется проверка IP…
+peer_ip_whois=WHOIS / владелец сети
+peer_ip_geoip=GeoIP / география
+peer_ip_raw=Полный ответ WHOIS
+peer_ip_handshake_time=Подтверждённое рукопожатие
+peer_ip_unavailable=Нет данных.
+peer_ip_no_history=История IP отсутствует. Проверьте сборщик аналитики.
+peer_ip_no_handshake=Для пира нет IP, подтверждённого рукопожатием.
+peer_ip_private=IP последнего рукопожатия частный или зарезервированный; внешний WHOIS не выполняется.
