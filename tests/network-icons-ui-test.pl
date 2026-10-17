@@ -25,7 +25,7 @@ my $icons=read_file("$FindBin::Bin/../network_icons.cgi");
 my $network_ui=read_file("$FindBin::Bin/../lib/network-icons-ui-lib.pl");
 die "network directory UI helper not used by CGI\n"
     unless $icons =~ m{require './lib/network-icons-ui-lib.pl'} &&
-           $icons =~ /wg_network_icons_page_script\(\)/;
+           $icons =~ /wg_network_icons_page_script\(json_encode_utf8/;
 die "network directory UI missing from WBM\n"
     unless read_file("$FindBin::Bin/../MANIFEST.wbm") =~ /^lib\/network-icons-ui-lib\.pl$/m;
 die "network directory editor or flag display lost\n"
