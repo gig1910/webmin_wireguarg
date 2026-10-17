@@ -70,6 +70,10 @@ my $show_job = sub {
     print '<p><strong data-role="status">'.html_escape(
         $text{'dependency_install_running'}||'Installation running').'</strong></p>';
     print '<pre data-role="output" style="max-height:520px;overflow:auto;white-space:pre-wrap"></pre>';
+    my $job_link=module_script_url('install_dependency.cgi',
+        job=>$id, dependency=>$dependency);
+    print '<p><a href="'.html_escape($job_link).'">'.html_escape(
+        $text{'dependency_job_link'}||'Open installation status').'</a></p>';
     print '<p><a class="btn btn-default" href="'.html_escape($back_url).'">'.
         html_escape($text{'dependency_return'}||'Return').'</a></p></div>';
     print <<'DEPENDENCY_JOB_SCRIPT';
