@@ -52,13 +52,8 @@ sub peer_ip_geoip
     my ($ip) = @_;
     my $mmdb = command_path('mmdblookup_cmd', '/usr/bin/mmdblookup');
     if (has_command($mmdb)) {
-        my @databases = grep { defined($_) && length($_) }
-            ($config{'geoip_city_db'},
-             '/var/lib/GeoIP/GeoLite2-City.mmdb',
-             '/usr/share/GeoIP/GeoLite2-City.mmdb',
-             '/var/lib/GeoIP/GeoLite2-Country.mmdb',
-             '/usr/share/GeoIP/GeoLite2-Country.mmdb');
-        my ($database) = grep { -f $_ && -r $_ } @databases;
+        my @databases = wg_geoip_database_paths();
+        my ($database) = @databases;
         if ($database) {
             my @fields;
             for my $request (

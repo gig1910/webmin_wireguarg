@@ -49,6 +49,7 @@ require './lib/collector-config-lib.pl';
 require './lib/metrics-lib.pl';
 require './lib/analytics-api-lib.pl';
 require './lib/peer-ip-info-lib.pl';
+require './lib/geoip-update-lib.pl';
 require './lib/peer-usage-lib.pl';
 require './lib/peer-usage-ui-lib.pl';
 require './lib/preshared-key-lib.pl';

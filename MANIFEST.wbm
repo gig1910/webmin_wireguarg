@@ -77,3 +77,5 @@ docs/ARCHITECTURE.md
 docs/SECURITY-REVIEW.md
 lib/peer-ip-info-lib.pl
 peer_ip_info.cgi
+lib/geoip-update-lib.pl
+geoip_timer.cgi
