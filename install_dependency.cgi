@@ -1,8 +1,8 @@
 #!/usr/local/bin/perl
 require './wireguard-lib.pl';
-use IO::Select;
-use IPC::Open3;
-use Symbol qw(gensym);
+use File::Path qw(make_path remove_tree);
+use File::Spec;
+use POSIX qw(setsid _exit);
 
 ReadParse();
 assert_view_access();
@@ -19,10 +19,103 @@ my $back_url = length($name)
     ? 'edit_peer.cgi?name='.urlize($name).(length("$peer") ? '&peer='.urlize($peer) : '')
     : 'index.cgi';
 my $back_label = length($name) ? text('interface_title', $name) : $text{'index_title'};
+my $title = text('dependency_install_title', $spec->{'package'});
+my $jobs_base = File::Spec->catdir(_state_dir(), 'dependency-jobs');
+
+sub install_job_dir
+{
+    my ($id)=@_;
+    error('Invalid installation job ID') if !valid_diagnostic_job_id($id);
+    return File::Spec->catdir($jobs_base, $id);
+}
+
+sub install_job_result
+{
+    my ($id)=@_;
+    my $dir=install_job_dir($id);
+    my $request=diagnostic_read_json(File::Spec->catfile($dir,'request.json'));
+    error('Installation job not found') if !$request || !-d $dir ||
+        ($request->{'owner_hash'}||'') ne _request_identity();
+    my $status=diagnostic_read_json(File::Spec->catfile($dir,'status.json')) ||
+        {state=>'starting',created=>$request->{'created'}};
+    my $state=$status->{'state'} || 'starting';
+    my $age=time()-($request->{'created'}||time());
+    if ($state eq 'starting' && $age>120 ||
+        $state eq 'running' && $age>2400) {
+        $state='failed';
+        $status->{'error'}='Installation worker stopped responding';
+    }
+    my $output='';
+    my $path=File::Spec->catfile($dir,'output.log');
+    if (-f $path && -s $path <= 5_242_880) {
+        $output=read_file_contents($path) || '';
+    }
+    return {ok=>JSON::PP::true(),state=>$state,
+        done=>($state eq 'done' || $state eq 'failed')?JSON::PP::true():JSON::PP::false(),
+        output=>$output,exit_code=>$status->{'exit_code'},
+        error=>$status->{'error'}||'',job=>$id};
+}
+
+my $show_job = sub {
+    my ($id)=@_;
+    my $url=module_script_url('install_dependency.cgi',
+        job=>$id, dependency=>$dependency, format=>'json');
+    ui_print_header(undef,$title,'',undef,1,1);
+    print '<div id="wg-dependency-job" data-status-url="'.html_escape($url).'"'.
+        ' data-running="'.html_escape($text{'dependency_install_running'}||'Installation running').'"'.
+        ' data-success="'.html_escape($text{'dependency_install_success_short'}||'Installation completed').'"'.
+        ' data-failed="'.html_escape($text{'dependency_install_failed_short'}||'Installation failed').'">';
+    print '<p><strong data-role="status">'.html_escape(
+        $text{'dependency_install_running'}||'Installation running').'</strong></p>';
+    print '<pre data-role="output" style="max-height:520px;overflow:auto;white-space:pre-wrap"></pre>';
+    print '<p><a class="btn btn-default" href="'.html_escape($back_url).'">'.
+        html_escape($text{'dependency_return'}||'Return').'</a></p></div>';
+    print <<'DEPENDENCY_JOB_SCRIPT';
+<script>
+(function(){
+    'use strict';
+    const root=document.getElementById('wg-dependency-job');
+    if(!root)return;
+    const status=root.querySelector('[data-role="status"]');
+    const output=root.querySelector('[data-role="output"]');
+    async function refresh(){
+        if(!root.isConnected)return;
+        try{
+            const response=await fetch(root.dataset.statusUrl,{
+                credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}
+            });
+            const data=await response.json();
+            if(!data.ok)throw new Error(data.error||'Status unavailable');
+            output.textContent=data.output||'';
+            if(data.done){
+                status.textContent=data.state==='done'?root.dataset.success:root.dataset.failed;
+                if(data.error)output.textContent+='\n'+data.error;
+                return;
+            }
+            status.textContent=root.dataset.running;
+        }catch(error){status.textContent=String(error);}
+        if(root.isConnected)setTimeout(refresh,2000);
+    }
+    refresh();
+})();
+</script>
+DEPENDENCY_JOB_SCRIPT
+    ui_print_footer($back_url,$back_label);
+};
+
+# Job progress is readable only to the user/session who started installation.
+if (defined($in{'job'}) && length($in{'job'})) {
+    my $result=install_job_result($in{'job'});
+    if (($in{'format'}||'') eq 'json') {
+        json_response($result);
+    }
+    else {
+        $show_job->($in{'job'});
+    }
+    exit;
+}
 
 my $status = optional_dependency_status($dependency);
-my $title = text('dependency_install_title', $spec->{'package'});
-
 if (($ENV{'REQUEST_METHOD'} || 'GET') ne 'POST') {
     ui_print_header(undef, $title, '', undef, 1, 1);
 
@@ -76,95 +169,58 @@ error($text{'dependency_package_manager_missing'}) if (!$status->{'package_manag
 
 my $apt = $status->{'apt_command'};
 require_command($apt);
-my @argv = (
-    $apt,
-    '-o', 'Dpkg::Use-Pty=0',
-    '--yes',
-    '--no-install-recommends',
-    'install',
-    @{$spec->{'packages'} || [$spec->{'package'}]},
-);
+eval { make_path($jobs_base, {mode=>0700}) if !-d $jobs_base; };
+error($@ || 'Cannot create installation jobs directory')
+    if $@ || !-d $jobs_base || -l $jobs_base;
+chmod(0700,$jobs_base);
 
-ui_print_header(undef, $title, '', undef, 1, 1);
-print '<div class="alert alert-info">'.html_escape(
-    text('dependency_install_running', $spec->{'package'})
-).'</div>';
-print '<pre style="min-height:180px;max-height:520px;overflow:auto;white-space:pre-wrap" id="dependency-output">';
-$| = 1;
-
-my ($writer, $reader);
-my $stderr = gensym();
-my $pid;
-my $spawn_error = '';
-my $exit_status = 255;
-{
-    local $ENV{'DEBIAN_FRONTEND'} = 'noninteractive';
-    local $ENV{'APT_LISTCHANGES_FRONTEND'} = 'none';
-    # Never restart system daemons from inside the Webmin CGI which serves
-    # this very HTTP request. In needrestart, 'a' means automatically restart
-    # affected services (potentially including Webmin); 'l' is list-only.
-    # Package maintainer scripts can still have their own side effects.
-    local $ENV{'NEEDRESTART_MODE'} = 'l';
-    local $ENV{'TERM'} = 'dumb';
-    local $ENV{'LC_ALL'} = 'C';
-
-    eval {
-        $pid = open3($writer, $reader, $stderr, @argv);
-        close($writer) if ($writer);
-        my $select = IO::Select->new($reader, $stderr);
-        while ($select->count()) {
-            foreach my $fh ($select->can_read(1)) {
-                my $line = <$fh>;
-                if (!defined($line)) {
-                    $select->remove($fh);
-                    close($fh);
-                    next;
-                }
-                $line =~ s/\e\[[0-9;?]*[ -\/]*[@-~]//g;
-                $line =~ s/\r/\n/g;
-                print html_escape($line);
-            }
-        }
-        waitpid($pid, 0);
-        $exit_status = $?;
-    };
-    $spawn_error = $@ || '' if ($@);
-}
-
-if (length($spawn_error)) {
-    print "\n".html_escape($spawn_error);
-}
-print '</pre>';
-
-my $exit_code = $exit_status == -1 ? 255 : ($exit_status >> 8);
-my $after = optional_dependency_status($dependency);
-my $success = !$spawn_error && $exit_status == 0 && $after->{'command_available'};
-
-webmin_log(
-    'install', 'dependency', $dependency,
-    {
-        'package' => $spec->{'package'},
-        'exit_code' => $exit_code,
-        'command_available' => $after->{'command_available'} ? 1 : 0,
+# Retain completed installation logs for seven days, without ever clearing
+# an active job or following a symlink in the job directory.
+if (opendir(my $dh,$jobs_base)) {
+    while (my $item=readdir($dh)) {
+        next if !valid_diagnostic_job_id($item);
+        my $dir=File::Spec->catdir($jobs_base,$item);
+        next if !-d $dir || -l $dir;
+        my $s=diagnostic_read_json(File::Spec->catfile($dir,'status.json'))||{};
+        next if ($s->{'state'}||'') =~ /^(?:running|starting)$/;
+        my $updated=$s->{'updated'} || (stat($dir))[9] || time();
+        remove_tree($dir) if time()-$updated>7*86400;
     }
-);
-
-if ($success) {
-    print '<div class="alert alert-success">'.html_escape(
-        text('dependency_install_success', $spec->{'package'}, $after->{'command'})
-    ).'</div>';
-}
-elsif (!$spawn_error && $exit_status == 0 && !$after->{'command_available'}) {
-    print '<div class="alert alert-warning">'.html_escape(
-        text('dependency_install_path_failed', $spec->{'package'}, $after->{'command'})
-    ).'</div>';
-    print '<p>'.ui_link_button('config.cgi', $text{'dependency_open_settings'}).'</p>';
-}
-else {
-    print '<div class="alert alert-danger">'.html_escape(
-        text('dependency_install_failed', $spec->{'package'}, $exit_code)
-    ).'</div>';
+    closedir($dh);
 }
 
-print '<p>'.ui_link_button($back_url, $text{'dependency_return'}).'</p>';
-ui_print_footer($back_url, $back_label);
+my $job_id=_secure_random_hex(32);
+my $job_dir=install_job_dir($job_id);
+error('Unable to allocate installation job') if !mkdir($job_dir,0700);
+my ($ok,$write_error)=diagnostic_write_json(File::Spec->catfile($job_dir,'request.json'),{
+    dependency=>$dependency, apt=>$apt, created=>time(),
+    owner_hash=>_request_identity(),
+});
+if (!$ok) {
+    remove_tree($job_dir);
+    error($write_error||'Cannot save installation job');
+}
+($ok,$write_error)=diagnostic_write_json(File::Spec->catfile($job_dir,'status.json'),{
+    state=>'starting',created=>time(),updated=>time()
+});
+if (!$ok) {
+    remove_tree($job_dir);
+    error($write_error||'Cannot prepare installation status');
+}
+my $pid=fork();
+if (!defined($pid)) {
+    remove_tree($job_dir);
+    error("Cannot start package installer: $!");
+}
+if ($pid==0) {
+    setsid();
+    open(STDIN,'<','/dev/null');
+    open(STDOUT,'>>',File::Spec->catfile($job_dir,'launcher.log'));
+    open(STDERR,'>&STDOUT');
+    for my $fd (3..1024) { POSIX::close($fd); }
+    my $worker=File::Spec->rel2abs('dependency-worker.pl');
+    exec($^X,$worker,$job_dir);
+    _exit(127);
+}
+webmin_log('install','dependency',$dependency,{job_id=>$job_id,package=>$spec->{'package'}});
+$show_job->($job_id);
