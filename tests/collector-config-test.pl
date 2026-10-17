@@ -51,6 +51,12 @@ die "failed stop state is incorrectly accepted as a clean stop\n" if $desired_bl
 
 open($fh, '<', "$FindBin::Bin/../index.cgi") or die $!;
 local $/; my $index = <$fh>; close($fh);
+die "dashboard is not connected to shared controller\n"
+    unless $index =~ m{require './lib/index-page-ui-lib.pl'} &&
+           $index =~ /wg_index_collector_script\(/;
+open($fh, '<', "$FindBin::Bin/../lib/index-page-ui-lib.pl") or die $!;
+local $/; $index .= "\n".<$fh>; close($fh);
+
 die "collector restart warning UI missing\n"
     if $index !~ /collector_restart_required/ || $index !~ /data-role="warning"/ || $index !~ /configPendingText/;
 
