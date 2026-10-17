@@ -42,7 +42,8 @@ die "WHOIS argv was not a validated IP argument\n"
 my $geo=peer_ip_geoip('8.8.8.8');
 die "offline legacy GeoIP unsuccessful\n"
     unless $geo->{ok} && @{$geo->{fields}}==1
-        && $geo->{fields}[0]{value} eq "US, United States";
+        && $geo->{fields}[0]{value} eq "US, United States"
+        && $geo->{country_code} eq "US";
 die "offline GeoIP executed unexpected command\n"
     unless @calls==2 && $calls[1][0] eq '/usr/bin/geoiplookup';
 my ($fh,$fake)=tempfile(SUFFIX=>'.mmdb',UNLINK=>1);
