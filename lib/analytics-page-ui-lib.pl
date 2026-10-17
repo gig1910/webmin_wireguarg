@@ -239,12 +239,8 @@ sub wg_analytics_controller_script
       url.searchParams.set('from',String(dates.from));url.searchParams.set('to',String(dates.to));
       if(iface.value)url.searchParams.set('interface',iface.value);
       if(peer.value)url.searchParams.set('peer_id',peer.value);
-      const res=await fetch(url.toString(),{signal:controller.signal,
-        cache:'no-store',credentials:'same-origin',redirect:'error',
-        headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
-      if(!(res.headers.get('content-type')||'').includes('application/json'))throw new Error('Non-JSON server response');
-      const json=await res.json();
-      if(!json.ok)throw new Error(json.error||'Analytics request failed');
+      const json=await window.WireGuardTransport.requestJson(
+        url.toString(),{signal:controller.signal},{requireOk:true});
       if(serial!==seq||!root.isConnected)return;
       data=json;render(json);
     }catch(ex){
