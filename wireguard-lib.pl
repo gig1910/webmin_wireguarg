@@ -47,6 +47,7 @@ require './lib/runtime-lib.pl';
 require './lib/api-ui-lib.pl';
 require './lib/table-sort-ui-lib.pl';
 require './lib/chart-ui-lib.pl';
+require './lib/ui-transport-lib.pl';
 require './lib/collector-config-lib.pl';
 require './lib/metrics-lib.pl';
 require './lib/analytics-api-lib.pl';
