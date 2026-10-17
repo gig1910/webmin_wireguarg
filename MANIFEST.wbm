@@ -65,6 +65,7 @@ lib/api-ui-lib.pl
 lib/table-sort-ui-lib.pl
 lib/chart-ui-lib.pl
 lib/ui-transport-lib.pl
+lib/network-icons-ui-lib.pl
 lib/interface-page-ui-lib.pl
 lib/collector-config-lib.pl
 lib/metrics-lib.pl
