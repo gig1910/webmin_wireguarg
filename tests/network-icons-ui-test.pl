@@ -14,6 +14,10 @@ die "peer activity script helper not wired" unless $peer =~ m{require './lib/pee
 $peer .= "\n".$peer_ui;
 
 my $iface=read_file("$FindBin::Bin/../edit_interface.cgi");
+die "interface CGI must delegate to isolated page controller\n"
+    unless $iface =~ m{require './lib/interface-page-ui-lib.pl'} &&
+           $iface =~ /wg_interface_page_script\(/;
+$iface .= "\n".read_file("$FindBin::Bin/../lib/interface-page-ui-lib.pl");
 my $backend=read_file("$FindBin::Bin/../analytics-store.py");
 my $network=read_file("$FindBin::Bin/../network_store.py");
 my $api=read_file("$FindBin::Bin/../peer_ip_info.cgi");
