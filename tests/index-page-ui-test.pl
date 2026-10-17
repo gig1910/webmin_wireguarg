@@ -23,7 +23,7 @@ my $manifest=read_file("$FindBin::Bin/../MANIFEST.wbm");
 die "Dashboard controller not packaged\n"
     unless $manifest =~ /^lib\/index-page-ui-lib\.pl$/m;
 my $collector=wg_index_collector_script((map { q{"test"} } 1..20));
-my $runtime=wg_index_runtime_script((map { q{"test"} } 1..4));
+my $runtime=wg_index_runtime_script(q{"page"},(map { q{"test"} } 1..4));
 for my $spec (
     [$collector,qr/data-role="status"/,qr/WireGuardTransport\.requestJson/],
     [$runtime,qr/wg-runtime/,qr/data-wg-orphan/],
