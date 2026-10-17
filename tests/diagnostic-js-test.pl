@@ -63,7 +63,20 @@ PRELUDE
     close($html_fh);
     $rendered =~ s/^<script>\n?//;
     $rendered =~ s/\n?<\/script>\n?$//;
-    die "rendered whitespace regular expression was corrupted\n" if $rendered !~ m{replace\(/\\s\+/g};
+    die "diagnostic controller is not wired to shared JSON decoder\n"
+        unless $rendered =~ /WireGuardTransport\.readJson/ &&
+               $source =~ /WireGuardTransport\.readJson/;
+    require "$FindBin::Bin/../lib/ui-transport-lib.pl";
+    my $transport_markup=wg_ui_transport_script();
+    die "shared JSON transport lost whitespace normalization\n"
+        unless $transport_markup =~ m{replace\(/\\s\+/g};
+    die "peer editor does not load JSON transport before diagnostic JS\n"
+        unless do {
+            open(my $peer_fh,'<',"$FindBin::Bin/../edit_peer.cgi") or die $!;
+            local $/; my $peer_src=<$peer_fh>;
+            close($peer_fh);
+            $peer_src =~ /print wg_ui_transport_script\(\)/;
+        };
     die "rendered newline escape was corrupted\n" if $rendered !~ /append\('\\n'/;
     open(my $rendered_out, '>', $rendered_js) or die $!;
     print {$rendered_out} $rendered;
