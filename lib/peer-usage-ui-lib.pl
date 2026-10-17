@@ -35,7 +35,9 @@ sub peer_usage_graph_html
     my $loading = html_escape($text{'peer_usage_loading'});
     my $received = html_escape($text{'peer_usage_received'});
     my $sent = html_escape($text{'peer_usage_sent'});
+    my $chart_primitives=wg_chart_ui_script();
     return <<HTML;
+$chart_primitives
 <div class="wg-peer-usage" id="$id" data-history-url="$history_url" data-poll-interval="$interval">
  <h3>$safe_title</h3>
  <div class="wg-peer-usage-toolbar">
@@ -93,12 +95,7 @@ sub peer_usage_graph_html
   let previousRefresh = 0, disposed = false;
 
   function bytes(v, rate) {
-    if (!Number.isFinite(v)) return '—';
-    const units = ['B','KiB','MiB','GiB','TiB'];
-    let i = 0;
-    while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
-    return (i === 0 || v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2)) +
-        ' ' + units[i] + (rate ? '/s' : '');
+    return window.WireGuardChart.formatBytes(v,rate);
   }
   function displayTime(epoch) {
     return new Date(epoch * 1000).toLocaleString();
@@ -149,12 +146,11 @@ sub peer_usage_graph_html
     const width=w-pad.left-pad.right, half=(h-pad.top-pad.bottom)/2;
     const center=pad.top+half;
     const rates=observedRates();
-    let scale=1024;
-    for (const v of rates) scale=Math.max(scale,v.rx || 0,v.tx || 0);
-    const theme=getComputedStyle(document.documentElement);
-    const txColor=theme.getPropertyValue('--primary-color').trim() || '#4f8dd6';
-    const rxColor=theme.getPropertyValue('--success-color').trim() || '#42a878';
-    const ink=theme.color || '#888';
+    let maxRate=1024;
+    for (const v of rates) maxRate=Math.max(maxRate,v.rx || 0,v.tx || 0);
+    const scale=window.WireGuardChart.niceLimit(maxRate);
+    const colors=window.WireGuardChart.themeColors();
+    const txColor=colors.tx,rxColor=colors.rx,ink=colors.text;
     ctx.font='12px sans-serif';ctx.lineWidth=1;
     ctx.strokeStyle='rgba(127,127,127,.23)';ctx.fillStyle=ink;
     for(let i=0;i<=4;i++){
