@@ -11,7 +11,10 @@ sub slurp {
 
 # Exercise the actual CGI mutation dispatch, not a reimplementation of it.
 my $source=slurp("$FindBin::Bin/../network_icons.cgi");
-my ($dispatch)=$source=~/(\Qmy $notice='';\E.*?)(?=\Qmy ($report,$err)=\E)/s;
+my $begin=index($source, q{my $notice='';});
+my $end=index($source,q{my ($report,$err)=analytics_backend},$begin);
+my $dispatch=$begin>=0 && $end>$begin
+    ? substr($source,$begin,$end-$begin) : undef;
 die "Cannot isolate network directory mutation dispatch\n" unless defined $dispatch;
 die "Missing mandatory CSRF gate\n" unless $dispatch =~ /assert_post_and_csrf\(\)/;
 die "Missing explicit mutation-action guard\n" unless $dispatch =~ /if \(length\(\$action\)\)/;
@@ -19,8 +22,8 @@ die "Missing explicit mutation-action guard\n" unless $dispatch =~ /if \(length\
 our (%in,%text);
 $text{'network_icons_invalid'}='Invalid operation';
 $text{'network_icons_saved'}='Saved';
-my ($csrf_checks,$write_calls,$rate_calls)=(0,0,0);
-my $csrf_valid=0;
+our ($csrf_checks,$write_calls,$rate_calls)=(0,0,0);
+our $csrf_valid=0;
 
 sub assert_post_and_csrf {
     ++$csrf_checks;
