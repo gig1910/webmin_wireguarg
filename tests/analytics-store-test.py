@@ -517,6 +517,23 @@ class AnalyticsTest(unittest.TestCase):
         store.network_manage(self.conn,{"action":"clear_cache","confirm":"CLEAR"})
         self.assertEqual(self.conn.execute("SELECT COUNT(*) FROM geoip_cache").fetchone()[0],0)
 
+    def test_sqlite_wal_budget_and_checkpoint(self):
+        # These caps are advisory; readers may temporarily keep WAL pages.
+        # Verify settings are installed for each new backend connection.
+        self.assertEqual(self.conn.execute("PRAGMA journal_mode").fetchone()[0], "wal")
+        self.assertEqual(self.conn.execute("PRAGMA wal_autocheckpoint").fetchone()[0], 256)
+        self.assertEqual(self.conn.execute("PRAGMA journal_size_limit").fetchone()[0], 4194304)
+        self.assertEqual(self.conn.execute("PRAGMA cache_size").fetchone()[0], -8192)
+        self.sample(self.a, 1200, 1, 2, handshake=1199)
+        wal_path = Path(str(self.db) + "-wal")
+        self.assertTrue(wal_path.is_file())
+        # The supported VACUUM maintenance action already truncates WAL.
+        self.assertTrue(store.maintain(self.conn, {"action": "vacuum"}, str(self.db))["ok"])
+        self.assertLessEqual(wal_path.stat().st_size if wal_path.exists() else 0, 4194304)
+        self.conn.close()
+        self.conn = store.connect(str(self.db))
+        self.assertEqual(self.conn.execute("PRAGMA wal_autocheckpoint").fetchone()[0], 256)
+
     def test_prometheus_text_contains_only_fingerprints(self):
         self.sample(self.a,1000,100,200,endpoint="192.0.2.5:12345")
         self.sample(self.a,1005,200,300)
