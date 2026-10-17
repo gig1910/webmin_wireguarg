@@ -16,12 +16,19 @@ sub _secure_random_hex
     my ($bytes) = @_;
     $bytes ||= 32;
     my $raw = '';
-    if (sysopen(my $fh, '/dev/urandom', O_RDONLY)) {
-        my $got = sysread($fh, $raw, $bytes);
-        close($fh);
-        return unpack('H*', $raw) if (defined($got) && $got == $bytes);
+    sysopen(my $fh, '/dev/urandom', O_RDONLY)
+        || error('Secure randomness is unavailable');
+    while (length($raw) < $bytes) {
+        my $chunk = '';
+        my $got = sysread($fh, $chunk, $bytes - length($raw));
+        if (!defined($got) || !$got) {
+            close($fh);
+            error('Cannot read secure randomness');
+        }
+        $raw .= $chunk;
     }
-    return sha256_hex(join('|', $$, time(), rand(), {}, $ENV{'REMOTE_ADDR'} || ''));
+    close($fh);
+    return unpack('H*', $raw);
 }
 
 sub _state_dir { return $config{'state_dir'} || '/var/webmin/wireguard'; }
