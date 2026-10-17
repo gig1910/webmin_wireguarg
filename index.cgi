@@ -14,7 +14,7 @@ if ($list_error) {
     exit;
 }
 
-my $index_page_id='wg-index-'.substr(sha256_hex(time().rand().$),0,16);
+my $index_page_id='wg-index-'.substr(sha256_hex(time().rand()),0,16);
 print '<div data-wg-index-page="'.html_escape($index_page_id).'">';
 print '<ul class="nav nav-tabs" style="margin-bottom:15px"><li class="active"><a href="index.cgi">'.html_escape($text{'analytics_interfaces_tab'}).'</a></li><li><a href="analytics.cgi">'.html_escape($text{'analytics_title'}).'</a></li></ul>';
 print '<div id="wg-runtime-error" class="alert alert-warning" style="display:none"></div>';
