@@ -103,4 +103,21 @@ if (-e $systemctl_log) {
     die "foreign unit was controlled\n" if ($foreign_calls =~ /(?:enable|start|restart).*webmin-wireguard-stats/);
 }
 
+# A hung one-shot collector must not make a Webmin module upgrade hang.
+open(my $stuck,'>',"$module/stats-collector.pl") or die $!;
+print {$stuck} "#!/usr/bin/perl\nsleep 10;\n";
+close($stuck);
+chmod(0755,"$module/stats-collector.pl");
+{
+    local $ENV{'WEBMIN_WIREGUARD_ONESHOT_TIMEOUT'}=1;
+    my $begin=time();
+    module_install();
+    die "postinstall did not enforce one-shot timeout\n" if time()-$begin>4;
+    open(my $lfh,'<',"$state/collector-install.log") or die $!;
+    local $/;
+    my $log=<$lfh>;
+    close($lfh);
+    die "timed-out first collector attempt was not recorded\n"
+        if $log !~ /Subprocess exceeded 1s timeout/;
+}
 print "fresh-install and upgrade-preservation collector setup tests passed\n";
