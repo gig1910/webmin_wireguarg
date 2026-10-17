@@ -18,6 +18,18 @@ my $title = $new ? $text{'peer_add_title'} : text('peer_title', peer_display_nam
 
 ui_print_header(undef, $title, '', undef, 1, 1);
 print wg_build_banner();
+my $peer_tabs_id='wg-peer-tabs-'.substr(sha256_hex(join('|',time(),$,rand())),0,12);
+if ($peer) {
+    print '<div id="'.html_escape($peer_tabs_id).'" class="wg-peer-detail-tabs">';
+    print '<ul class="nav nav-tabs" role="tablist">'.
+        '<li class="active"><a href="#wg-peer-settings" data-wg-peer-tab="settings" role="tab" aria-selected="true">'.
+        html_escape($text{'peer_tab_settings'}).'</a></li>'.
+        '<li><a href="#wg-peer-usage" data-wg-peer-tab="usage" role="tab" aria-selected="false">'.
+        html_escape($text{'peer_tab_usage'}).'</a></li>'.
+        '<li><a href="#wg-peer-activity" data-wg-peer-tab="activity" role="tab" aria-selected="false">'.
+        html_escape($text{'peer_tab_activity'}).'</a></li></ul>';
+    print '<div data-wg-peer-pane="settings" role="tabpanel">';
+}
 print '<div id="wg-peer-runtime-error" class="alert alert-warning" style="display:none"></div>' if ($peer);
 
 if ($peer) {
@@ -28,9 +40,7 @@ if ($peer) {
         ' &nbsp; <b>'.$text{'peer_endpoint'}.':</b> <span data-peer-endpoint>'.
         html_escape(get_section_value($peer, 'Endpoint') || '-').'</span>'.
         ' &nbsp; <b>'.$text{'runtime_updated'}.':</b> <span data-wg-runtime-time>'.$text{'runtime_loading'}.'</span></div>';
-    print graph_html($name, $public_key, text('graph_peer_title', peer_display_name($peer, $in{'peer'})));
-    print '<p>'.direct_link_button('analytics.cgi', $text{'analytics_peer_link'},
-        { peer_id => sha256_hex($public_key) }).'</p>';    # On-demand IP investigation; no automatic WHOIS/network side effects.
+    # On-demand IP investigation; no automatic WHOIS/network side effects.
     my $ip_dom_id='wg-peer-ip-'.time().'-'.int(rand(1000000000));
     my $ip_dom_json=json_encode_utf8($ip_dom_id);
     my $ip_name_json=json_encode_utf8($name);
@@ -716,6 +726,133 @@ if ($peer && $access{'diagnostics'}) {
 SCRIPT
 }
 
+
+if ($peer) {
+    print '</div>'; # End settings
+    print '<div data-wg-peer-pane="usage" role="tabpanel" hidden>';
+    print graph_html($name, $public_key,
+        text('graph_peer_title',peer_display_name($peer,$in{'peer'})));
+    print '<p>'.direct_link_button('analytics.cgi',$text{'analytics_peer_link'},
+        {peer_id=>sha256_hex($public_key)}).'</p>';
+    print '</div>';
+    print '<div data-wg-peer-pane="activity" role="tabpanel" hidden>';
+    print '<div class="wg-peer-activity-toolbar"><label>'.
+        html_escape($text{'analytics_period'}).' <select data-wg-peer-activity-period class="form-control">'.
+        '<option value="21600">'.html_escape($text{'analytics_6h'}).'</option>'.
+        '<option value="86400" selected>'.html_escape($text{'analytics_24h'}).'</option>'.
+        '<option value="604800">'.html_escape($text{'analytics_7d'}).'</option>'.
+        '<option value="2592000">'.html_escape($text{'analytics_month'}).'</option>'.
+        '<option value="31536000">'.html_escape($text{'analytics_year'}).'</option>'.
+        '</select></label> '.
+        '<button type="button" data-wg-peer-activity-refresh class="btn btn-default">'.
+        html_escape($text{'journal_refresh'}).'</button></div>';
+    print '<p class="help-block">'.html_escape($text{'analytics_warning'}).'</p>';
+    print '<div data-wg-peer-activity-status class="help-block" role="status"></div>';
+    print '<div class="table-responsive" data-wg-peer-activity-sort>'.
+        '<table class="table table-striped table-hover"><thead><tr>'.
+        '<th>'.html_escape($text{'analytics_event_time'}).'</th>'.
+        '<th>'.html_escape($text{'analytics_event_type'}).'</th>'.
+        '<th>'.html_escape($text{'analytics_event_endpoint'}).'</th>'.
+        '<th>'.html_escape($text{'analytics_event_previous'}).'</th>'.
+        '</tr></thead><tbody data-wg-peer-activity-rows></tbody></table></div>';
+    print '</div></div>'; # end activity and three-tab root
+    my $js_tabs_id=json_encode_utf8($peer_tabs_id);
+    my $js_analytics_url=json_encode_utf8(module_script_url('analytics_data.cgi'));
+    my $js_peer_id=json_encode_utf8(sha256_hex($public_key));
+    my $js_activity_labels=json_encode_utf8({
+        loading=>$text{'analytics_loading'},
+        empty=>$text{'analytics_empty'},
+        limited=>$text{'analytics_events_limited'},
+        events=>{ map { $_ => $text{'analytics_event_'.$_} }
+          qw(endpoint_ip_observed endpoint_ip_changed) },
+    });
+    print wg_table_sort_script();
+    print <<PEER_TABS_SCRIPT;
+<style>
+.wg-peer-detail-tabs > .nav-tabs{margin:14px 0}
+.wg-peer-detail-tabs [data-wg-peer-pane][hidden]{display:none!important}
+.wg-peer-activity-toolbar{display:flex;gap:10px;align-items:end;margin:15px 0;flex-wrap:wrap}
+.wg-peer-activity-toolbar label{display:flex;flex-direction:column;gap:4px}
+</style>
+<script>
+(function(){
+ 'use strict';
+ const root=document.getElementById($js_tabs_id);
+ if(!root)return;
+ const url=$js_analytics_url;
+ const peerId=$js_peer_id;
+ const labels=$js_activity_labels;
+ const sort=window.WireGuardTableSort&&window.WireGuardTableSort.attach(
+     root.querySelector('[data-wg-peer-activity-sort]'),
+     ['time','text','ip','ip']);
+ const status=root.querySelector('[data-wg-peer-activity-status]');
+ const body=root.querySelector('[data-wg-peer-activity-rows]');
+ let request=null,seq=0;
+ function show(tab){
+   root.querySelectorAll('[data-wg-peer-pane]').forEach(p=>{
+     p.hidden=p.dataset.wgPeerPane!==tab;
+   });
+   root.querySelectorAll('[data-wg-peer-tab]').forEach(a=>{
+     const selected=a.dataset.wgPeerTab===tab;
+     a.setAttribute('aria-selected',selected?'true':'false');
+     a.parentElement.classList.toggle('active',selected);
+   });
+   if(tab==='activity')load();
+   if(tab==='usage'){
+     // A hidden Canvas measures zero width; redraw when visible.
+     window.dispatchEvent(new Event('resize'));
+   }
+ }
+ async function load(){
+   const serial=++seq;
+   if(request)request.abort();
+   request=new AbortController();
+   status.textContent=labels.loading;
+   const now=Math.floor(Date.now()/1000),span=Number(root.querySelector('[data-wg-peer-activity-period]').value);
+   const requestUrl=new URL(url,window.location.href);
+   requestUrl.searchParams.set('peer_id',peerId);
+   requestUrl.searchParams.set('from',String(now-span));
+   requestUrl.searchParams.set('to',String(now));
+   try{
+     const response=await fetch(requestUrl.toString(),{
+       credentials:'same-origin',cache:'no-store',signal:request.signal,headers:{Accept:'application/json'}
+     });
+     if(!(response.headers.get('content-type')||'').includes('application/json'))
+       throw new Error('HTTP '+response.status);
+     const result=await response.json();
+     if(!result.ok)throw new Error(result.error||'HTTP '+response.status);
+     if(serial!==seq||!root.isConnected)return;
+     body.replaceChildren();
+     for(const event of result.events||[]){
+       const tr=document.createElement('tr');
+       const cols=[
+         new Date(event.at*1000).toLocaleString(),
+         labels.events[event.type]||event.type,
+         event.endpoint||'—',event.previous||'—'
+       ];
+       for(const value of cols){
+         const td=document.createElement('td');
+         td.textContent=value;tr.append(td);
+       }
+       body.append(tr);
+     }
+     if(sort)sort.apply();
+     status.textContent=result.events_truncated?labels.limited:
+       result.events.length?'':labels.empty;
+   }catch(err){
+     if(err.name!=='AbortError'&&serial===seq)status.textContent=err.message||String(err);
+   }
+ }
+ root.querySelectorAll('[data-wg-peer-tab]').forEach(a=>a.addEventListener('click',e=>{
+   e.preventDefault();show(a.dataset.wgPeerTab);
+ }));
+ root.querySelector('[data-wg-peer-activity-refresh]').addEventListener('click',load);
+ root.querySelector('[data-wg-peer-activity-period]').addEventListener('change',load);
+ window.addEventListener('pagehide',()=>{if(request)request.abort();});
+})();
+</script>
+PEER_TABS_SCRIPT
+}
 
 if ($peer) {
     my $runtime_name = json_encode_utf8($name);
