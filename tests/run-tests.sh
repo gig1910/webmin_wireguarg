@@ -42,6 +42,7 @@ perl tests/collector-config-test.pl
 perl tests/ui-ux-test.pl
 perl tests/analytics-ui-test.pl
 perl tests/analytics-chart-test.pl
+perl tests/network-icons-ui-test.pl
 perl tests/peer-ip-info-test.pl
 perl tests/geoip-update-test.pl
 perl tests/table-sort-test.pl
