@@ -39,6 +39,7 @@ $access{'install_dependencies'} = $access{'manage'} if (!exists($access{'install
 # Split by responsibility.  These files intentionally share the Webmin module
 # package and globals for backwards compatibility with existing CGI programs.
 require './lib/security-lib.pl';
+require './lib/subprocess-lib.pl';
 require './lib/ip-lib.pl';
 require './lib/command-lib.pl';
 require './lib/config-lib.pl';
