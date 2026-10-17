@@ -95,5 +95,7 @@ my $peer=do {
 die "GeoIP installer link or ACL gate missing on peer details\n"
     unless $peer =~ /optional_dependency_quick_status\('geoip'\)/ &&
            $peer =~ /\$access\{'install_dependencies'\}/ &&
-           $peer =~ /install_dependency\.cgi\?dependency=geoip/;
+           $peer =~ /direct_link_button\(/ &&
+           $peer =~ /dependency => 'geoip'/ &&
+           $peer =~ /dependency => 'qrencode'/;
 print "dependency tests passed\n";

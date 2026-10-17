@@ -86,10 +86,9 @@ if ($peer) {
         '<div data-role="output" aria-live="polite"></div>';
     if (!$geo_dependencies->{'command_available'} &&
         $access{'install_dependencies'} && $geo_dependencies->{'package_manager_available'}) {
-        print '<p>'.ui_link_button(
-            'install_dependency.cgi?dependency=geoip&name='.urlize($name).
-                '&peer='.urlize($in{'peer'}),
-            $text{'geoip_install_button'}
+        print '<p>'.direct_link_button(
+            'install_dependency.cgi', $text{'geoip_install_button'},
+            { dependency => 'geoip', name => $name, peer => $in{'peer'} }
         ).'</p>';
     }
     if (!$geo_dependencies->{'command_available'} &&
@@ -323,9 +322,9 @@ if ($access{'manage'}) {
                     text('qr_command_missing', $qr_status->{'command'})
                 );
                 if ($access{'install_dependencies'} && $qr_status->{'package_manager_available'}) {
-                    $export_html .= '<br>'.ui_link_button(
-                        'install_dependency.cgi?dependency=qrencode&name='.urlize($name).'&peer='.urlize($in{'peer'}),
-                        $text{'qr_install_button'}
+                    $export_html .= '<br>'.direct_link_button(
+                        'install_dependency.cgi', $text{'qr_install_button'},
+                        { dependency => 'qrencode', name => $name, peer => $in{'peer'} }
                     );
                 }
                 elsif (!$qr_status->{'package_manager_available'}) {
