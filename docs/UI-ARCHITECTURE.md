@@ -71,6 +71,7 @@ server-side HTML; do not duplicate them in JavaScript merely for uniformity.
 - `tests/ui-transport-test.pl`: JSON transport, HTML/404 rejection and API error classification
 - `tests/index-page-ui-test.pl`: dashboard's rendered JavaScript and shared module wiring
 - `tests/index-lifecycle-test.pl`: dashboard listener disposal on repeat SPA navigation
+- `tests/index-collector-lifecycle-test.pl`: collector timer and action listener cleanup
 - `tests/table-sort-test.pl`: accessible sort, numeric IP comparison, safe DOM rows
 - `tests/async-js-test.pl`, `tests/peer-usage-test.pl`: live polling and history
 - `tests/interface-controller-root-test.pl`, `tests/peer-list-actions-test.pl`:
@@ -94,8 +95,9 @@ still decodes incremental chunks separately.
 
 Dashboard and network-directory DOM are scoped by unique page-instance tokens,
 preventing old Authentic Theme fragments from capturing new handlers. Dashboard
-runtime event listeners are removed during navigation and tested against
-repeated page loads.
+runtime event listeners and collector background-refresh timers/action handlers
+are removed when navigation replaces the page. Both scenarios have behavioral
+Node tests against consecutive page instances.
 
 The source regression gate and packaged-WBM smoke test pass, but neither
 replaces deployment verification with a real MiniServ/Authentic Theme process,
