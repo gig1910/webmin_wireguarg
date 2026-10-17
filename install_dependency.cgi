@@ -49,14 +49,19 @@ if (($ENV{'REQUEST_METHOD'} || 'GET') ne 'POST') {
         print '<p><b>'.html_escape($text{'dependency_package'}).':</b> '.html_escape($spec->{'package'}).'<br>'.
             '<b>'.html_escape($text{'dependency_command_path'}).':</b> '.html_escape($status->{'command'}).'</p>';
 
-        print ui_form_start('install_dependency.cgi', 'post'); print csrf_hidden();
+        # Use Webmin's complete form lifecycle. Authentic Theme can replace
+        # fragments during navigation; a raw </form> bypasses its form-end
+        # processing and may drop the hidden CSRF field on submission.
+        print ui_form_start(module_script_url('install_dependency.cgi'), 'post');
+        print csrf_hidden();
         print ui_hidden('dependency', $dependency);
         print ui_hidden('name', $name) if (length($name));
         print ui_hidden('peer', $peer) if (length("$peer"));
         print ui_hidden('confirm', 1);
         print '<button type="submit" class="btn btn-warning">'.html_escape(
             text('dependency_install_button', $spec->{'package'})
-        ).'</button></form>';
+        ).'</button>';
+        print ui_form_end();
     }
 
     ui_print_footer($back_url, $back_label);
