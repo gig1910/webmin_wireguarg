@@ -20,6 +20,7 @@ perl tests/export-navigation-test.pl
 perl tests/json-utf8-test.pl
 perl tests/json-boolean-literals-test.pl
 perl tests/dependency-test.pl
+perl tests/install-dependency-csrf-test.pl
 perl tests/runtime-async-test.pl
 perl tests/peer-usage-test.pl
 python3 tests/analytics-store-test.py
