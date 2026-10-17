@@ -54,6 +54,7 @@ images/icon.gif
 lang/en
 lang/ru
 lib/security-lib.pl
+lib/subprocess-lib.pl
 lib/ip-lib.pl
 lib/command-lib.pl
 lib/firewall-ufw-lib.pl
