@@ -62,7 +62,20 @@ if ($access{'manage'} && $geo->{'configured'} && $geo->{'command_available'} &&
     print ui_form_end();
 }
 print '</div></section>';
+
+my %ranges;
+for my $item (@{$report->{'cache'}||[]}) {
+    next if !defined($item->{'cidr'});
+    $ranges{$item->{'cidr'}}={%$item};
+}
+for my $item (@{$report->{'icons'}||[]}) {
+    next if !defined($item->{'cidr'});
+    $ranges{$item->{'cidr'}} ||= {cidr=>$item->{'cidr'}};
+    $ranges{$item->{'cidr'}}->{'manual'}=$item;
+}
 print '<h3>'.html_escape($text{'network_icons_manual'}).'</h3>';
+print '<p>'.html_escape($text{'network_icons_cache_help'}).'</p>';
+print '<div id="wg-network-editor">';
 print ui_form_start(module_script_url('network_icons.cgi'),'post');
 print csrf_hidden();
 print ui_hidden('action','set_icon');
@@ -72,34 +85,37 @@ print '<div class="wg-network-form">'.
     '<label>'.html_escape($text{'network_icons_label'}).' <input name="label" maxlength="100" size="30"></label> '.
     '<button type="submit" class="btn btn-primary">'.html_escape($text{'network_icons_save'}).'</button></div>';
 print ui_form_end();
+print '</div>';
 print '<table class="table table-striped table-hover"><thead><tr><th>'.
     html_escape($text{'network_icons_prefix'}).'</th><th>'.html_escape($text{'network_icons_symbol'}).
     '</th><th>'.html_escape($text{'network_icons_label'}).'</th><th>'.
-    html_escape($text{'interface_peer_actions'}).'</th></tr></thead><tbody>';
-for my $item (@{$report->{'icons'}||[]}) {
-    print '<tr><td>'.html_escape($item->{'cidr'}).'</td>'.
-        '<td>'.html_escape($item->{'icon'}).'</td>'.
-        '<td>'.html_escape($item->{'label'}).'</td><td>';
-    print ui_form_start(module_script_url('network_icons.cgi'),'post');
-    print csrf_hidden();
-    print ui_hidden('action','delete_icon');
-    print ui_hidden('cidr',$item->{'cidr'});
-    print '<button type="submit" class="btn btn-default">'.
-        html_escape($text{'network_icons_delete'}).'</button>';
-    print ui_form_end();
-    print '</td></tr>';
-}
-print '</tbody></table>';
-print '<h3>'.html_escape($text{'network_icons_cache'}).'</h3>';
-print '<p>'.html_escape($text{'network_icons_cache_help'}).'</p>';
-print '<table class="table table-striped table-hover"><thead><tr><th>'.
-    html_escape($text{'network_icons_prefix'}).'</th><th>'.
     html_escape($text{'network_icons_owner'}).'</th><th>'.
-    html_escape($text{'network_icons_country'}).'</th></tr></thead><tbody>';
-for my $item (@{$report->{'cache'}||[]}) {
-    print '<tr><td>'.html_escape($item->{'cidr'}).'</td><td>'.
-        html_escape($item->{'owner'}).'</td><td>'.
-        html_escape($item->{'country'}).'</td></tr>';
+    html_escape($text{'network_icons_country'}).'</th><th>'.
+    html_escape($text{'interface_peer_actions'}).'</th></tr></thead><tbody>';
+for my $cidr (sort keys %ranges) {
+    my $item=$ranges{$cidr};
+    my $manual=$item->{'manual'};
+    my $icon=$manual ? ($manual->{'icon'}||'?') : '?';
+    my $label=$manual ? ($manual->{'label'}||'') : '';
+    my $country=$item->{'country'} || '';
+    my $owner=$item->{'owner'} || '';
+    print '<tr><td><button type="button" class="wg-network-edit-link" data-wg-edit-range="1"'.
+        ' data-cidr="'.html_escape($cidr).'"'.
+        ' data-icon="'.html_escape($icon).'"'.
+        ' data-label="'.html_escape($label).'">'.html_escape($cidr).'</button></td>'.
+        '<td>'.html_escape($icon).'</td><td>'.html_escape($label).'</td>'.
+        '<td>'.html_escape($owner).'</td>'.
+        '<td><span data-wg-country="'.html_escape($country).'">'.html_escape($country).'</span></td><td>';
+    if ($manual) {
+        print ui_form_start(module_script_url('network_icons.cgi'),'post');
+        print csrf_hidden();
+        print ui_hidden('action','delete_icon');
+        print ui_hidden('cidr',$cidr);
+        print '<button type="submit" class="btn btn-default">'.
+            html_escape($text{'network_icons_delete'}).'</button>';
+        print ui_form_end();
+    }
+    print '</td></tr>';
 }
 print '</tbody></table>';
 print ui_form_start(module_script_url('network_icons.cgi'),'post');
@@ -108,6 +124,38 @@ print ui_hidden('action','clear_cache');
 print '<label>'.html_escape($text{'network_icons_confirm'}).' <input name="confirm" maxlength="5" autocomplete="off"></label> ';
 print '<button type="submit" class="btn btn-danger">'.html_escape($text{'network_icons_clear'}).'</button>';
 print ui_form_end();
-print '<style>.wg-network-form{display:flex;gap:10px;align-items:end;flex-wrap:wrap}'.
-    '.wg-network-form label{display:inline-flex;flex-direction:column;gap:4px}</style>';
+print <<'NETWORK_UI';
+<style>
+.wg-network-form{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.wg-network-form label{display:inline-flex;flex-direction:column;gap:4px}
+.wg-network-edit-link{padding:0;border:0;background:none;color:inherit;text-decoration:underline;
+    text-underline-offset:2px;cursor:pointer;font:inherit}
+.wg-network-edit-link:hover,.wg-network-edit-link:focus{color:var(--link-color,#5bc0de)}
+</style>
+<script>
+(function(){
+    'use strict';
+    const editor=document.getElementById('wg-network-editor');
+    if(!editor)return;
+    const cidr=editor.querySelector('[name="cidr"]');
+    const icon=editor.querySelector('[name="icon"]');
+    const label=editor.querySelector('[name="label"]');
+    document.querySelectorAll('[data-wg-edit-range]').forEach(function(button){
+        button.addEventListener('click',function(){
+            cidr.value=button.dataset.cidr||'';
+            icon.value=button.dataset.icon||'?';
+            label.value=button.dataset.label||'';
+            editor.scrollIntoView({behavior:'smooth',block:'center'});
+            icon.focus({preventScroll:true});
+        });
+    });
+    document.querySelectorAll('[data-wg-country]').forEach(function(node){
+        const code=(node.dataset.wgCountry||'').trim().toUpperCase();
+        if(!/^[A-Z]{2}$/.test(code))return;
+        const flag=String.fromCodePoint(...Array.from(code,c=>127397+c.charCodeAt(0)));
+        node.textContent=flag+' '+code;
+    });
+})();
+</script>
+NETWORK_UI
 ui_print_footer('index.cgi',$text{'index_title'});
