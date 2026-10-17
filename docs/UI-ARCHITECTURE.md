@@ -18,7 +18,9 @@ may replace DOM fragments without a traditional full-page reload.
 | Peer history controller | `lib/peer-usage-ui-lib.pl` | Period selection and measured peer-usage canvas |
 | Shared chart primitives | `lib/chart-ui-lib.pl` | Byte/rate labels, theme palette and chart axis limits |
 | Shared table component | `lib/table-sort-ui-lib.pl` | Stable column sorting, IP parsing, and safe text-only row creation |
-| Supporting pages | `network_icons.cgi`, `index.cgi` | Network cache editing and collector administration (still contain localized page-level JavaScript) |
+| Dashboard controller | `lib/index-page-ui-lib.pl` | Collector actions, runtime state and SPA listener disposal |
+| Network directory controller | `lib/network-icons-ui-lib.pl` | CIDR editor, manual icons and WHOIS/GeoIP country badge presentation |
+| Shared browser transport | `lib/ui-transport-lib.pl` | Same-origin JSON fetch defaults, Content-Type validation, parse errors and `nonJson` classification |
 
 ### Three chart data models
 
@@ -66,6 +68,9 @@ server-side HTML; do not duplicate them in JavaScript merely for uniformity.
 ## Regression gates
 
 - `tests/chart-ui-test.pl`: shared units, color/scale helpers, multiple charts
+- `tests/ui-transport-test.pl`: JSON transport, HTML/404 rejection and API error classification
+- `tests/index-page-ui-test.pl`: dashboard's rendered JavaScript and shared module wiring
+- `tests/index-lifecycle-test.pl`: dashboard listener disposal on repeat SPA navigation
 - `tests/table-sort-test.pl`: accessible sort, numeric IP comparison, safe DOM rows
 - `tests/async-js-test.pl`, `tests/peer-usage-test.pl`: live polling and history
 - `tests/interface-controller-root-test.pl`, `tests/peer-list-actions-test.pl`:
@@ -77,16 +82,23 @@ server-side HTML; do not duplicate them in JavaScript merely for uniformity.
 - `scripts/smoke-release.sh`: verify built WBM actually includes and loads
   controllers, Python backend and checksum-verified assets
 
-## Remaining improvements
+## Shared JSON transport and remaining deployment checks
 
-`index.cgi`, `network_icons.cgi` and parts of `metrics-lib.pl` retain
-page-local scripts. API response parsing and fetch error normalization also
-appear in multiple controllers. These are candidates for a separate
-**browser transport** utility, but a refactor must preserve special properties
-such as the runtime poller's `nonJson` termination behavior and diagnostic
-stream chunk decoding. Do not replace different lifecycle policies with one
-generic poller.
+`WireGuardTransport` is idempotently initialized per browser window. It
+centralizes content-type checks, JSON decoding, small error excerpts, optional
+`ok` checking, and same-origin request defaults. Runtime polling, diagnostic
+progress, client graph refresh, and mutation requests **keep their own**
+timeouts, cancellation, request ordering and lifecycle policies. For example,
+the runtime poller still stops on `error.nonJson`, while diagnostic output
+still decodes incremental chunks separately.
 
-The release gate tests source, generated JavaScript and WBM initialization;
-a real MiniServ/Authentic Theme integration smoke test remains necessary
-before deploying a major UI refactor on a VPN server.
+Dashboard and network-directory DOM are scoped by unique page-instance tokens,
+preventing old Authentic Theme fragments from capturing new handlers. Dashboard
+runtime event listeners are removed during navigation and tested against
+repeated page loads.
+
+The source regression gate and packaged-WBM smoke test pass, but neither
+replaces deployment verification with a real MiniServ/Authentic Theme process,
+systemd services and apt/dpkg operations. Test in a separate Webmin instance
+before production rollout. In particular, validate SPA navigation, multiple
+charts/tables, delayed responses, ACL failures and optional dependency jobs.
