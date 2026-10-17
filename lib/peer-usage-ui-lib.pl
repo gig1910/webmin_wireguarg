@@ -36,7 +36,9 @@ sub peer_usage_graph_html
     my $received = html_escape($text{'peer_usage_received'});
     my $sent = html_escape($text{'peer_usage_sent'});
     my $chart_primitives=wg_chart_ui_script();
+    my $transport=wg_ui_transport_script();
     return <<HTML;
+$transport
 $chart_primitives
 <div class="wg-peer-usage" id="$id" data-history-url="$history_url" data-poll-interval="$interval">
  <h3>$safe_title</h3>
@@ -224,15 +226,8 @@ $chart_primitives
     url.searchParams.set('to',String(range.to));
     error.hidden=true;
     try {
-      const response=await fetch(url.toString(),{
-        cache:'no-store',credentials:'same-origin',redirect:'error',
-        headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},
-        signal:controller.signal
-      });
-      const contentType=(response.headers.get('content-type')||'').toLowerCase();
-      if(!contentType.includes('application/json')) throw new Error('Expected JSON (HTTP '+response.status+')');
-      const data=await response.json();
-      if(!data.ok) throw new Error(data.error || 'HTTP '+response.status);
+      const data=await window.WireGuardTransport.requestJson(
+        url.toString(),{signal:controller.signal},{requireOk:true});
       if(disposed || serial!==requestSerial || !root.isConnected)return;
       previousRefresh=Date.now();
       present(data);
