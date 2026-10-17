@@ -53,7 +53,7 @@ tar -xzf "$PACKAGE" -C "$TMP"
         my $dashboard=wg_index_collector_script((map { q{"test"} } 1..20));
         die "Packaged collector controller not rendered\n"
             unless $dashboard =~ /data-role/ && $dashboard =~ /WireGuardTransport/;
-        my $index=wg_index_runtime_script((map { q{"test"} } 1..4));
+        my $index=wg_index_runtime_script(q{"page"},(map { q{"test"} } 1..4));
         die "Packaged dashboard runtime controller missing\n"
             unless $index =~ /wg-runtime/;
         my $network=wg_network_icons_page_script();
