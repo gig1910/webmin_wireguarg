@@ -153,6 +153,7 @@ $runtime_error_prefix =~ s/\$1//g;
 my $js_runtime_error_prefix = json_encode_utf8($runtime_error_prefix);
 my $js_network_icons_url = json_encode_utf8(module_script_url('network_icon_data.cgi'));
 print wg_table_sort_script();
+print wg_ui_transport_script();
 print wg_interface_page_script(
     $js_page_instance, $js_name, $js_network_icons_url, $js_active, $js_inactive, $js_not_running, $js_peer_enabled, $js_peer_disabled, $js_peer_enable, $js_peer_disable, $js_peer_busy, $js_confirm_disable, $js_runtime_loading, $js_runtime_updated, $js_refresh, $js_runtime_error_prefix, $csrf);
 
