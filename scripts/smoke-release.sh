@@ -28,6 +28,9 @@ tar -xzf "$PACKAGE" -C "$TMP"
         require "./lib/interface-page-ui-lib.pl";
         require "./lib/chart-ui-lib.pl";
         require "./lib/table-sort-ui-lib.pl";
+        require "./lib/index-page-ui-lib.pl";
+        require "./lib/network-icons-ui-lib.pl";
+        require "./lib/ui-transport-lib.pl";
         my $a=wg_analytics_controller_script(q{{}},q{""},q{""});
         my $p=wg_peer_activity_tabs_script(q{"peer-root"},q{"/wireguard/analytics_data.cgi"},
             q{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},q{{}});
@@ -47,6 +50,17 @@ tar -xzf "$PACKAGE" -C "$TMP"
             unless wg_chart_ui_script() =~ /WireGuardChart/;
         die "Table helper not rendered\n"
             unless wg_table_sort_script() =~ /WireGuardTableSort/;
+        my $dashboard=wg_index_collector_script((map { q{"test"} } 1..20));
+        die "Packaged collector controller not rendered\n"
+            unless $dashboard =~ /data-role/ && $dashboard =~ /WireGuardTransport/;
+        my $index=wg_index_runtime_script((map { q{"test"} } 1..4));
+        die "Packaged dashboard runtime controller missing\n"
+            unless $index =~ /wg-runtime/;
+        my $network=wg_network_icons_page_script();
+        die "Packaged network icon editor controller missing\n"
+            unless $network =~ /data-wg-edit-range/ && $network =~ /flagFor/;
+        die "Packaged transport missing\n"
+            unless wg_ui_transport_script() =~ /WireGuardTransport/;
         print "Packaged Perl UI controllers loaded\n";
     '
     export PYTHONDONTWRITEBYTECODE=1
