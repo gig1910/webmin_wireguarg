@@ -86,9 +86,7 @@ $render .= "const configPendingText=$js_collector_config_pending, configUnverifi
             options.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
             options.body = new URLSearchParams({_wg_csrf: root.dataset.csrf, action: action}).toString();
         }
-        const response = await fetch(root.dataset.url, options);
-        const body = await response.text();
-        let data; try { data = JSON.parse(body); } catch (e) { throw new Error(body.replace(/\s+/g,' ').slice(0,240)); }
+        const data = await window.WireGuardTransport.requestJson(root.dataset.url, options);
         if (method === 'POST' && consoleOutput) consoleOutput.textContent = data.output || '';
         render(data);
         if (!data.ok) throw new Error(data.error || 'Команда не достигла ожидаемого состояния. Подробности показаны в консоли.');
