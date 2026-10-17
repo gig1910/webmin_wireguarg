@@ -213,6 +213,7 @@ print <<'COLLECTOR_JS';
 COLLECTOR_JS
 
 my $qr_status = optional_dependency_quick_status('qrencode');
+print '<p>'.direct_link_button('network_icons.cgi',$text{'network_icons_title'},{}).'</p>' if $access{'manage'};
 print '<div class="panel panel-default"><div class="panel-heading"><b>'.html_escape($text{'dependencies_title'}).'</b></div><div class="panel-body">';
 if ($qr_status->{'command_available'}) {
     print '<span class="text-success">'.html_escape(text('dependency_command_available', $qr_status->{'command'})).'</span>';
