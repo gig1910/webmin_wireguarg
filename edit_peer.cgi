@@ -45,6 +45,7 @@ if ($peer) {
     my $ip_url_json=json_encode_utf8(module_script_url('peer_ip_info.cgi'));
     # Local-only health check: no remote IP requests just to view the peer.
     my $geo_status=wg_geoip_update_status();
+    my $geo_dependencies=optional_dependency_quick_status('geoip');
     my $geo_message=$text{'geoip_update_missing_db'};
     if ($geo_status->{'database_mtime'}) {
         my $date=strftime('%Y-%m-%d %H:%M',localtime($geo_status->{'database_mtime'}));
@@ -52,6 +53,12 @@ if ($peer) {
             $date,0+($geo_status->{'database_age_days'} || 0));
         $geo_message .= ' — '.$text{'geoip_update_stale'}
             if $geo_status->{'stale'};
+    }
+    if ($geo_status->{'legacy_database_available'} && !$geo_status->{'database_mtime'}) {
+        $geo_message=$text{'geoip_legacy_ready'};
+    }
+    if (!$geo_dependencies->{'command_available'}) {
+        $geo_message .= ' — '.$text{'geoip_dependency_missing'};
     }
     if (!$geo_status->{'command_available'}) {
         $geo_message .= ' — '.$text{'geoip_update_missing_tool'};
@@ -77,6 +84,18 @@ if ($peer) {
         '<button type="button" class="btn btn-default" data-role="lookup">'.
         html_escape($text{'peer_ip_lookup'}).'</button>'.
         '<div data-role="output" aria-live="polite"></div>';
+    if (!$geo_dependencies->{'command_available'} &&
+        $access{'install_dependencies'} && $geo_dependencies->{'package_manager_available'}) {
+        print '<p>'.ui_link_button(
+            'install_dependency.cgi?dependency=geoip&name='.urlize($name).
+                '&peer='.urlize($in{'peer'}),
+            $text{'geoip_install_button'}
+        ).'</p>';
+    }
+    if (!$geo_dependencies->{'command_available'} &&
+        !$geo_dependencies->{'package_manager_available'}) {
+        print '<p class="help-block">'.html_escape($text{'dependency_package_manager_missing'}).'</p>';
+    }
     if ($access{'manage'} && $geo_status->{'configured'} &&
         $geo_status->{'command_available'} && $geo_status->{'timer_available'} &&
         (!$geo_status->{'timer_enabled'} || !$geo_status->{'timer_active'})) {

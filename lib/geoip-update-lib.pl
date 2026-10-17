@@ -76,8 +76,16 @@ sub wg_geoip_update_status
         database_path=>$database, database_mtime=>$modified,
         database_age_days=>$modified?int(($age>0?$age:0)/86400):undef,
         stale=>$modified && $age>14*86400?1:0,
+        legacy_database_available=>0,
         timer_available=>0,timer_enabled=>0,timer_active=>0
     );
+    # The apt-managed legacy country database does not use geoipupdate.timer.
+    for my $file ('/usr/share/GeoIP/GeoIP.dat','/var/lib/GeoIP/GeoIP.dat') {
+        if (-f $file && -r $file) {
+            $status{'legacy_database_available'}=1;
+            last;
+        }
+    }
     if (has_command($ctl)) {
         my ($ok,$out)=run_command([$ctl,'show','-p','LoadState','--value','geoipupdate.timer'],1,5,256);
         $out =~ s/\s+//g if defined($out);
