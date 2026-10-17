@@ -227,7 +227,7 @@ print <<SCRIPT;
             icon.title=info ? [info.cidr,info.label,info.country].filter(Boolean).join(' — ') : '';
             const country=root.querySelector('[data-wg-geoip-country="'+CSS.escape(icon.dataset.wgNetIcon)+'"]');
             if(country){
-                const code=info&&typeof info.country==='string'&&/^[A-Za-z]{2}$/.test(info.country.trim())
+                const code=info&&typeof info.country==='string'&&/^[A-Za-z]{2}\$/.test(info.country.trim())
                     ?info.country.trim().toUpperCase():'';
                 country.textContent=code;
                 country.hidden=!code;
