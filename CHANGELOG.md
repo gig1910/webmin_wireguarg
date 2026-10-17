@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Domain separation
+
+- Move network WHOIS cache and administrator icon logic into `network_store.py`
+  without migrating or removing existing SQLite data.
+- Store GeoIP ISO-country observations by exact IP, not by WHOIS CIDR;
+  expose GeoIP/WHOIS origin separately in the lookup API and show observed
+  GeoIP country codes separately in the merged network directory table.
+- Use an asynchronous, ACL-bound and rate-limited dependency installation job
+  with a bounded subprocess and single-installer lock.
+
 ### Reliability and security hardening
 
 - Use one bounded, nonblocking subprocess adapter for Python/SQLite calls from
