@@ -115,35 +115,40 @@ COLLECTOR_JS
 
 sub wg_index_runtime_script
 {
-    my ($js_active, $js_inactive, $js_orphan, $js_runtime_error_prefix) = @_;
+    my ($js_index_page_id,$js_active, $js_inactive, $js_orphan, $js_runtime_error_prefix) = @_;
     return <<SCRIPT;
 <script>
 (function() {
+    const pageId=$js_index_page_id;
+    const root=document.querySelector('[data-wg-index-page="'+pageId+'"]');
+    if(!root)return;
+    const prior=window.__wgIndexRuntimeController;
+    if(prior && typeof prior.destroy==='function')prior.destroy();
     const activeText = $js_active;
     const inactiveText = $js_inactive;
     const orphanText = $js_orphan;
     const runtimeErrorPrefix = $js_runtime_error_prefix;
-    const configured = new Set(Array.from(document.querySelectorAll('[data-wg-interface-name]')).map(function(e) { return e.dataset.wgInterfaceName; }));
+    const configured = new Set(Array.from(root.querySelectorAll('[data-wg-interface-name]')).map(function(e) { return e.dataset.wgInterfaceName; }));
 
     function setConfiguredState(name, active, iface) {
-        const state = document.querySelector('[data-wg-state="' + CSS.escape(name) + '"]');
+        const state = root.querySelector('[data-wg-state="' + CSS.escape(name) + '"]');
         if (state) {
             state.textContent = active ? activeText : inactiveText;
             state.style.fontWeight = active ? 'bold' : 'normal';
         }
-        const port = document.querySelector('[data-wg-port="' + CSS.escape(name) + '"]');
+        const port = root.querySelector('[data-wg-port="' + CSS.escape(name) + '"]');
         if (port && active && iface.listen_port) port.textContent = iface.listen_port;
-        const loading = document.querySelector('[data-wg-actions-loading="' + CSS.escape(name) + '"]');
-        const start = document.querySelector('[data-wg-action-start="' + CSS.escape(name) + '"]');
-        const stop = document.querySelector('[data-wg-action-stop="' + CSS.escape(name) + '"]');
+        const loading = root.querySelector('[data-wg-actions-loading="' + CSS.escape(name) + '"]');
+        const start = root.querySelector('[data-wg-action-start="' + CSS.escape(name) + '"]');
+        const stop = root.querySelector('[data-wg-action-stop="' + CSS.escape(name) + '"]');
         if (loading) loading.style.display = 'none';
         if (start) start.style.display = active ? 'none' : 'inline';
         if (stop) stop.style.display = active ? 'inline' : 'none';
     }
 
     function addOrphan(name, iface) {
-        if (document.querySelector('[data-wg-orphan="' + CSS.escape(name) + '"]')) return;
-        const wrapper = document.getElementById('wg-interface-table');
+        if (root.querySelector('[data-wg-orphan="' + CSS.escape(name) + '"]')) return;
+        const wrapper = root.querySelector('#wg-interface-table');
         const tbody = wrapper && wrapper.querySelector('tbody');
         if (!tbody) return;
         const tr = document.createElement('tr');
@@ -156,7 +161,7 @@ sub wg_index_runtime_script
         tbody.appendChild(tr);
     }
 
-    document.addEventListener('wg-runtime', function(event) {
+    function onRuntime(event) {
         const data = event.detail || {};
         const interfaces = data.interfaces || {};
         configured.forEach(function(name) { setConfiguredState(name, false, {}); });
@@ -165,25 +170,43 @@ sub wg_index_runtime_script
             if (configured.has(name)) setConfiguredState(name, !!iface.active, iface);
             else if (iface.active) addOrphan(name, iface);
         });
-        const time = document.getElementById('wg-index-runtime-time');
+        const time = root.querySelector('#wg-index-runtime-time');
         if (time) time.textContent = new Date((data.timestamp || Date.now() / 1000) * 1000).toLocaleString();
-        const error = document.getElementById('wg-runtime-error');
+        const error = root.querySelector('#wg-runtime-error');
         if (error) error.style.display = 'none';
     });
 
-    document.addEventListener('wg-runtime-error', function(event) {
-        const error = document.getElementById('wg-runtime-error');
+    function onRuntimeError(event) {
+        const error = root.querySelector('#wg-runtime-error');
         if (!error) return;
         error.textContent = runtimeErrorPrefix + (event.detail && event.detail.error ? event.detail.error : '');
         error.style.display = 'block';
     });
 
-    document.addEventListener('wg-runtime-warning', function(event) {
-        const error = document.getElementById('wg-runtime-error') || document.getElementById('wg-interface-runtime-error');
+    function onRuntimeWarning(event) {
+        const error = root.querySelector('#wg-runtime-error') || root.querySelector('#wg-interface-runtime-error');
         if (!error) return;
         error.textContent = event.detail && event.detail.warning ? event.detail.warning : '';
         error.style.display = error.textContent ? 'block' : 'none';
+    }
+    function destroy(){
+        document.removeEventListener('wg-runtime',onRuntime);
+        document.removeEventListener('wg-runtime-error',onRuntimeError);
+        document.removeEventListener('wg-runtime-warning',onRuntimeWarning);
+        observer.disconnect();
+        if(window.__wgIndexRuntimeController &&
+           window.__wgIndexRuntimeController.root===root)
+            delete window.__wgIndexRuntimeController;
+    }
+    const observer=new MutationObserver(function(){
+        if(!root.isConnected)destroy();
     });
+    document.addEventListener('wg-runtime',onRuntime);
+    document.addEventListener('wg-runtime-error',onRuntimeError);
+    document.addEventListener('wg-runtime-warning',onRuntimeWarning);
+    observer.observe(document.documentElement,{childList:true,subtree:true});
+    window.__wgIndexRuntimeController={root:root,destroy:destroy};
+    window.addEventListener('pagehide',destroy,{once:true});
 })();
 </script>
 SCRIPT
