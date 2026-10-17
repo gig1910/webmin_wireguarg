@@ -6,6 +6,8 @@ use warnings;
 use FindBin;
 use File::Temp qw(tempdir);
 use File::Spec;
+use JSON::PP ();
+use Time::HiRes qw(sleep);
 use IPC::Open3;
 use Symbol qw(gensym);
 
@@ -82,20 +84,50 @@ for my $dependency (qw(qrencode geoip)) {
                $hidden{'name'} eq 'wg0' && $hidden{'peer'} eq '0';
     ($status,$html,$err)=request('POST','',form_body(\%hidden),
         'test-session','https://vpn.example.test:10000');
-    die "$dependency POST rejected valid token or fake apt: $err\n"
-        unless $status==0 && $html=~/FAKE_APT_OK/;
+    die "$dependency POST rejected valid token: $err\n"
+        unless $status==0 && $html=~/data-status-url=/;
+    my ($job_id)=$html=~/\bjob=([a-f0-9]{64})/;
+    die "$dependency install job ID missing\n" unless $job_id;
+    my $job_dir=File::Spec->catdir($dir,'state','dependency-jobs',$job_id);
+    my $result;
+    for (1..120) {
+        my $file=File::Spec->catfile($job_dir,'status.json');
+        if (-r $file) {
+            open(my $fh,'<',$file) or die $!;
+            local $/; my $raw=<$fh>; close($fh);
+            $result=eval { JSON::PP::decode_json($raw) };
+            last if $result && ($result->{'state'}||'') =~ /^(?:done|failed)$/;
+        }
+        sleep(0.1);
+    }
+    die "$dependency asynchronous installation did not finish\n"
+        unless $result && ($result->{'state'}||'') eq 'done';
+    my $log=File::Spec->catfile($job_dir,'output.log');
+    open(my $fh,'<',$log) or die "$log: $!";
+    local $/; my $output=<$fh>; close($fh);
+    die "$dependency fake apt output missing\n"
+        unless $output=~/FAKE_APT_OK/;
     die "$dependency installer must prevent automatic service restarts\n"
-        unless $html =~ /NEEDRESTART_MODE=l\b/;
+        unless $output =~ /NEEDRESTART_MODE=l\b/;
     die "$dependency allowed unexpected package injection\n"
-        if $html =~ /FAKE_APT_OK.*(?:curl|sudo|sh -c)/;
+        if $output =~ /FAKE_APT_OK.*(?:curl|sudo|sh -c)/;
     if($dependency eq 'geoip'){
         die "GeoIP fixed apt package set missing\n"
-            unless $html=~/FAKE_APT_OK.*geoipupdate.*mmdb-bin.*geoip-bin.*geoip-database.*whois/s;
+            unless $output=~/FAKE_APT_OK.*geoipupdate.*mmdb-bin.*geoip-bin.*geoip-database.*whois/s;
     }
     else{
         die "QR fixed apt package missing\n"
-            unless $html=~/FAKE_APT_OK.*qrencode/;
+            unless $output=~/FAKE_APT_OK.*qrencode/;
     }
+    ($status,$html,$err)=request('GET',
+        'dependency='.$dependency.'&job='.$job_id.'&format=json',
+        '', 'test-session','');
+    die "$dependency owner cannot read install result: $err\n"
+        unless $status==0 && $html=~/FAKE_APT_OK/;
+    ($status,$html,$err)=request('GET',
+        'dependency='.$dependency.'&job='.$job_id.'&format=json',
+        '', 'different-session','');
+    die "$dependency foreign session read installation output\n" if $status==0;
 
     my %tampered=%hidden;
     $tampered{'_wg_csrf'}='0'x64;
