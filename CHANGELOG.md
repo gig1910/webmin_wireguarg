@@ -4,6 +4,11 @@
 
 ### Fixed
 
+- Corrected GeoIP/QR dependency installation confirmation to use the complete
+  Webmin form lifecycle and an absolute, module-aware POST URL. Updated
+  installer navigation for Authentic Theme and added a hermetic GET-to-POST
+  CSRF regression for both dependency packages (including invalid and
+  cross-origin submissions). Existing ACL/CSRF safeguards remain enforced.
 - Preserved existing peer `PresharedKey` on ordinary saves and on toggling
   peer enabled/disabled state. Moved PSK handling into the explicit peer-save
   pipeline instead of relying on the CGI executable name (`$0`) and
