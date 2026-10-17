@@ -20,6 +20,23 @@ The Analytics admin section (Webmin `manage` ACL, POST/CSRF and rate limits) sup
 
 Back up a live database with SQLite's online backup rather than copying only the main DB file without its WAL.
 
+### SQLite WAL resource limits
+
+Each short-lived backend connection uses an approximately **8 MiB SQLite page
+cache**, an automatic WAL checkpoint target of **256 pages** (usually ~1 MiB)
+and a **4 MiB journal recycling target**. These settings bound typical idle
+WAL footprint, **not** the maximum disk usage: a concurrent long-running
+reader or unusually large transaction can delay checkpointing and allow WAL
+growth. A controlled **VACUUM** from the Analytics maintenance page requests
+`wal_checkpoint(TRUNCATE)` before compaction; do not delete `*-wal` or
+`*-shm` files manually while SQLite is running.
+
+The main `analytics.sqlite3` size is primarily controlled by bucket/event
+retention and explicit maintenance, not by the WAL limits. The backend
+health endpoint reports `db_bytes` and `wal_bytes` separately. Monitor
+actual main database, WAL and backup sizes when assessing storage; no hard
+global analytics quota is implied by these pragmas.
+
 ## Prometheus and requirements
 
 Webmin module settings expose metric selection (`traffic`, `peer_state`, `handshake`, `events`, `collector`), refresh interval, and the target `.prom` file under either `/var/lib/node_exporter/textfile_collector/` or `/var/lib/prometheus/node-exporter/`. Paths are allowlisted; the directory must exist. The exporter writes atomically, with peer public-key fingerprints as labels and no private keys/endpoints. Retained traffic is a **gauge** because deletion can decrease it.
