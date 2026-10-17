@@ -108,7 +108,7 @@ my $html=$generator->();
 my ($js)=$html=~m{<script>\n(.*?)</script>}s;
 die "peer tab JS missing\n" if !defined $js;
 require "$FindBin::Bin/../lib/network-icons-ui-lib.pl";
-my $network_markup=wg_network_icons_page_script();
+my $network_markup=wg_network_icons_page_script(q{"test-network-page"});
 my ($network_js)=$network_markup=~m{<script>\s*(.*?)\s*</script>}s;
 die "rendered network directory JavaScript missing\n" unless $network_js;
 my $node=qx(command -v node 2>/dev/null);
