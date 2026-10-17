@@ -70,6 +70,7 @@ lib/analytics-api-lib.pl
 lib/analytics-page-ui-lib.pl
 lib/peer-usage-lib.pl
 lib/peer-usage-ui-lib.pl
+lib/peer-activity-ui-lib.pl
 lib/preshared-key-lib.pl
 lib/version-lib.pl
 docs/INSTALLATION.md
