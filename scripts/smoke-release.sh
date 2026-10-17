@@ -40,7 +40,7 @@ tar -xzf "$PACKAGE" -C "$TMP"
         die "Diagnostic JavaScript not rendered\n" if $d !~ /diagnostic_status/;
         my $iface=wg_interface_page_script(
             q{"instance"},q{"wg0"},q{"/wireguard/network_icon_data.cgi"},
-            (q{"test"}) x 13,q{fixture});
+            (map { q{"test"} } 1..13),q{fixture});
         die "Interface runtime JavaScript not rendered\n"
             if $iface !~ /wg-runtime/ || $iface !~ /showNetworkIcons/;
         die "Chart helper not rendered\n"
