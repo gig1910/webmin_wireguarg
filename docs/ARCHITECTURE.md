@@ -1,6 +1,6 @@
 # Architecture
 
-Version 1.0.0 replaces the former 1,800-line shared library with a compatibility facade and responsibility-oriented internal modules.
+The current `main` architecture uses a Webmin compatibility facade and responsibility-oriented internal modules. The base release version is `0.2.0`; historical `1.0.0` release documents do not define the current package version.
 
 - `wireguard-lib.pl` — Webmin bootstrap and compatibility loader.
 - `lib/security-lib.pl` — ACL checks, CSRF integrity, same-origin validation and request throttling.
