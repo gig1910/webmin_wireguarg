@@ -83,11 +83,20 @@ my $installer=do {
     open(my $fd,'<','install_dependency.cgi') or die $!;
     local $/; <$fd>;
 };
-die "installer must build fixed apt argv from the package whitelist\n"
-    unless $installer =~ /\@\{\$spec->\{'packages'\}/ &&
-           $installer =~ /assert_post_and_csrf\(\)/ &&
+my $worker=do {
+    open(my $fd,'<','dependency-worker.pl') or die $!;
+    local $/; <$fd>;
+};
+die "installer must enforce POST, CSRF, dependency ACL and rate limit\n"
+    unless $installer =~ /assert_post_and_csrf\(\)/ &&
            $installer =~ /assert_install_dependencies_access\(\)/ &&
            $installer =~ /request_rate_limit\('install_dependency'/;
+die "background worker must whitelist packages independently of CGI\n"
+    unless $worker =~ /my %allowed=/ &&
+           $worker =~ /geoipupdate mmdb-bin geoip-bin geoip-database whois/ &&
+           $worker =~ /\@\{\$allowed\{\$dependency\}\}/ &&
+           $worker =~ /flock\(\$lock/ &&
+           $worker =~ /NEEDRESTART_MODE/;
 my $peer=do {
     open(my $fd,'<','edit_peer.cgi') or die $!;
     local $/; <$fd>;
