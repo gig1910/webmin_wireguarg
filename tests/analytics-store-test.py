@@ -3,12 +3,14 @@
 import importlib.util
 import json
 import os
+import sys
 import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))  # analytics-store imports its adjacent network_store module
 spec=importlib.util.spec_from_file_location("wg_store",ROOT/"analytics-store.py")
 store=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(store)
