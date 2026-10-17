@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Network directory navigation
+
+- Treat navigation to `network_icons.cgi` as read-only when no mutation action
+  is supplied, including Webmin/Authentic Theme requests that arrive as POST.
+  Only explicit `set_icon`, `delete_icon` and `clear_cache` actions can
+  mutate storage; every such request still requires POST, same-origin checks,
+  a valid CSRF token and rate limiting.
+- Add a regression test for read-only GET/POST navigation, blocked GET mutations,
+  rejected CSRF-less POST mutations and successful authorized updates.
+
+
 ### Browser UI consolidation and SPA reliability
 
 - Add `lib/ui-transport-lib.pl` for shared same-origin JSON transport,
