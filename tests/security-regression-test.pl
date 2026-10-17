@@ -20,6 +20,7 @@ my %mutators = (
     'diagnostic.cgi' => 'diagnostics',
     'diagnostic_stop.cgi' => 'diagnostics',
     'install_dependency.cgi' => 'install_dependencies',
+    'network_icons.cgi' => 'manage',
     'collector_status.cgi' => 'manage',
 );
 for my $file (sort keys %mutators) {

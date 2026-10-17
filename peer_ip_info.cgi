@@ -42,11 +42,19 @@ if (!$record->{'public'}) {
                    detail=>$text{'peer_ip_private'}.' ('.$ip.')'});
     exit;
 }
+my $whois=peer_ip_whois($ip);
+my $geoip=peer_ip_geoip($ip);
+# Cache is populated ONLY by a manual user-triggered lookup, not by polling.
+# Best-effort storage must never mask WHOIS/GeoIP results.
+my ($cached,$cache_error)=analytics_backend('network_record', {
+    ip=>$ip, whois_fields=>$whois->{'fields'} || []
+});
 my $result={
     ok=>JSON::PP::true(),
     available=>JSON::PP::true(),
     ip=>$ip, handshake=>0+($record->{'handshake'} || 0),
-    whois=>peer_ip_whois($ip),
-    geoip=>peer_ip_geoip($ip),
+    whois=>$whois, geoip=>$geoip,
+    network_cached=>$cached ? JSON::PP::true() : JSON::PP::false(),
+    network_cache_error=>$cached ? '' : ($cache_error||'Cache unavailable'),
 };
 json_response($result);
