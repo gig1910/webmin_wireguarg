@@ -63,6 +63,13 @@ def connect(path):
     conn = sqlite3.connect(str(p), timeout=10)
     conn.execute("PRAGMA busy_timeout=10000")
     conn.execute("PRAGMA journal_mode=WAL")
+    # Keep short-lived request/collector connections from retaining excessive
+    # SQLite pages. These are *soft* WAL limits: an active read transaction can
+    # defer checkpointing, and a single huge transaction can exceed the target.
+    conn.execute("PRAGMA busy_timeout=10000")
+    conn.execute("PRAGMA cache_size=-8192")  # approximately 8 MiB / connection
+    conn.execute("PRAGMA wal_autocheckpoint=256")  # roughly 1 MiB at 4 KiB pages
+    conn.execute("PRAGMA journal_size_limit=4194304")  # 4 MiB after checkpoint
     conn.executescript(SCHEMA)
     conn.executescript(NETWORK_SCHEMA)
     # CREATE TABLE IF NOT EXISTS does not add columns to pre-existing databases.
@@ -555,7 +562,9 @@ def main():
             result={"ok":True,"peers":conn.execute("SELECT COUNT(*) FROM peers").fetchone()[0],
                     "buckets":conn.execute("SELECT COUNT(*) FROM buckets").fetchone()[0],
                     "events":conn.execute("SELECT COUNT(*) FROM events").fetchone()[0],
-                    "db_bytes":os.stat(path).st_size}
+                    "db_bytes":os.stat(path).st_size,
+                "wal_bytes":(os.stat(path+"-wal").st_size
+                             if os.path.exists(path+"-wal") else 0)}
         print(json.dumps(result,ensure_ascii=True,separators=(",",":")))
     finally:
         conn.close()
