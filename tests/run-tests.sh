@@ -57,6 +57,7 @@ perl tests/chart-ui-test.pl
 perl tests/ui-transport-test.pl
 perl tests/index-page-ui-test.pl
 perl tests/index-lifecycle-test.pl
+perl tests/index-collector-lifecycle-test.pl
 ./tests/diagnostic-test.sh
 ./tests/collector-test.sh
 
