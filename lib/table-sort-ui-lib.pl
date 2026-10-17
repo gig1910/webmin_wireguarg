@@ -75,7 +75,11 @@ function value(row,i,kind){
     const el=cell.querySelector('[data-wg-peer-state]');
     return el?(el.dataset.disabled==='1'?0:1):t;
   }
-  if(kind==='ip'||kind==='endpoint')return ip(t);
+  if(kind==='ip'||kind==='endpoint'){
+    // Network icon is a presentation glyph, not part of the endpoint address.
+    const address=kind==='endpoint'&&cell.querySelector('[data-wg-endpoint]');
+    return ip(address?address.textContent.trim():t);
+  }
   if(kind==='handshake'){
     const el=cell.querySelector('[data-wg-handshake]');
     return el&&Number(el.dataset.sortEpoch)>0?Number(el.dataset.sortEpoch):null;

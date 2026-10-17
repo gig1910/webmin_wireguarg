@@ -90,7 +90,8 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
         $name_link,
         $state_html,
         '<span title="'.html_escape($allowed).'">'.html_escape($short_allowed).'</span>',
-        '<span data-wg-endpoint="'.$id.'">'.html_escape($endpoint).'</span>',
+        '<span class="wg-endpoint-with-icon"><span class="wg-network-icon" data-wg-net-icon="'.$id.'" title="'.html_escape($text{'network_icons_unknown'}).'">?</span> '.
+        '<span data-wg-endpoint="'.$id.'">'.html_escape($endpoint).'</span></span>',
         '<span data-wg-handshake="'.$id.'">'.html_escape($handshake).'</span>',
         '<span data-wg-rx="'.$id.'">—</span>',
         '<span data-wg-tx="'.$id.'">—</span>',
@@ -147,6 +148,7 @@ my $js_refresh = json_encode_utf8($text{'journal_refresh'});
 my $runtime_error_prefix = $text{'index_runtime_error'};
 $runtime_error_prefix =~ s/\$1//g;
 my $js_runtime_error_prefix = json_encode_utf8($runtime_error_prefix);
+my $network_icons_url = json_encode_utf8(module_script_url('network_icon_data.cgi'));
 print wg_table_sort_script();
 print <<SCRIPT;
 <style>
@@ -154,6 +156,12 @@ print <<SCRIPT;
 .wg-peer-state-disabled { opacity: .75; }
 .wg-peer-action-pending { opacity: .65; }
 .wg-runtime-toolbar { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
+.wg-endpoint-with-icon { display:inline-flex; align-items:center; gap:5px; }
+.wg-network-icon { display:inline-flex; flex:0 0 18px; width:18px;height:18px;
+ align-items:center;justify-content:center;box-sizing:border-box;border:1.6px solid white;
+ border-radius:50%;color:white;background:rgba(35,40,46,.55);font-weight:bold;font-size:12px;
+ line-height:1;vertical-align:middle;white-space:nowrap;overflow:hidden; }
+.wg-network-icon[data-custom="1"] { font-size:11px; }
 </style>
 <script>
 (function() {
@@ -172,6 +180,7 @@ print <<SCRIPT;
     }
 
     const interfaceName = $js_name;
+    const networkIconsUrl = $network_icons_url;
     const activeText = $js_active;
     const inactiveText = $js_inactive;
     const notRunningText = $js_not_running;
@@ -190,6 +199,54 @@ print <<SCRIPT;
         root.querySelector('[data-wg-peer-sort-table]'),
         ['name','state','ip','endpoint','handshake','bytes','bytes','actions']);
     let destroyed = false;
+    let knownNetworkIcons = {}, networkSignature = '', networkRequest = null;
+    let networkLastCheck = 0;
+    function endpointIp(value) {
+        value=String(value||'').trim();
+        if(value.startsWith('[')) {
+            const end=value.indexOf(']');
+            return end>1?value.slice(1,end).toLowerCase():'';
+        }
+        const m=value.match(/^(\d{1,3}(?:\.\d{1,3}){3}):\d{1,5}$/);
+        if(m)return m[1];
+        if(/^[0-9a-f:]+$/i.test(value)&&value.includes(':'))return value.toLowerCase();
+        if(/^\d{1,3}(?:\.\d{1,3}){3}$/.test(value))return value;
+        return '';
+    }
+    function showNetworkIcons() {
+        root.querySelectorAll('[data-wg-net-icon]').forEach(function(icon){
+            const endpoint=root.querySelector('[data-wg-endpoint="'+CSS.escape(icon.dataset.wgNetIcon)+'"]');
+            const address=endpoint?endpointIp(endpoint.textContent):'';
+            const info=address&&knownNetworkIcons[address];
+            icon.textContent=info&&info.icon?info.icon:'?';
+            icon.dataset.custom=info&&info.icon&&info.icon!=='?'?'1':'0';
+            icon.title=info ? [info.cidr,info.label,info.country].filter(Boolean).join(' — ') : '';
+        });
+    }
+    async function updateNetworkIcons() {
+        const ips=Array.from(new Set(Array.from(root.querySelectorAll('[data-wg-endpoint]')).
+          map(e=>endpointIp(e.textContent)).filter(Boolean))).slice(0,128);
+        const signature=ips.slice().sort().join(',');
+        showNetworkIcons();
+        if(!signature || (signature===networkSignature && Date.now()-networkLastCheck<60000))return;
+        if(networkRequest)networkRequest.abort();
+        networkRequest=new AbortController();
+        networkSignature=signature;networkLastCheck=Date.now();
+        const url=new URL(networkIconsUrl,window.location.href);
+        url.searchParams.set('ips',ips.join(','));
+        try {
+            const response=await fetch(url.toString(),{
+                credentials:'same-origin',cache:'no-store',signal:networkRequest.signal,
+                headers:{'Accept':'application/json'}
+            });
+            if(!(response.headers.get('content-type')||'').includes('application/json'))return;
+            const result=await response.json();
+            if(!destroyed&&result.ok&&result.results){
+                knownNetworkIcons=result.results;
+                showNetworkIcons();
+            }
+        }catch(e){ /* Read-only cache is optional. Never block runtime. */ }
+    }
 
     function findById(id) {
         return root.querySelector('#' + CSS.escape(id));
@@ -421,6 +478,7 @@ print <<SCRIPT;
             const peer = peers.get(id);
             element.textContent = peer ? (peer.endpoint || '(none)') : (active ? '—' : notRunningText);
         });
+        updateNetworkIcons();
         root.querySelectorAll('[data-wg-handshake]').forEach(function(element) {
             const id = element.dataset.wgHandshake;
             if (isPeerDisabled(id)) {
