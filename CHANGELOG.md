@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Preserved existing peer `PresharedKey` on ordinary saves and on toggling
+  peer enabled/disabled state. Moved PSK handling into the explicit peer-save
+  pipeline instead of relying on the CGI executable name (`$0`) and
+  replacing shared functions at runtime.
+- Restored explicit peer-form rendering for the PSK status and removal action.
+  PSK values continue to be omitted from HTML and logs.
+- Added round-trip configuration regressions covering preserved, imported,
+  generated and removed keys, including disabled peers and MiniServ execution.
+
 All notable changes to this project are documented here.
 
 ## [1.0.0] - 2026-08-03

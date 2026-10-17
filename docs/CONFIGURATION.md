@@ -142,3 +142,19 @@ The hooks execute under `wg-quick` whether started by Webmin or by
 ### Collector restart status
 
 A successful systemd start is not the same as a new metrics health snapshot. Webmin compares `health.json.pid` to systemd `MainPID`; while they differ (for instance, during startup compaction) it displays **waiting for configuration confirmation**, not a false restart request. Once the new collector reports its fingerprint, only a mismatch from that running PID triggers the restart warning. The status response includes `health.config_state` (`pending`, `current`, `restart_required`, `unverified`, or `inactive`) and `config_mismatch_keys` for diagnosis.
+
+## Peer PresharedKey persistence
+
+The `PresharedKey` is a persistent WireGuard secret stored in the peer's server
+configuration. Ordinary peer saves **retain** it even when no PSK input is
+submitted, including peer renames, route edits, endpoint changes and
+peer enable/disable. A key changes only after explicitly choosing Generate,
+importing a new valid Base64 key, or clicking Remove PresharedKey. Invalid or
+conflicting actions abort before writing the configuration.
+
+The PSK is never embedded in the HTML editor. Before every successful edit,
+the module saves a restricted-permission copy of the old configuration under
+`backup_dir` (default `/var/webmin/wireguard/backups`). If a previous
+version already removed the PSK, recover it from a trustworthy older backup
+and **never** submit the secret itself in support logs or screenshots. A server
+PSK must agree with the corresponding client configuration.
