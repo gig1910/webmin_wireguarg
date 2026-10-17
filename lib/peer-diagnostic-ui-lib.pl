@@ -52,16 +52,7 @@ sub wg_peer_diagnostic_script
     }
 
     async function jsonResponse(response) {
-        const body = await response.text();
-        const contentType = (response.headers.get('content-type') || '').toLowerCase();
-        if (!contentType.includes('application/json')) {
-            throw new Error('HTTP ' + response.status + ': ' + body.replace(/\\s+/g, ' ').trim().slice(0, 240));
-        }
-        let data;
-        try { data = JSON.parse(body); }
-        catch (error) { throw new Error('Некорректный JSON: ' + body.replace(/\\s+/g, ' ').trim().slice(0, 240)); }
-        if (!data.ok) throw new Error(data.error || ('HTTP ' + response.status));
-        return data;
+        return window.WireGuardTransport.readJson(response,{requireOk:true});
     }
 
     function endpoint(base, values) {
