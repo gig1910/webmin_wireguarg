@@ -196,30 +196,25 @@ sub wg_analytics_controller_script
     const body=root.querySelector('[data-events]');
     body.replaceChildren();
     for(const e of result.events){
-      const row=document.createElement('tr');
       const peerData=(result.peers||[]).find(p=>p.id===e.peer_id);
       const columns=[
         new Date(e.at*1000).toLocaleString(),
         peerData?peerLabel(peerData):e.peer_id.slice(0,16)+'…',
         labels['analytics_event_'+e.type]||e.type,e.endpoint||'—',e.previous||'—'
       ];
-      for(let i=0;i<columns.length;i++){
-        const td=document.createElement('td');
-        if(i===1 && peerData && peerData.peer_url){
-          const url=new URL(peerData.peer_url,window.location.href);
-          if(url.origin===window.location.origin && url.pathname.endsWith('/wireguard/edit_peer.cgi')){
-            const link=document.createElement('a');
-            link.href=url.toString();
-            link.textContent=columns[i];
-            link.className='wg-analytics-peer-link';
-            link.setAttribute('data-wg-module-navigation','1');
-            link.title=labels.analytics_peer_open;
-            td.append(link);
-          }else td.textContent=columns[i];
-        }else td.textContent=columns[i];
-        row.append(td);
+      const row=window.WireGuardTableSort.appendTextRow(body,columns);
+      if(peerData && peerData.peer_url){
+        const url=new URL(peerData.peer_url,window.location.href);
+        if(url.origin===window.location.origin && url.pathname.endsWith('/wireguard/edit_peer.cgi')){
+          const link=document.createElement('a');
+          link.href=url.toString();
+          link.textContent=columns[1];
+          link.className='wg-analytics-peer-link';
+          link.setAttribute('data-wg-module-navigation','1');
+          link.title=labels.analytics_peer_open;
+          row.cells[1].replaceChildren(link);
+        }
       }
-      body.append(row);
     }
     if(eventSort)eventSort.apply();
     draw();
