@@ -86,9 +86,10 @@ sub peer_ip_geoip
         my $country_code='';
         for my $line (split(/\r?\n/,$out)) {
             next if $line !~ /^\s*GeoIP\s+(.+?)\s*:\s*(.*?)\s*$/;
-            next if $2 =~ /not found|can't open|cannot open/i;
-            $country_code=uc($1) if !$country_code && $2 =~ /^([A-Z]{2}),/i;
-            push(@fields, {label=>substr($1,0,90),value=>substr($2,0,350)});
+            my ($label,$value)=($1,$2);
+            next if $value =~ /not found|can't open|cannot open/i;
+            $country_code=uc($1) if !$country_code && $value =~ /^([A-Z]{2}),/i;
+            push(@fields, {label=>substr($label,0,90),value=>substr($value,0,350)});
             last if @fields>=6;
         }
         return { ok => @fields ? JSON::PP::true() : JSON::PP::false(),
