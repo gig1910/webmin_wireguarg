@@ -63,7 +63,7 @@ AllowedIPs и элементы управления интерфейсом и п
 ### Экспорт конфигураций клиента и QR-Code
 
 [![WireGuard client configuration and QR export](docs/images/ru/peer_config_view.jpg)](docs/images/ru/peer_config_view.jpg)
-[![WireGuard client configuration and QR export](docs/images/ru/peer_qr_view.jpg)](docs/images/ru/peer_qr_view.jpg.jpg)
+[![WireGuard client configuration and QR export](docs/images/ru/peer_qr_view.jpg)](docs/images/ru/peer_qr_view.jpg)
 
 ### Подтверждения
 
