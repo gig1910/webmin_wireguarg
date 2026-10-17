@@ -54,6 +54,8 @@ sub wg_capture_subprocess
     for my $fh ($stdout, $stderr, (length($input) ? ($stdin) : ())) {
         if (!_wg_nonblocking($fh)) { $problem = 'Cannot enable nonblocking pipes'; last; }
     }
+    # A child can close stdin before consuming the entire request.
+    local $SIG{'PIPE'} = 'IGNORE';
     my $deadline = Time::HiRes::time() + $timeout;
     while (!$problem && ( $readers->count() || $writers->count() || !$reaped )) {
         if (Time::HiRes::time() >= $deadline) {
