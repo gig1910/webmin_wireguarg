@@ -176,6 +176,10 @@ if (!defined($child_status)) {
     $child_status = $?;
 }
 
+# Stop CGI can terminate the command while we are inside can_read().
+# In that case EOF may end the loop before we inspect stop.requested again.
+# The explicit stop marker wins over an ordinary (or signaled) child exit.
+$stop_reason = 'user' if !$stop_reason && -e $stop_path;
 append_text($output, "\n---\n");
 my ($exit_code, $signal) = ($child_status >> 8, $child_status & 127);
 my $final_state = 'done';
