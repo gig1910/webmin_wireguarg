@@ -17,6 +17,11 @@ CREATE TABLE IF NOT EXISTS network_icons (
     cidr TEXT PRIMARY KEY, icon TEXT NOT NULL DEFAULT '?',
     label TEXT NOT NULL DEFAULT ''
 );
+CREATE TABLE IF NOT EXISTS geoip_cache (
+    ip TEXT PRIMARY KEY,
+    country_code TEXT NOT NULL,
+    observed_at INTEGER NOT NULL DEFAULT 0
+);
 """
 
 # WHOIS prefix facts and administrator-assigned icons have independent lifecycles.
@@ -39,6 +44,10 @@ def network_record(conn, req):
         raise ValueError("invalid IP") from error
     if not ip.is_global:
         raise ValueError("only public IPs may enter lookup cache")
+    geoip_country = req.get("geoip_country_code") or ""
+    if not isinstance(geoip_country, str) or (geoip_country and
+            not re.fullmatch(r"[A-Z]{2}", geoip_country)):
+        raise ValueError("invalid GeoIP country code")
     fields = req.get("whois_fields") or []
     if not isinstance(fields, list) or len(fields) > 30:
         raise ValueError("invalid WHOIS fields")
@@ -80,6 +89,13 @@ def network_record(conn, req):
             "ON CONFLICT(cidr) DO UPDATE SET owner=excluded.owner,"
             "country=excluded.country,observed_at=excluded.observed_at",
             (cidr, owner, country, int(time.time())))
+        if geoip_country:
+            # A GeoIP observation describes one IP, not its WHOIS parent CIDR.
+            conn.execute(
+                "INSERT INTO geoip_cache(ip,country_code,observed_at) VALUES(?,?,?) "
+                "ON CONFLICT(ip) DO UPDATE SET country_code=excluded.country_code,"
+                "observed_at=excluded.observed_at",
+                (str(ip), geoip_country, int(time.time())))
     return {"ok": True, "cidr": cidr}
 
 
@@ -91,6 +107,9 @@ def network_lookup(conn, req):
               in conn.execute("SELECT cidr,owner,country FROM network_cache")]
     icons = [(ipaddress.ip_network(net), icon, label) for net, icon, label
              in conn.execute("SELECT cidr,icon,label FROM network_icons")]
+    geoip = {ip: code for ip, code in conn.execute(
+        "SELECT ip,country_code FROM geoip_cache WHERE observed_at>=?",
+        (int(time.time())-30*86400,))}
     result = {}
     for raw in ips:
         if not isinstance(raw, str) or len(raw) > 64:
@@ -103,14 +122,19 @@ def network_lookup(conn, req):
                   key=lambda entry: entry[0].prefixlen, default=None)
         manual = max((entry for entry in icons if ip in entry[0]),
                      key=lambda entry: entry[0].prefixlen, default=None)
+        country_code = geoip.get(str(ip), "")
+        registered_country = hit[2] if hit else ""
         # Preserve the exact request literal as the map key. Browser runtime
         # endpoints can use a non-canonical IPv6 spelling (e.g. leading zeros).
         result[raw] = {
             "icon": manual[1] if manual else "?",
             "label": manual[2] if manual else (hit[1] if hit else ""),
             "cidr": str(manual[0] if manual else hit[0]) if (manual or hit) else "",
-            "country": hit[2] if hit else "",
-            "cached": bool(hit),
+            "country": country_code or registered_country,
+            "country_source": "geoip" if country_code else ("whois" if registered_country else ""),
+            "whois_country": registered_country,
+            "geoip_country": country_code,
+            "cached": bool(hit or country_code),
         }
     return {"ok": True, "results": result}
 
@@ -130,6 +154,7 @@ def network_manage(conn, req):
         with conn:
             count = conn.execute("SELECT COUNT(*) FROM network_cache").fetchone()[0]
             conn.execute("DELETE FROM network_cache")
+            conn.execute("DELETE FROM geoip_cache")
         return {"ok": True, "deleted": count}
     if action not in ("set_icon", "delete_icon"):
         raise ValueError("invalid network icon action")
