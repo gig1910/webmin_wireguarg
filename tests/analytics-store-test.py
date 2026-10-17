@@ -493,6 +493,30 @@ class AnalyticsTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             store.network_lookup(self.conn,{"ips":["1.1.1.1"]*129})
 
+    def test_geoip_country_is_exact_ip_not_whois_prefix(self):
+        store.network_record(self.conn,{
+            "ip":"8.8.8.8","geoip_country_code":"DE",
+            "whois_fields":[
+                {"label":"CIDR","value":"8.8.8.0/24"},
+                {"label":"Country","value":"US"},
+                {"label":"Organization","value":"Example Network"}]})
+        got=store.network_lookup(self.conn,{"ips":["8.8.8.8","8.8.8.9"]})["results"]
+        self.assertEqual(got["8.8.8.8"]["country"],"DE")
+        self.assertEqual(got["8.8.8.8"]["country_source"],"geoip")
+        self.assertEqual(got["8.8.8.8"]["whois_country"],"US")
+        self.assertEqual(got["8.8.8.9"]["country"],"US")
+        self.assertEqual(got["8.8.8.9"]["country_source"],"whois")
+        self.assertEqual(self.conn.execute(
+            "SELECT country FROM network_cache WHERE cidr='8.8.8.0/24'").fetchone()[0],"US")
+        self.assertEqual(self.conn.execute(
+            "SELECT country_code FROM geoip_cache WHERE ip='8.8.8.8'").fetchone()[0],"DE")
+        with self.assertRaises(ValueError):
+            store.network_record(self.conn,{
+                "ip":"8.8.8.8","geoip_country_code":"<script>",
+                "whois_fields":[]})
+        store.network_manage(self.conn,{"action":"clear_cache","confirm":"CLEAR"})
+        self.assertEqual(self.conn.execute("SELECT COUNT(*) FROM geoip_cache").fetchone()[0],0)
+
     def test_prometheus_text_contains_only_fingerprints(self):
         self.sample(self.a,1000,100,200,endpoint="192.0.2.5:12345")
         self.sample(self.a,1005,200,300)
