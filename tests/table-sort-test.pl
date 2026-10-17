@@ -49,6 +49,25 @@ for(const kind of ['time','handshake','bytes','ip','endpoint','name']){
   if(-sort.compare(null,present,kind)!==-1)
       throw new Error('Descending must invert NULL placement: '+kind);
 }
+// Table rows are built as text nodes, never parsed as HTML.
+global.document={
+  createElement(tag){
+    return {
+      tagName:tag.toUpperCase(),textContent:'',children:[],
+      append(node){this.children.push(node)},
+      get cells(){return this.children}
+    };
+  }
+};
+const body={rows:[],append(row){this.rows.push(row)}};
+const dangerous='<img src=x onerror=alert(1)>';
+const safeRow=sort.appendTextRow(body,['Name',dangerous,0,null]);
+if(body.rows.length!==1||safeRow.cells.length!==4)
+  throw new Error('Shared row factory produced incorrect table structure');
+if(safeRow.cells[1].textContent!==dangerous||safeRow.cells[1].children.length!==0)
+  throw new Error('Untrusted cell content was treated as markup');
+if(safeRow.cells[2].textContent!=='0'||safeRow.cells[3].textContent!=='')
+  throw new Error('Row factory must preserve numeric zero and empty null');
 // Missing or invalid date values must normalize to NULL.
 const cell=(text,attribute)=>({
   textContent:text,querySelector:()=>attribute||null
