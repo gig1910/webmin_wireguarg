@@ -6,10 +6,13 @@ assert_view_access();
 assert_manage_access();
 
 my $notice='';
-if (($ENV{'REQUEST_METHOD'}||'GET') eq 'POST') {
+# Authentic Theme navigation can arrive as a POST without an edit action.
+# Rendering the directory is read-only, regardless of the navigation method.
+# An explicit action, however, always requires POST + a valid CSRF token.
+my $action=$in{'action'} || '';
+if (length($action)) {
     assert_post_and_csrf();
     request_rate_limit('network_icons',12,60);
-    my $action=$in{'action'} || '';
     error($text{'network_icons_invalid'}) if $action !~ /^(?:set_icon|delete_icon|clear_cache)$/;
     my $payload={
         action=>$action,
