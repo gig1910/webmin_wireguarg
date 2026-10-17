@@ -36,7 +36,7 @@ $symbols{$_}=1 for ($block =~ /\$(js_[A-Za-z0-9_]+)/g);
     }
     ${'main::csrf'} = 'csrf-test';
 }
-my $rendered=eval "sub { return <<WG_RENDER;\n$block\nWG_RENDER\n}";
+my $rendered=eval "no strict 'vars'; sub { return <<WG_RENDER;\n$block\nWG_RENDER\n}";
 die "Cannot interpolate interface page JavaScript: $@\n" if !$rendered || $@;
 my $html=$rendered->();
 my ($script) = $html =~ m{<script>\s*(.*?)\s*</script>}s;
