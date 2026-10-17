@@ -35,6 +35,33 @@ ui_print_header(undef,$text{'network_icons_title'},'',undef,1,1);
 print wg_build_banner();
 print '<div class="alert alert-success">'.html_escape($notice).'</div>' if $notice;
 print '<p>'.html_escape($text{'network_icons_help'}).'</p>';
+# Shared network/GeoIP controls live here, independently of any peer.
+my $geo=wg_geoip_update_status();
+my $deps=optional_dependency_quick_status('geoip');
+my $geo_message=$geo->{'database_mtime'}
+    ? text('geoip_update_age',strftime('%Y-%m-%d %H:%M',localtime($geo->{'database_mtime'})),
+        0+($geo->{'database_age_days'}||0))
+    : ($geo->{'legacy_database_available'} ? $text{'geoip_legacy_ready'} : $text{'geoip_update_missing_db'});
+$geo_message .= ' — '.$text{'geoip_update_stale'} if $geo->{'stale'};
+print '<section class="panel panel-default"><div class="panel-heading"><b>'.
+    html_escape($text{'geoip_update_title'}).'</b></div><div class="panel-body"><p>'.
+    html_escape($geo_message).'</p>';
+if (!$deps->{'command_available'}) {
+    print '<p>'.html_escape($text{'geoip_dependency_missing'}).'</p>';
+    if ($access{'install_dependencies'} && $deps->{'package_manager_available'}) {
+        print '<p>'.direct_link_button('install_dependency.cgi',$text{'geoip_install_button'},
+            {dependency=>'geoip'}).'</p>';
+    }
+}
+if ($access{'manage'} && $geo->{'configured'} && $geo->{'command_available'} &&
+    $geo->{'timer_available'} && (!$geo->{'timer_enabled'} || !$geo->{'timer_active'})) {
+    print ui_form_start('geoip_timer.cgi','post');
+    print csrf_hidden();
+    print '<button type="submit" class="btn btn-default">'.
+        html_escape($text{'geoip_update_enable'}).'</button>';
+    print ui_form_end();
+}
+print '</div></section>';
 print '<h3>'.html_escape($text{'network_icons_manual'}).'</h3>';
 print ui_form_start(module_script_url('network_icons.cgi'),'post');
 print csrf_hidden();
