@@ -134,7 +134,19 @@ function attach(wrapper,kinds){
   });
   return {apply};
 }
-window.WireGuardTableSort={version:1,attach,ip,compare,value};
+// Build text-only table rows. Never interpret content from APIs as HTML.
+function appendTextRow(tbody,values){
+  if(!tbody||!Array.isArray(values))throw new TypeError('Invalid table row');
+  const row=document.createElement('tr');
+  for(const value of values){
+    const cell=document.createElement('td');
+    cell.textContent=value===null||value===undefined?'':String(value);
+    row.append(cell);
+  }
+  tbody.append(row);
+  return row;
+}
+window.WireGuardTableSort={version:1,attach,ip,compare,value,appendTextRow};
 })();
 </script>
 SORTABLE
