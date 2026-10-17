@@ -25,6 +25,9 @@ tar -xzf "$PACKAGE" -C "$TMP"
         require "./lib/analytics-page-ui-lib.pl";
         require "./lib/peer-activity-ui-lib.pl";
         require "./lib/peer-diagnostic-ui-lib.pl";
+        require "./lib/interface-page-ui-lib.pl";
+        require "./lib/chart-ui-lib.pl";
+        require "./lib/table-sort-ui-lib.pl";
         my $a=wg_analytics_controller_script(q{{}},q{""},q{""});
         my $p=wg_peer_activity_tabs_script(q{"peer-root"},q{"/wireguard/analytics_data.cgi"},
             q{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},q{{}});
@@ -35,6 +38,15 @@ tar -xzf "$PACKAGE" -C "$TMP"
         die "Analytics JavaScript not rendered\n" if $a !~ /wg-analytics/;
         die "Peer activity JavaScript not rendered\n" if $p !~ /data-wg-peer-tab/;
         die "Diagnostic JavaScript not rendered\n" if $d !~ /diagnostic_status/;
+        my $iface=wg_interface_page_script(
+            q{"instance"},q{"wg0"},q{"/wireguard/network_icon_data.cgi"},
+            (q{"test"}) x 13,q{fixture});
+        die "Interface runtime JavaScript not rendered\n"
+            if $iface !~ /wg-runtime/ || $iface !~ /showNetworkIcons/;
+        die "Chart helper not rendered\n"
+            unless wg_chart_ui_script() =~ /WireGuardChart/;
+        die "Table helper not rendered\n"
+            unless wg_table_sort_script() =~ /WireGuardTableSort/;
         print "Packaged Perl UI controllers loaded\n";
     '
     export PYTHONDONTWRITEBYTECODE=1
