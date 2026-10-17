@@ -14,6 +14,10 @@ sub slurp {
 }
 
 my $source = slurp("$FindBin::Bin/../edit_interface.cgi");
+die "interface CGI must delegate to isolated page controller\n"
+    unless $source =~ m{require './lib/interface-page-ui-lib.pl'} &&
+           $source =~ /wg_interface_page_script\(/;
+$source .= "\n".slurp("$FindBin::Bin/../lib/interface-page-ui-lib.pl");
 die "page-instance selector missing\n"
     if $source !~ /document\.querySelector\('\[data-wg-interface-page=/;
 die "interface controller still depends only on document.currentScript\n"
@@ -23,7 +27,7 @@ die "manual runtime refresh button missing\n"
 die "manual runtime refresh does not use forced poller refresh\n"
     if $source !~ /poller\.refresh\(\)/;
 
-my ($block) = $source =~ /print <<SCRIPT;\n(.*?)\nSCRIPT/s;
+my ($block) = $source =~ /(?:print|return) <<SCRIPT;\n(.*?)\nSCRIPT/s;
 die "interface JavaScript block missing\n" if !defined $block;
 # Render the actual interpolating Perl heredoc. Syntax checks against the
 # raw source miss Perl's treatment of '$/' at the end of JS regexes.
