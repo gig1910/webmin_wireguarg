@@ -42,6 +42,7 @@ print ui_table_row($text{'interface_client_allowed'}, html_escape($client_allowe
 print ui_table_end();
 
 print '<p>'.direct_link_button('analytics.cgi', $text{'analytics_interface_link'}, { interface => $name }).'</p>';
+print '<p>'.direct_link_button('network_icons.cgi',$text{'network_icons_title'},{}).'</p>' if $access{'manage'};
 print graph_html($name, '', text('graph_interface_title', $name));
 print '<div class="wg-runtime-toolbar">'.
     '<button type="button" class="btn btn-default" data-wg-runtime-refresh>'.html_escape($text{'journal_refresh'}).'</button> '.
@@ -115,7 +116,7 @@ else {
 }
 
 if ($access{'manage'}) {
-    print '<p>'.direct_link_button('network_icons.cgi', $text{'network_icons_title'}, {}).'</p>';
+
     print '<p>'.ui_link_button('interface_form.cgi?name='.urlize($name), $text{'interface_edit'}).' '.
         ui_link_button('edit_peer.cgi?name='.urlize($name), $text{'interface_add_peer'}).'</p>';
     print '<div class="wg-actions">'.
