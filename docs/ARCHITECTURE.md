@@ -41,6 +41,14 @@ The split deliberately keeps functions in the Webmin module package. Existing CG
 - External commands are invoked through fixed/configured executable paths with
   argument arrays and timeouts.
 
+## Browser presentation layer
+
+For shared chart formatting, table construction and SPA lifecycle invariants
+see [Browser UI architecture](UI-ARCHITECTURE.md). The interface page, analytics
+view, peer activities and diagnostics controllers now live in focused
+`lib/*-ui-lib.pl` modules rather than being embedded in large CGI handlers.
+The module still uses Webmin/Authentic Theme for its page shell.
+
 ## Network identity versus geographic observations
 
 A WHOIS CIDR describes registry ownership and may cover IP addresses in different
