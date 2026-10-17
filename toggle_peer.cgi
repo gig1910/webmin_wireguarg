@@ -7,8 +7,7 @@ my $ajax = $in{'ajax'} ? 1 : 0;
 sub json_reply
 {
     my (%payload) = @_;
-    print "Content-type: application/json; Charset=utf-8\n\n";
-    print json_encode_utf8(\%payload);
+    json_response(\%payload);
     exit;
 }
 
