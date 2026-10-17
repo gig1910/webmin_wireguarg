@@ -115,13 +115,33 @@ sub wg_firewall_preflight
 sub optional_dependency_spec
 {
     my ($id) = @_;
-    return undef if (!defined($id) || $id ne 'qrencode');
-    return {
-        'id' => 'qrencode',
-        'package' => 'qrencode',
-        'command_key' => 'qrencode_cmd',
-        'command_fallback' => '/usr/bin/qrencode',
-    };
+    return undef if (!defined($id));
+    if ($id eq 'qrencode') {
+        return {
+            'id' => 'qrencode',
+            'package' => 'qrencode',
+            'packages' => ['qrencode'],
+            'command_key' => 'qrencode_cmd',
+            'command_fallback' => '/usr/bin/qrencode',
+        };
+    }
+    if ($id eq 'geoip') {
+        # Install an immediately usable offline country DB as well as the
+        # optional GeoLite2 City updater and WHOIS client. The City MMDB
+        # download still requires the administrator's MaxMind credentials.
+        return {
+            'id' => 'geoip',
+            'package' => 'geoipupdate mmdb-bin geoip-bin geoip-database whois',
+            'packages' => [qw(geoipupdate mmdb-bin geoip-bin geoip-database whois)],
+            'commands' => [
+                ['geoipupdate_cmd','/usr/bin/geoipupdate'],
+                ['mmdblookup_cmd','/usr/bin/mmdblookup'],
+                ['geoiplookup_cmd','/usr/bin/geoiplookup'],
+                ['whois_cmd','/usr/bin/whois']
+            ],
+        };
+    }
+    return undef;
 }
 
 sub optional_dependency_quick_status
@@ -130,12 +150,17 @@ sub optional_dependency_quick_status
     my $spec = optional_dependency_spec($id);
     return undef if (!$spec);
 
-    my $command = command_path($spec->{'command_key'}, $spec->{'command_fallback'});
+    my @commands = $spec->{'commands'}
+        ? map { command_path($_->[0],$_->[1]) } @{$spec->{'commands'}}
+        : (command_path($spec->{'command_key'}, $spec->{'command_fallback'}));
+    my @missing = grep { !$_ || !has_command($_) } @commands;
     my $apt = command_path('apt_get_cmd', '/usr/bin/apt-get');
     return {
         %$spec,
-        'command' => $command,
-        'command_available' => ($command && has_command($command)) ? 1 : 0,
+        'command' => join(', ', @commands),
+        'commands' => \@commands,
+        'missing_commands' => \@missing,
+        'command_available' => @missing ? 0 : 1,
         'package_manager_available' => (-e '/etc/debian_version' && has_command($apt)) ? 1 : 0,
         'apt_command' => $apt,
     };
@@ -147,28 +172,27 @@ sub optional_dependency_status
     my $spec = optional_dependency_spec($id);
     return undef if (!$spec);
 
-    my $command = command_path($spec->{'command_key'}, $spec->{'command_fallback'});
+    my $status = optional_dependency_quick_status($id);
     my $dpkg = command_path('dpkg_query_cmd', '/usr/bin/dpkg-query');
-    my $apt = command_path('apt_get_cmd', '/usr/bin/apt-get');
-    my $status = {
-        %$spec,
-        'command' => $command,
-        'command_available' => ($command && has_command($command)) ? 1 : 0,
-        'package_installed' => 0,
-        'package_version' => '',
-        'package_manager_available' => (-e '/etc/debian_version' && has_command($apt)) ? 1 : 0,
-        'apt_command' => $apt,
-        'dpkg_query_command' => $dpkg,
-    };
-
+    $status->{'package_installed'} = 0;
+    $status->{'package_version'} = '';
+    $status->{'dpkg_query_command'} = $dpkg;
     if (has_command($dpkg)) {
-        my ($ok, $out) = run_command([
-            $dpkg, '-W', '-f=${Status}\t${Version}\n', $spec->{'package'}
-        ], 1, 10, 4096);
-        if ($ok && $out =~ /^install\s+ok\s+installed\t([^\r\n]+)$/m) {
-            $status->{'package_installed'} = 1;
-            $status->{'package_version'} = _trim($1);
+        my @versions;
+        my $all_installed = 1;
+        for my $package (@{$spec->{'packages'} || [$spec->{'package'}]}) {
+            my ($ok, $out) = run_command([
+                $dpkg, '-W', '-f=${Status}\t${Version}\n', $package
+            ], 1, 10, 4096);
+            if ($ok && $out =~ /^install\s+ok\s+installed\t([^\r\n]+)$/m) {
+                push(@versions, $package.' '._trim($1));
+            }
+            else {
+                $all_installed=0;
+            }
         }
+        $status->{'package_installed'} = $all_installed ? 1 : 0;
+        $status->{'package_version'} = join(', ', @versions);
     }
     return $status;
 }

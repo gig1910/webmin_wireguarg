@@ -77,7 +77,7 @@ my @argv = (
     '--yes',
     '--no-install-recommends',
     'install',
-    $spec->{'package'},
+    @{$spec->{'packages'} || [$spec->{'package'}]},
 );
 
 ui_print_header(undef, $title, '', undef, 1, 1);
