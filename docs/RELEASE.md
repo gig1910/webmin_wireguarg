@@ -1,37 +1,46 @@
 # Release procedure
 
+The current tracked base version is `0.2.0` (see `VERSION` and `module.info`).
+Development builds are uniquely stamped with UTC timestamp and the Git SHA.
+
 ## Prepare
 
 ```bash
+git status --short
 ./tests/run-tests.sh
 ./scripts/check-release.sh
 ./scripts/build-release.sh
 ```
 
-The version in `VERSION`, `module.info`, API markers and release tag must match.
+The `Regression and Release Gate` GitHub Actions workflow runs the same
+checks on pushes to `main` and on pull requests. Inspect its result before
+deploying a newly built module. The build writes release packages into
+`dist/`, not into the running Webmin installation.
 
-## Create repository and first release
+## Release an existing version
 
-```bash
-git init
-git add .
-git commit -m "Release 1.0.0"
-git branch -M main
-git remote add origin git@github.com:OWNER/webmin-wireguard.git
-git push -u origin main
-git tag -s v1.0.0 -m "WireGuard Webmin 1.0.0"
-git push origin v1.0.0
-```
+1. Confirm that `VERSION` and `module.info` agree.
+2. Confirm `docs/RELEASE-NOTES-<VERSION>.md` exists and describes the release.
+3. Run the test/build gate on the exact commit to be released.
+4. Inspect `dist/SHA256SUMS`, `dist/SHA512SUMS`, package manifest and build
+   metadata, including the full commit SHA.
+5. Create and push a signed annotated `v<VERSION>` tag only when that version
+   is actually being published; do not reuse existing tags.
+6. Create the GitHub release and explicitly upload the corresponding
+   `.wbm.gz`, source archive, release notes and checksum files from `dist/`.
+   The CI gate currently validates and builds packages but **does not publish**
+   them automatically.
 
-The release workflow builds and uploads the WBM, source archive, checksums and
-release notes. Signed tags require a locally configured signing key.
-
-## Manual GitHub release
-
-Upload the files from `dist/` and use `docs/RELEASE-NOTES-1.0.0.md` as the
-release description. Do not upload private test configurations or runtime
-state.
+Do not upload local Webmin configuration, WireGuard keys, production endpoint
+data or runtime state. A module upgrade must never implicitly rewrite live
+`/etc/wireguard/*.conf` or restart WireGuard interfaces.
 
 ## Unique build identifiers
 
-Running `./scripts/build-release.sh` automatically generates a new build version and filename for the Webmin package and source bundle (release VERSION + UTC timestamp/nanoseconds + Git commit). The archive's `module.info` and `build.info` are stamped, but tracked source files are not rewritten. You can inspect the installed build number in the module UI and in the `X-WireGuard-Webmin-Build` API response header. `SOURCE_DATE_EPOCH` can be supplied to reproduce an explicitly timestamped build. The release notes remain tied to the base VERSION.
+Each `./scripts/build-release.sh` invocation stamps a version such as
+`0.2.0+<UTC nanosecond timestamp>.g<Git SHA>`. The WBM package contains the
+exact `module.info` version and `build.info`; source files remain unchanged.
+Set `SOURCE_DATE_EPOCH` to reproduce an intentionally fixed build timestamp.
+
+Use the new timestamped `.wbm.gz` on upgrade and verify the identity shown
+by Webmin. A successful build does **not** deploy or activate the package.
