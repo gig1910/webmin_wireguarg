@@ -103,8 +103,7 @@ sub wg_interface_page_script
                 credentials:'same-origin',cache:'no-store',signal:networkRequest.signal,
                 headers:{'Accept':'application/json'}
             });
-            if(!(response.headers.get('content-type')||'').includes('application/json'))return;
-            const result=await response.json();
+            const result=await window.WireGuardTransport.readJson(response);
             if(!destroyed&&result.ok&&result.results){
                 knownNetworkIcons=result.results;
                 showNetworkIcons();
@@ -187,21 +186,6 @@ sub wg_interface_page_script
         box.style.display = message ? 'block' : 'none';
     }
 
-    async function decodeJsonResponse(response) {
-        const body = await response.text();
-        const contentType = (response.headers.get('content-type') || '').toLowerCase();
-        if (!contentType.includes('application/json')) {
-            const sample = body.replace(/\s+/g, ' ').trim().slice(0, 240);
-            throw new Error('HTTP ' + response.status + ': сервер вернул не JSON' + (sample ? ': ' + sample : ''));
-        }
-        try {
-            return JSON.parse(body);
-        }
-        catch (error) {
-            const sample = body.replace(/\s+/g, ' ').trim().slice(0, 240);
-            throw new Error('Некорректный JSON-ответ' + (sample ? ': ' + sample : ''));
-        }
-    }
 
     async function forceRuntimeRefresh(button) {
         if (!button || button.dataset.refreshPending === '1') return;
@@ -287,7 +271,7 @@ sub wg_interface_page_script
                 cache: 'no-store',
                 signal: requestController.signal
             });
-            const data = await decodeJsonResponse(response);
+            const data = await window.WireGuardTransport.readJson(response);
             if (!response.ok || !data.ok) throw new Error(data.error || ('HTTP ' + response.status));
             if (destroyed) return;
             const disabled = !!data.disabled;
