@@ -40,7 +40,6 @@ peer_qr.cgi
 qr_image.cgi
 runtime.cgi
 history.cgi
-stats.cgi
 journal.cgi
 collector_status.cgi
 stats-collector.pl
