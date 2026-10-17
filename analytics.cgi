@@ -43,6 +43,7 @@ my %labels = map { $_ => $text{$_} || $_ } qw(
 my $strings = json_encode_utf8(\%labels);
 print wg_table_sort_script();
 print wg_chart_ui_script();
+print wg_ui_transport_script();
 print <<HTML;
 <div id="wg-analytics" data-url="$url">
  <section class="panel panel-default wg-analytics-section">
