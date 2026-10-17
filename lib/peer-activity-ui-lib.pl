@@ -61,17 +61,11 @@ sub wg_peer_activity_tabs_script
      if(serial!==seq||!root.isConnected)return;
      body.replaceChildren();
      for(const event of result.events||[]){
-       const tr=document.createElement('tr');
-       const cols=[
+       window.WireGuardTableSort.appendTextRow(body,[
          new Date(event.at*1000).toLocaleString(),
          labels.events[event.type]||event.type,
          event.endpoint||'—',event.previous||'—'
-       ];
-       for(const value of cols){
-         const td=document.createElement('td');
-         td.textContent=value;tr.append(td);
-       }
-       body.append(tr);
+       ]);
      }
      if(sort)sort.apply();
      status.textContent=result.events_truncated?labels.limited:
