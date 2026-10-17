@@ -47,7 +47,8 @@ my $geoip=peer_ip_geoip($ip);
 # Cache is populated ONLY by a manual user-triggered lookup, not by polling.
 # Best-effort storage must never mask WHOIS/GeoIP results.
 my ($cached,$cache_error)=analytics_backend('network_record', {
-    ip=>$ip, whois_fields=>$whois->{'fields'} || []
+    ip=>$ip, whois_fields=>$whois->{'fields'} || [],
+    geoip_country_code=>$geoip->{'country_code'} || ''
 });
 my $result={
     ok=>JSON::PP::true(),
