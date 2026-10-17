@@ -7,12 +7,12 @@ in standard `.conf` files.
 
 **Stable release:** `0.2.0`
 
-## Development: persistent peer analytics
+## Current development
 
-The feature branch adds persistent 10-minute SQLite usage, activity events,
-an Analytics tab, protected storage maintenance and configurable Prometheus
-textfile metrics. See [Analytics operations](docs/ANALYTICS.md).
-These features are not yet included in the published stable release.
+The `main` branch includes persistent SQLite analytics, peer activity,
+a protected network/WHOIS/GeoIP directory, and optional Prometheus export.
+The base package version is `0.2.0`; each local build is uniquely stamped
+with UTC build time and Git commit. See [Analytics operations](docs/ANALYTICS.md).
 
 ## Features
 
@@ -59,7 +59,7 @@ non-routable examples.
 ### Client configuration and QR export
 
 [![WireGuard client configuration and QR export](docs/images/en/peer_config_view.jpg)](docs/images/en/peer_config_view.jpg)
-[![WireGuard client configuration and QR export](docs/images/en/peer_qr_view.jpg)](docs/images/en/peer_qr_view.jpg.jpg)
+[![WireGuard client configuration and QR export](docs/images/en/peer_qr_view.jpg)](docs/images/en/peer_qr_view.jpg)
 
 ### Confirms
 
