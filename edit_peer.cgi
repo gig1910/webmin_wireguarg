@@ -43,12 +43,52 @@ if ($peer) {
         unavailable=>$text{'peer_ip_unavailable'}
     });
     my $ip_url_json=json_encode_utf8(module_script_url('peer_ip_info.cgi'));
+    # Local-only health check: no remote IP requests just to view the peer.
+    my $geo_status=wg_geoip_update_status();
+    my $geo_message=$text{'geoip_update_missing_db'};
+    if ($geo_status->{'database_mtime'}) {
+        my $date=strftime('%Y-%m-%d %H:%M',localtime($geo_status->{'database_mtime'}));
+        $geo_message=text('geoip_update_age',
+            $date,0+($geo_status->{'database_age_days'} || 0));
+        $geo_message .= ' — '.$text{'geoip_update_stale'}
+            if $geo_status->{'stale'};
+    }
+    if (!$geo_status->{'command_available'}) {
+        $geo_message .= ' — '.$text{'geoip_update_missing_tool'};
+    }
+    elsif (!$geo_status->{'configured'}) {
+        $geo_message .= ' — '.$text{'geoip_update_missing_credentials'};
+    }
+    elsif (!$geo_status->{'timer_available'}) {
+        $geo_message .= ' — '.$text{'geoip_update_missing_timer'};
+    }
+    elsif ($geo_status->{'timer_enabled'} && $geo_status->{'timer_active'}) {
+        $geo_message .= ' — '.$text{'geoip_update_scheduled'};
+    }
+    else {
+        $geo_message .= ' — '.$text{'geoip_update_disabled'};
+    }
     print '<section id="'.html_escape($ip_dom_id).'" class="panel panel-default">'.
         '<div class="panel-heading"><strong>'.html_escape($text{'peer_ip_title'}).'</strong></div>'.
         '<div class="panel-body"><p class="help-block">'.html_escape($text{'peer_ip_help'}).'</p>'.
+        '<p class="'.($geo_status->{'stale'} ? 'alert alert-warning':'help-block').'">'.
+        '<strong>'.html_escape($text{'geoip_update_title'}).':</strong> '.
+        html_escape($geo_message).'</p>'.
         '<button type="button" class="btn btn-default" data-role="lookup">'.
         html_escape($text{'peer_ip_lookup'}).'</button>'.
-        '<div data-role="output" aria-live="polite"></div></div></section>';
+        '<div data-role="output" aria-live="polite"></div>';
+    if ($access{'manage'} && $geo_status->{'configured'} &&
+        $geo_status->{'command_available'} && $geo_status->{'timer_available'} &&
+        (!$geo_status->{'timer_enabled'} || !$geo_status->{'timer_active'})) {
+        print ui_form_start('geoip_timer.cgi','post');
+        print csrf_hidden();
+        print ui_hidden('name',$name);
+        print ui_hidden('peer',$in{'peer'});
+        print '<button type="submit" class="btn btn-default">'.
+            html_escape($text{'geoip_update_enable'}).'</button>';
+        print ui_form_end();
+    }
+    print '</div></section>';
     print <<IP_LOOKUP_SCRIPT;
 <script>
 (function(){

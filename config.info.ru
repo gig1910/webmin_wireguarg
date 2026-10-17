@@ -49,3 +49,5 @@ whois_cmd=Путь к whois (запрос по нажатию),0
 geoiplookup_cmd=Путь к локальному geoiplookup,0
 mmdblookup_cmd=Путь к локальному mmdblookup для GeoLite2,0
 geoip_city_db=Путь к локальной базе GeoLite2 City/Country .mmdb (необязательно),0
+geoipupdate_cmd=Путь к официальной утилите MaxMind geoipupdate,0
+geoipupdate_conf=Путь к конфигурации geoipupdate с учётными данными (сами ключи сюда не записывать),0

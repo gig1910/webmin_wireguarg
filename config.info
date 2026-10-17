@@ -50,3 +50,5 @@ whois_cmd=Full path to WHOIS command (on-demand network lookup),0
 geoiplookup_cmd=Legacy local GeoIP lookup command,0
 mmdblookup_cmd=MaxMind local GeoLite2 lookup command,0
 geoip_city_db=Optional absolute path to local GeoLite2 City/Country .mmdb database,0
+geoipupdate_cmd=Full path to official MaxMind geoipupdate command,0
+geoipupdate_conf=Absolute path to geoipupdate credential configuration file; do not store secrets here,0

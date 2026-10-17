@@ -51,3 +51,5 @@ whois_cmd=/usr/bin/whois
 geoiplookup_cmd=/usr/bin/geoiplookup
 mmdblookup_cmd=/usr/bin/mmdblookup
 geoip_city_db=
+geoipupdate_cmd=/usr/bin/geoipupdate
+geoipupdate_conf=/etc/GeoIP.conf

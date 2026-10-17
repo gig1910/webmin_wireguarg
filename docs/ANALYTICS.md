@@ -59,3 +59,7 @@ The history plot uses SVG lines and translucent fills with the same theme colors
 ### Last-handshake peer WHOIS and GeoIP
 
 On peer details an explicit button looks up the IP in the SQLite `handshake_ip` field bound to SHA256(public key), not the current or statically configured endpoint. ACL, POST CSRF, and rate limiting are enforced. WHOIS is an on-demand outbound registry query via `whois`. GeoIP is offline-only with optional `mmdblookup`/GeoLite2 .mmdb or legacy `geoiplookup`/geoip-database; missing tools and DBs are reported. No automatic external IP lookup on page load, no external HTTP GeoIP providers, and no public lookup of private or reserved addresses.
+ 
+### Automatic GeoLite2 updates
+
+Use the OS-provided `geoipupdate` and `geoipupdate.timer` (Ubuntu/Debian) rather than a competing timer. Install `geoipupdate` and `mmdb-bin`, configure a root-protected `/etc/GeoIP.conf` with MaxMind `AccountID`, `LicenseKey` and `EditionIDs GeoLite2-City GeoLite2-Country`. Credentials **must never** be put in Webmin WireGuard settings or Git. Peer details display the local database mtime, age and vendor timer state, warn after **14 days**, and let administrators explicitly enable the installed timer (POST+CSRF). The vendor controls actual update cadence; no duplicate scheduler is created. GeoIP database files configured by `DatabaseDirectory` are supported. Webmin removal leaves the vendor timer and MaxMind credentials untouched. WHOIS remains an explicit request and does not affect database updates.
