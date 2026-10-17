@@ -175,7 +175,11 @@ die "client config failed: $client_error\n" if (!$client);
 die "PresharedKey missing from client config\n"
     if ($client !~ /^PresharedKey = \Q$existing\E$/m);
 
-die "PresharedKey value leaked into form helper source\n"
-    if (preshared_key_form_rows_for_state(1) =~ /\Q$existing\E/);
+{
+    no warnings qw(redefine);
+    local *main::ui_table_row = sub { return join(' ', @_); };
+    die "PresharedKey value leaked into form helper source\n"
+        if (preshared_key_form_rows_for_state(1) =~ /\Q$existing\E/);
+}
 
 print "PresharedKey tests passed\n";
