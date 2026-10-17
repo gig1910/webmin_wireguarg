@@ -12,7 +12,13 @@ my $controller_path="$FindBin::Bin/../lib/analytics-page-ui-lib.pl";
 open(my $controller_fh,'<',$controller_path) or die $!;
 my $controller_source=do {local $/; <$controller_fh>};
 close($controller_fh);
-my $whole_page=$source."\n".$controller_source;
+my $chart_path="$FindBin::Bin/../lib/chart-ui-lib.pl";
+open(my $chart_fh,'<',$chart_path) or die $!;
+my $chart_source=do {local $/; <$chart_fh>};
+close($chart_fh);
+die "analytics page does not load shared chart component"
+    unless $source =~ /print wg_chart_ui_script\(\)/;
+my $whole_page=$source."\n".$controller_source."\n".$chart_source;
 die "SVG chart missing" unless $whole_page =~ /data-chart-svg/ &&
     $whole_page =~ /class="wg-analytics-chart"/;
 die "historical graph must use SQLite display intervals" unless $whole_page =~ /data\.bucket_seconds/;
@@ -41,6 +47,7 @@ my $initial_interface_json='""';
 my $generator=eval "sub { return <<HTML;\n$template\nHTML\n}";
 die "cannot compile analytics HTML heredoc: $@" if $@ || !$generator;
 my $html=$generator->();
+require "$FindBin::Bin/../lib/chart-ui-lib.pl";
 require "$FindBin::Bin/../lib/analytics-page-ui-lib.pl";
 my $script_html=wg_analytics_controller_script($strings,$selected_json,$initial_interface_json);
 my ($js)=$script_html =~ m{<script>\n(\(function\(\)\{.*?)</script>}s;
