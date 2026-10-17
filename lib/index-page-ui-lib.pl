@@ -174,14 +174,14 @@ sub wg_index_runtime_script
         if (time) time.textContent = new Date((data.timestamp || Date.now() / 1000) * 1000).toLocaleString();
         const error = root.querySelector('#wg-runtime-error');
         if (error) error.style.display = 'none';
-    });
+    }
 
     function onRuntimeError(event) {
         const error = root.querySelector('#wg-runtime-error');
         if (!error) return;
         error.textContent = runtimeErrorPrefix + (event.detail && event.detail.error ? event.detail.error : '');
         error.style.display = 'block';
-    });
+    }
 
     function onRuntimeWarning(event) {
         const error = root.querySelector('#wg-runtime-error') || root.querySelector('#wg-interface-runtime-error');
