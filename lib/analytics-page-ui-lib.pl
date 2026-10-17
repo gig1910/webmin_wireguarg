@@ -25,13 +25,7 @@ sub wg_analytics_controller_script
     return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+
        'T'+pad(d.getHours())+':'+pad(d.getMinutes());
   }
-  function bytes(v) {
-    if (!Number.isFinite(v)) return '—';
-    const units=['B','KiB','MiB','GiB','TiB'];
-    let i=0;
-    while(v>=1024 && i<units.length-1){v/=1024;i++;}
-    return (i===0 || v>=100 ? v.toFixed(0):v.toFixed(1))+' '+units[i];
-  }
+  function bytes(v) { return window.WireGuardChart.formatBytes(v,false); }
   function range() {
     let to=Math.floor(Date.now()/1000), from;
     if(period.value==='custom'){
@@ -73,20 +67,12 @@ sub wg_analytics_controller_script
       values[pos].rx+=Math.max(0,Number(row.rx)||0);
       values[pos].observed=true;
     }
-    const style=getComputedStyle(document.documentElement);
-    const colors={
-      tx:style.getPropertyValue('--primary-color').trim()||'#4f8dd6',
-      rx:style.getPropertyValue('--success-color').trim()||'#42a878',
-      grid:'rgba(127,127,127,.22)',zero:'rgba(190,190,190,.8)',
-      text:style.color||'#aaa'
-    };
+    const colors=window.WireGuardChart.themeColors();
     const width=Math.max(320,Math.round(chartSvg.clientWidth||graph.clientWidth||900));
     const height=300,pad={l:76,r:12,t:18,b:28};
     const pw=width-pad.l-pad.r,half=(height-pad.t-pad.b)/2,zero=pad.t+half;
     const max=Math.max(1024,...values.map(v=>Math.max(v.tx,v.rx)));
-    const power=Math.pow(1024,Math.floor(Math.log(max)/Math.log(1024)));
-    const scaled=Math.ceil(max/power),tickStep=scaled<=2?.5:scaled<=5?1:2;
-    const limit=Math.max(power,Math.ceil(scaled/tickStep)*tickStep*power);
+    const limit=window.WireGuardChart.niceLimit(max);
     const svgNs='http://www.w3.org/2000/svg';
     chartSvg.setAttribute('viewBox','0 0 '+width+' '+height);
     chartSvg.replaceChildren();
