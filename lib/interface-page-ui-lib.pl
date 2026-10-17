@@ -3,7 +3,7 @@
 # Scope, listener disposal and polling semantics must remain unchanged.
 sub wg_interface_page_script
 {
-    my ($js_page_instance, $$js_name, $$js_network_icons_url, $$js_active, $$js_inactive, $$js_not_running, $$js_peer_enabled, $$js_peer_disabled, $$js_peer_enable, $$js_peer_disable, $$js_peer_busy, $$js_confirm_disable, $$js_runtime_loading, $$js_runtime_updated, $$js_refresh, $$js_runtime_error_prefix, $$csrf) = @_;
+    my ($js_page_instance, $js_name, $js_network_icons_url, $js_active, $js_inactive, $js_not_running, $js_peer_enabled, $js_peer_disabled, $js_peer_enable, $js_peer_disable, $js_peer_busy, $js_confirm_disable, $js_runtime_loading, $js_runtime_updated, $js_refresh, $js_runtime_error_prefix, $csrf) = @_;
     return <<SCRIPT;
 <style>
 .wg-peer-toggle { margin: 0; display: inline-block; }
