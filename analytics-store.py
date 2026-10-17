@@ -514,9 +514,27 @@ def render_prometheus_text(conn,enabled):
                ["webmin_wg_analytics_export_timestamp_seconds "+str(int(time.time()))])
     return "\n".join(out)+"\n"
 
+def peer_handshake_ip(conn, request):
+    """Read only the IP observed at the last confirmed handshake for a key."""
+    ident = request.get("peer_id")
+    if not isinstance(ident,str) or not KEY.fullmatch(ident):
+        raise ValueError("invalid peer key fingerprint")
+    row=conn.execute(
+        "SELECT handshake,handshake_ip FROM peers WHERE id=?", (ident,)
+    ).fetchone()
+    if not row or not row[0] or not row[1]:
+        return {"ok":True,"available":False,"handshake":int(row[0]) if row else 0}
+    try:
+        ip=ipaddress.ip_address(row[1])
+    except ValueError:
+        return {"ok":True,"available":False,"handshake":int(row[0])}
+    return {"ok":True,"available":True,"ip":str(ip),"handshake":int(row[0]),
+            "public":ip.is_global}
+
+
 def main():
     os.umask(0o077)
-    if len(sys.argv)!=3 or sys.argv[1] not in ("ingest","query","maintain","prometheus","health"):
+    if len(sys.argv)!=3 or sys.argv[1] not in ("ingest","query","peer_ip","maintain","prometheus","health"):
         raise ValueError("usage: analytics-store.py ACTION /absolute/path.sqlite3")
     action,path=sys.argv[1:]
     body=json.load(sys.stdin)
@@ -524,6 +542,7 @@ def main():
     try:
         if action=="ingest": result=ingest(conn,body)
         elif action=="query": result=query(conn,body)
+        elif action=="peer_ip": result=peer_handshake_ip(conn,body)
         elif action=="maintain": result=maintain(conn,body,path)
         elif action=="prometheus": result=prometheus(conn,body)
         else:

@@ -13,7 +13,7 @@ sub analytics_backend
 {
     my ($action, $request) = @_;
     return (undef, 'Invalid analytics command')
-        if ($action !~ /^(?:query|maintain|health)$/);
+        if ($action !~ /^(?:query|peer_ip|maintain|health)$/);
     my $python = '/usr/bin/python3';
     my $backend = File::Spec->catfile('.', 'analytics-store.py');
     return (undef, 'Python3 or analytics backend unavailable')

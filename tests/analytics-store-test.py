@@ -400,6 +400,33 @@ class AnalyticsTest(unittest.TestCase):
         self.assertEqual(result["totals"]["tx"],60)
         self.assertFalse(result["truncated"])
 
+    def test_peer_handshake_ip_only_uses_confirmed_sqlite_identity(self):
+        a=self.key_a
+        self.assertEqual(store.peer_handshake_ip(self.conn,{"peer_id":a}),
+                         {"ok":True,"available":False,"handshake":0})
+        self.sample(self.a,1000,10,20,endpoint="198.51.100.2:51720",handshake=999)
+        result=store.peer_handshake_ip(self.conn,{"peer_id":a})
+        self.assertTrue(result["available"])
+        self.assertEqual((result["ip"],result["handshake"]),("198.51.100.2",999))
+        self.assertFalse(result["public"])  # documentation/test range is non-global
+        # Endpoint may move without a new handshake; must keep confirmed IP.
+        self.sample(self.a,1005,15,25,endpoint="8.8.4.4:51721",handshake=999)
+        self.assertEqual(store.peer_handshake_ip(self.conn,{"peer_id":a})["ip"],"198.51.100.2")
+        # Handshake changes: now accept the new address.
+        self.sample(self.a,1010,20,30,endpoint="8.8.4.4:51721",handshake=1009)
+        result=store.peer_handshake_ip(self.conn,{"peer_id":a})
+        self.assertEqual(result["ip"],"8.8.4.4")
+        self.assertTrue(result["public"])
+        # Disabled, then reused tunnel IP/name under another public key.
+        store.ingest(self.conn,{"timestamp":1015,"interfaces":{"wg0":{"peer_list":[]}}})
+        self.assertEqual(store.peer_handshake_ip(self.conn,{"peer_id":a})["ip"],"8.8.4.4")
+        self.assertFalse(store.peer_handshake_ip(self.conn,{"peer_id":self.key_b})["available"])
+        for ident in ("invalid","../config",self.a):
+            with self.assertRaises(ValueError):
+                store.peer_handshake_ip(self.conn,{"peer_id":ident})
+        self.sample(self.b,1020,1,2,endpoint="10.66.66.1:1234",handshake=1018)
+        self.assertFalse(store.peer_handshake_ip(self.conn,{"peer_id":self.key_b})["public"])
+
     def test_prometheus_text_contains_only_fingerprints(self):
         self.sample(self.a,1000,100,200,endpoint="192.0.2.5:12345")
         self.sample(self.a,1005,200,300)
