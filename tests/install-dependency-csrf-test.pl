@@ -15,7 +15,7 @@ my $apt=File::Spec->catfile($dir,'apt-get');
 my $dpkg=File::Spec->catfile($dir,'dpkg-query');
 my $unavailable=File::Spec->catdir($dir,'missing-bin');
 mkdir $unavailable or die $!;
-for my $pair ([$apt, "#!/bin/sh\necho 'FAKE_APT_OK' \"\$@\"\nexit 0\n"],
+for my $pair ([$apt, "#!/bin/sh\necho 'FAKE_APT_OK' \"\$@\"\nprintf 'NEEDRESTART_MODE=%s\\n' \"\$NEEDRESTART_MODE\"\nexit 0\n"],
               [$dpkg,"#!/bin/sh\nexit 1\n"]) {
     open(my $file,'>',$pair->[0]) or die $!;
     print {$file} $pair->[1];
@@ -84,6 +84,8 @@ for my $dependency (qw(qrencode geoip)) {
         'test-session','https://vpn.example.test:10000');
     die "$dependency POST rejected valid token or fake apt: $err\n"
         unless $status==0 && $html=~/FAKE_APT_OK/;
+    die "$dependency installer must prevent automatic service restarts\n"
+        unless $html =~ /NEEDRESTART_MODE=l\b/;
     die "$dependency allowed unexpected package injection\n"
         if $html =~ /FAKE_APT_OK.*(?:curl|sudo|sh -c)/;
     if($dependency eq 'geoip'){

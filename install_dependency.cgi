@@ -100,7 +100,11 @@ my $exit_status = 255;
 {
     local $ENV{'DEBIAN_FRONTEND'} = 'noninteractive';
     local $ENV{'APT_LISTCHANGES_FRONTEND'} = 'none';
-    local $ENV{'NEEDRESTART_MODE'} = 'a';
+    # Never restart system daemons from inside the Webmin CGI which serves
+    # this very HTTP request. In needrestart, 'a' means automatically restart
+    # affected services (potentially including Webmin); 'l' is list-only.
+    # Package maintainer scripts can still have their own side effects.
+    local $ENV{'NEEDRESTART_MODE'} = 'l';
     local $ENV{'TERM'} = 'dumb';
     local $ENV{'LC_ALL'} = 'C';
 
