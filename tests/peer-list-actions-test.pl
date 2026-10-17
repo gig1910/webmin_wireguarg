@@ -39,7 +39,7 @@ die "peer detail still contains legacy toggle form\n" if $peer_page =~ /ui_form_
 my $toggle = slurp("$FindBin::Bin/../toggle_peer.cgi");
 die "peer toggle does not persist configuration\n" if $toggle !~ /atomic_write_config/;
 die "peer toggle does not apply runtime configuration\n" if $toggle !~ /action_apply_interface/;
-die "peer toggle does not use AJAX JSON response\n" if $toggle !~ /application\/json/;
+die "peer toggle does not use shared AJAX JSON transport\n" if $toggle !~ /json_response\(\\%payload\)/;
 die "peer toggle has no rollback on runtime failure\n" if $toggle !~ /original_contents/ || $toggle !~ /rollback/;
 
 my ($block) = $interface =~ /print <<SCRIPT;\n(.*?)\nSCRIPT/s;
