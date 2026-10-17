@@ -14,6 +14,10 @@ sub slurp {
 }
 
 my $interface = slurp("$FindBin::Bin/../edit_interface.cgi");
+die "interface CGI must delegate to isolated page controller\n"
+    unless $interface =~ m{require './lib/interface-page-ui-lib.pl'} &&
+           $interface =~ /wg_interface_page_script\(/;
+$interface .= "\n".slurp("$FindBin::Bin/../lib/interface-page-ui-lib.pl");
 die "peer actions column missing\n" if $interface !~ /interface_peer_actions/;
 die "enabled peer color marker missing\n" if $interface !~ /label-success wg-peer-state-enabled/;
 die "disabled peer color marker missing\n" if $interface !~ /label-default wg-peer-state-disabled/;
@@ -42,7 +46,7 @@ die "peer toggle does not apply runtime configuration\n" if $toggle !~ /action_a
 die "peer toggle does not use shared AJAX JSON transport\n" if $toggle !~ /json_response\(\\%payload\)/;
 die "peer toggle has no rollback on runtime failure\n" if $toggle !~ /original_contents/ || $toggle !~ /rollback/;
 
-my ($block) = $interface =~ /print <<SCRIPT;\n(.*?)\nSCRIPT/s;
+my ($block) = $interface =~ /(?:print|return) <<SCRIPT;\n(.*?)\nSCRIPT/s;
 die "interface JavaScript block missing\n" if !defined $block;
 my ($script) = $block =~ m{<script>\s*(.*?)\s*</script>}s;
 die "interface JavaScript content missing\n" if !defined $script;
