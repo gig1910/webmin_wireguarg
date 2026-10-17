@@ -80,16 +80,16 @@ sub wg_capture_subprocess
             if (defined($length) && $length > 0) {
                 my $target = fileno($fh) == $stdout_fd ? \$out : \$err;
                 my $limit = fileno($fh) == $stdout_fd ? $max_out : $max_err;
-                if (length($target) + $length > $limit) {
+                if (length($$target) + $length > $limit) {
                     if ($options{'truncate_output'}) {
-                        my $remaining = $limit - length($target);
-                        $target .= substr($chunk, 0, $remaining) if $remaining > 0;
+                        my $remaining = $limit - length($$target);
+                        $$target .= substr($chunk, 0, $remaining) if $remaining > 0;
                         next;
                     }
                     $problem = 'Subprocess output exceeds limit';
                     last;
                 }
-                $target .= $chunk;
+                $$target .= $chunk;
             }
             elsif (defined($length) && $length == 0) {
                 $readers->remove($fh); close($fh);
