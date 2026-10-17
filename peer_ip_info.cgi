@@ -36,8 +36,12 @@ if (!$record->{'available'}) {
 }
 my $ip=$record->{'ip'} || '';
 # Only globally routable, canonical numeric IPs may leave the server.
-fail_ip_info($text{'peer_ip_no_handshake'})
-    if !$record->{'public'} || $ip !~ /^[0-9a-f:.]{3,45}$/i;
+fail_ip_info($text{'peer_ip_no_handshake'}) if $ip !~ /^[0-9a-f:.]{3,45}$/i;
+if (!$record->{'public'}) {
+    json_response({ok=>JSON::PP::true(),available=>JSON::PP::false(),
+                   detail=>$text{'peer_ip_private'}.' ('.$ip.')'});
+    exit;
+}
 my $result={
     ok=>JSON::PP::true(),
     available=>JSON::PP::true(),
