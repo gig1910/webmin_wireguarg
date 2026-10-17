@@ -70,9 +70,9 @@ if (!$already_done) {
     # iteration. Terminate the command group immediately, while leaving the
     # worker alive long enough to drain output and write the final status.
     $term_sent += signal_child('TERM', $child_pid) if ($child_pid);
-    if ($worker_pid && ($state eq 'running' || $child_pid)) {
-        $term_sent += kill('TERM', $worker_pid) || 0;
-    }
+    # Do not signal the worker: its status.json may have been published just
+    # before it installed SIGTERM handlers. The stop marker is authoritative;
+    # the worker notices it during polling and writes the final stopped state.
 
     # Give normal termination a short grace period, then force only the child
     # command group. The worker must survive so it can report "stopped".
