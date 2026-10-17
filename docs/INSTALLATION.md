@@ -69,3 +69,7 @@ Each `./scripts/build-release.sh` run stamps an independent build version:
 ## Scheduled local GeoIP database updates
 
 GeoIP requires a periodically refreshed local database. Install the distribution `geoipupdate` and `mmdb-bin` packages, obtain a MaxMind account ID and license key, and keep them in `/etc/GeoIP.conf` with mode `0600` (not in the WireGuard module config). The file must contain `EditionIDs GeoLite2-City GeoLite2-Country` to fetch both city and country datasets. Open an existing peer's WHOIS/GeoIP block to inspect database age and enable the **vendor-supplied** `geoipupdate.timer` using the protected Webmin button, if it is disabled. The module does not install competing jobs or touch an administrator's timer on uninstall. GeoLite2 downloads depend on MaxMind credentials and network availability.
+
+### Webmin package installation for WHOIS and GeoIP
+
+On a peer detail page, a user with the **Install dependencies** ACL may choose **Install WHOIS and GeoIP components**. After explicit confirmation, Webmin runs apt-get for the fixed set: `geoipupdate mmdb-bin geoip-bin geoip-database whois`. The legacy country database works immediately without MaxMind credentials; modern GeoLite2 City still requires its own key in `/etc/GeoIP.conf`. Package operations are not performed on ordinary page views and do not restart WireGuard.

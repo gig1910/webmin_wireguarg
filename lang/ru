@@ -275,7 +275,7 @@ dependency_command_available=Команда уже доступна: $1
 dependency_package_version=Версия установленного пакета: $1
 dependency_package_installed_path_missing=Пакет версии $1 установлен, но команда по настроенному пути $2 не найдена. Проверьте путь в настройках модуля.
 dependency_open_settings=Открыть настройки модуля
-dependency_package_manager_missing=Автоматическая установка доступна только на Debian/Ubuntu при наличии apt-get. Установите qrencode средствами вашей системы либо укажите путь к существующей команде.
+dependency_package_manager_missing=Автоматическая установка доступна только на Debian/Ubuntu при наличии apt-get. Установите требуемые пакеты средствами вашей системы либо проверьте пути к командам.
 dependency_confirm_heading=Будет изменён состав системных пакетов
 dependency_confirm_text=Модуль установит только пакет $1 без рекомендуемых пакетов. Обновление списка пакетов автоматически не выполняется.
 dependency_package=Пакет
@@ -475,3 +475,7 @@ geoip_update_disabled=Автообновление выключено
 geoip_update_enable=Включить автообновление GeoIP
 geoip_update_enabled=Штатный geoipupdate.timer включён. База будет обновляться автоматически.
 geoip_update_back=Вернуться к пиру
+
+geoip_install_button=Установить компоненты WHOIS и GeoIP
+geoip_dependency_missing=Не все инструменты WHOIS/GeoIP установлены
+geoip_legacy_ready=Локальная GeoIP Country установлена (обновляется пакетным менеджером)

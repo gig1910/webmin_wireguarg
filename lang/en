@@ -275,7 +275,7 @@ dependency_command_available=The command is already available: $1
 dependency_package_version=Installed package version: $1
 dependency_package_installed_path_missing=Package version $1 is installed, but the command at configured path $2 was not found. Check the module settings.
 dependency_open_settings=Open module settings
-dependency_package_manager_missing=Automatic installation is available only on Debian/Ubuntu when apt-get is present. Install qrencode using your system tools or configure the path to an existing command.
+dependency_package_manager_missing=Automatic installation requires Debian/Ubuntu and apt-get. Install the required packages using your system tools or configure the command paths.
 dependency_confirm_heading=System packages will be changed
 dependency_confirm_text=The module will install only package $1 without recommended packages. Package lists will not be updated automatically.
 dependency_package=Package
@@ -475,3 +475,7 @@ geoip_update_disabled=Automatic updates disabled
 geoip_update_enable=Enable GeoIP automatic updates
 geoip_update_enabled=The system geoipupdate.timer is enabled. Updates will run automatically.
 geoip_update_back=Back to peer
+
+geoip_install_button=Install WHOIS and GeoIP components
+geoip_dependency_missing=Some WHOIS/GeoIP tools are not installed
+geoip_legacy_ready=Local GeoIP Country database installed (updated by package manager)
