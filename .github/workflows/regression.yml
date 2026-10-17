@@ -1,0 +1,29 @@
+name: Regression and Release Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Verify toolchain
+        run: |
+          perl -v >/dev/null
+          python3 --version
+          node --version
+      - name: Run regressions
+        run: ./tests/run-tests.sh
+      - name: Verify release metadata and manifest
+        run: ./scripts/check-release.sh
+      - name: Build tested release
+        run: ./scripts/build-release.sh
