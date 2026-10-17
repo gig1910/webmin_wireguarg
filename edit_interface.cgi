@@ -149,7 +149,7 @@ my $js_refresh = json_encode_utf8($text{'journal_refresh'});
 my $runtime_error_prefix = $text{'index_runtime_error'};
 $runtime_error_prefix =~ s/\$1//g;
 my $js_runtime_error_prefix = json_encode_utf8($runtime_error_prefix);
-my $network_icons_url = json_encode_utf8(module_script_url('network_icon_data.cgi'));
+my $js_network_icons_url = json_encode_utf8(module_script_url('network_icon_data.cgi'));
 print wg_table_sort_script();
 print <<SCRIPT;
 <style>
@@ -181,7 +181,7 @@ print <<SCRIPT;
     }
 
     const interfaceName = $js_name;
-    const networkIconsUrl = $network_icons_url;
+    const networkIconsUrl = $js_network_icons_url;
     const activeText = $js_active;
     const inactiveText = $js_inactive;
     const notRunningText = $js_not_running;
