@@ -65,33 +65,43 @@ else {
 }
 print '</div>';
 
-my $index_left=$access{'manage'} ? ui_link_button('interface_form.cgi', $text{'index_add'}) : '';
-my $index_right=($access{'logs'} ? ui_link_button('journal.cgi',$text{'index_logs'}) : '').
-    ($access{'manage'} ? ' '.direct_link_button('network_icons.cgi',$text{'network_icons_title'},{}) : '');
+my $index_left=$access{'manage'}
+    ? wg_ui_button(href=>'interface_form.cgi',icon=>'plus',
+        label=>$text{'index_add'},tone=>'success') : '';
+my $index_right=($access{'logs'} ? wg_ui_button(
+    href=>'journal.cgi',icon=>'log',label=>$text{'index_logs'}) : '').
+    ($access{'manage'} ? wg_ui_icon_action(
+    href=>'network_icons.cgi',icon=>'globe',
+    label=>$text{'network_icons_title'},tone=>'info') : '');
 print wg_ui_action_bar($index_left,$index_right);
 
 
 my $collector_url = module_script_url('collector_status.cgi');
 my $collector_csrf = csrf_token();
 my $collector_id = 'wg-collector-'.substr(sha256_hex(time().rand().$$), 0, 12);
-print '<div id="'.html_escape($collector_id).'" class="panel panel-default" data-url="'.html_escape($collector_url).'" data-csrf="'.html_escape($collector_csrf).'">'.
-    '<div class="panel-heading"><b>'.html_escape($text{'collector_title'}).'</b></div>'.
-    '<div class="panel-body">'.
-    '<div data-role="status">'.html_escape($text{'collector_loading'}).'</div>'.
-    '<div data-role="warning" class="alert alert-warning" style="display:none;margin-top:8px;margin-bottom:8px"></div>'.
-    '<div data-role="details" style="margin-top:6px"></div>';
+print '<div id="'.html_escape($collector_id).'" class="wg-ui-collector"'.
+    ' data-url="'.html_escape($collector_url).'" data-csrf="'.html_escape($collector_csrf).'">'.
+    '<details class="wg-ui-panel wg-ui-tools" data-wg-tool-panel>'.
+    '<summary>'.wg_ui_icon('chevron').' '.html_escape($text{'collector_title'}).
+    ' — <span data-role="status">'.html_escape($text{'collector_loading'}).'</span></summary>'.
+    '<div class="wg-ui-tools-body">'.
+    '<div data-role="warning" class="alert alert-warning" style="display:none"></div>'.
+    '<div data-role="details" class="help-block"></div>';
 if ($access{'manage'}) {
-    print '<div data-role="actions" style="margin-top:8px">'.
-        '<button type="button" class="btn btn-success" data-action="start">'.html_escape($text{'collector_start'}).'</button> '.
-        '<button type="button" class="btn btn-warning" data-action="restart">'.html_escape($text{'collector_restart'}).'</button> '.
-        '<button type="button" class="btn btn-danger" data-action="stop">'.html_escape($text{'collector_stop'}).'</button>'.
+    print '<div data-role="actions" class="wg-ui-button-row">'.
+        wg_ui_button(type=>'button',icon=>'play',tone=>'success',
+            label=>$text{'collector_start'},attrs=>{'data-action'=>'start'}).
+        wg_ui_button(type=>'button',icon=>'refresh',tone=>'warning',
+            label=>$text{'collector_restart'},attrs=>{'data-action'=>'restart'}).
+        wg_ui_button(type=>'button',icon=>'stop',tone=>'warning',
+            label=>$text{'collector_stop'},attrs=>{'data-action'=>'stop'}).
         '</div>'.
         '<div data-role="console-wrap" style="display:none;margin-top:10px">'.
         '<b>'.html_escape($text{'collector_console'}).'</b>'.
         '<pre data-role="console" style="margin-top:6px;max-height:360px;overflow:auto;white-space:pre-wrap"></pre>'.
         '</div>';
 }
-print '</div></div>';
+print '</div></details></div>';
 my $js_collector_id = json_encode_utf8($collector_id);
 my $js_collector_healthy = json_encode_utf8($text{'collector_healthy'});
 my $js_collector_stale = json_encode_utf8($text{'collector_stale'});
@@ -116,19 +126,47 @@ print wg_ui_transport_script();
 print wg_index_collector_script(
     $js_collector_id, $js_collector_healthy, $js_collector_stale, $js_collector_stopped, $js_collector_failed, $js_collector_starting, $js_collector_stopping, $js_collector_unavailable, $js_collector_last_update, $js_collector_storage, $js_collector_service_state, $js_collector_confirm_stop, $js_collector_confirm_restart, $js_collector_running_action, $js_collector_compacting, $js_collector_restart_required, $js_collector_last_compaction, $js_collector_config_pending, $js_collector_config_unverified, $js_collector_config_different);
 
-my $qr_status = optional_dependency_quick_status('qrencode');
-
-print '<div class="panel panel-default"><div class="panel-heading"><b>'.html_escape($text{'dependencies_title'}).'</b></div><div class="panel-body">';
-if ($qr_status->{'command_available'}) {
-    print '<span class="text-success">'.html_escape(text('dependency_command_available', $qr_status->{'command'})).'</span>';
+# Treat executable availability independently: a country-only database,
+# WHOIS and QR generation are usable even when the full optional bundle is not.
+my $qr_status=optional_dependency_quick_status('qrencode');
+my $geo_status=wg_geoip_update_status();
+my $mmdb=command_path('mmdblookup_cmd','/usr/bin/mmdblookup');
+my $legacy=command_path('geoiplookup_cmd','/usr/bin/geoiplookup');
+my $whois=command_path('whois_cmd','/usr/bin/whois');
+my @geo_dbs=wg_geoip_database_paths();
+my $has_geoip=(@geo_dbs && has_command($mmdb)) ||
+    ($geo_status->{'legacy_database_available'} && has_command($legacy));
+my $has_city=scalar(grep { /GeoLite2-City\\.mmdb$/ } @geo_dbs) > 0 && has_command($mmdb);
+my $dep_markup='<div class="wg-ui-dependency-list">';
+for my $item (
+    [$text{'ui_dependency_qr'},$qr_status->{'command_available'},$qr_status->{'command'}],
+    [$text{'ui_dependency_whois'},has_command($whois),$whois],
+    [$text{'ui_dependency_geoip'},$has_geoip,
+        $has_city?$text{'ui_dependency_city'}:
+        ($has_geoip?$text{'ui_dependency_country_only'}:$text{'ui_dependency_missing_db'})],
+    [$text{'ui_dependency_geoip_update'},$geo_status->{'command_available'} &&
+        $geo_status->{'configured'} && $geo_status->{'timer_enabled'} &&
+        $geo_status->{'timer_active'},
+        $geo_status->{'command_available'} ? $text{'geoip_update_title'} :
+            $text{'geoip_update_missing_tool'}],
+) {
+    my ($label,$available,$info)=@$item;
+    $dep_markup.='<div class="wg-ui-dependency-item">'.
+        '<strong>'.html_escape($label).'</strong> <span class="'.
+        ($available?'text-success':'text-muted').'">'.
+        html_escape($available?$text{'ui_dependency_available'}:$text{'ui_dependency_unavailable'}).
+        '</span> <small>'.html_escape($info||'').'</small></div>';
 }
-else {
-    print '<span>'.html_escape(text('dependency_qrencode_missing', $qr_status->{'command'})).'</span>';
-    if ($access{'install_dependencies'} && $qr_status->{'package_manager_available'}) {
-        print ' '.ui_link_button('install_dependency.cgi?dependency=qrencode', $text{'qr_install_button'});
-    }
+if ($access{'install_dependencies'} && $qr_status->{'package_manager_available'}) {
+    $dep_markup.=wg_ui_button(
+        href=>'install_dependency.cgi?dependency=qrencode',
+        icon=>'plus',label=>$text{'qr_install_button'});
+    $dep_markup.=' '.wg_ui_button(
+        href=>'install_dependency.cgi?dependency=geoip',
+        icon=>'plus',label=>$text{'geoip_install_button'});
 }
-print '</div></div>';
+$dep_markup.='</div>';
+print wg_ui_panel($text{'dependencies_title'},$dep_markup);
 
 my $js_index_page_id=json_encode_utf8($index_page_id);
 my $js_active = json_encode_utf8($text{'index_active'});
