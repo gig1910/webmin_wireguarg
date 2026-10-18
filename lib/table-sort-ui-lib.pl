@@ -113,7 +113,10 @@ function attach(wrapper,kinds){
     const rows=Array.from(table.rows).filter(r=>r!==header&&r.cells.length>=kinds.length);
     for(const row of rows)if(!original.has(row))original.set(row,next++);
     rows.sort((a,b)=>{
-      const c=compare(value(a,column,kinds[column]),value(b,column,kinds[column]),kinds[column]);
+      const av=value(a,column,kinds[column]),bv=value(b,column,kinds[column]);
+      const am=missing(av),bm=missing(bv);
+      if(am!==bm)return am?1:-1; // NULL last in both directions
+      const c=compare(av,bv,kinds[column]);
       return c?(reverse?-c:c):original.get(a)-original.get(b);
     });
     for(const row of rows)row.parentNode.appendChild(row);
