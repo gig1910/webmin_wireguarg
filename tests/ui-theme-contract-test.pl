@@ -9,6 +9,15 @@ for my $tone (sort keys %native) {
     die "Missing native $native{$tone} for $tone\n" unless index($html,$native{$tone})>=0;
     die "Missing SVG/text for $tone\n" unless $html =~ /<svg/ && $html =~ /<span>Example<\/span>/;
 }
+# Verify rendered semantic controls, not caller-specific legacy tone arguments.
+my %actions=(start=>'btn-success',add=>'btn-success',save=>'btn-success',
+    stop=>'btn-warning',restart=>'btn-warning',edit=>'btn-primary',
+    delete=>'btn-danger',clear=>'btn-danger');
+for my $action (sort keys %actions) {
+    my $html=wg_ui_button(icon=>'save',label=>'Action',action=>$action);
+    die "Semantic $action renders wrong native theme class\n"
+        unless $html =~ /class="[^"]*\b\Q$actions{$action}\E\b/;
+}
 my $stop=wg_ui_icon_action(icon=>'stop',label=>'Stop',tone=>'warning');
 die "Unreadable stop icon\n" unless $stop =~ /text-warning/ &&
     $stop =~ /fill="currentColor"/ && $stop =~ /aria-label="Stop"/;
@@ -22,8 +31,8 @@ die "Expected independent network/country/endpoint cells\n"
 die "Icon columns must not be sortable\n"
     unless $iface_js =~ /\['name','state','ip','actions','actions','endpoint'/;
 my $index=read_text("$FindBin::Bin/../index.cgi");
-die "Dashboard stop must be orange\n"
-    unless $index =~ /mini_action_form\(\$name, 'stop', \$text\{'interface_stop'\}, 'warning'/;
+die "Dashboard stop action missing\n"
+    unless $index =~ /mini_action_form\(\$name, 'stop'/;
 die "Installed QR component wrongly offers installation\n"
     unless $index =~ /if \(!\$qr_status->\{'command_available'\}\)/;
 my $analytics=read_text("$FindBin::Bin/../analytics.cgi");
