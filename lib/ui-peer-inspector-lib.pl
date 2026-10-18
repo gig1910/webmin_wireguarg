@@ -59,7 +59,7 @@ sub wg_ui_peer_inspector_script {
    const raw=String(field.value||'');
    const countryField=/country/i.test(String(field.label||''));
    const prefix=raw.trim().slice(0,2).toUpperCase();
-   const iso=/^[A-Z]{2}$/.test(prefix) &&
+   const iso=/^[A-Z]{2}\$/.test(prefix) &&
      (raw.trim().length===2 || raw.trim().charAt(2)===',');
    const country=countryField ? (iso?prefix:result.country_code||'') : '';
    const flag=window.WireGuardUI.flag(country);
