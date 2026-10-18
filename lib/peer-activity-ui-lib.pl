@@ -66,17 +66,7 @@ sub wg_peer_activity_tabs_script
        const info=data.results&&data.results[node.dataset.wgHistoryIp];
        const badge=node.querySelector('.wg-network-icon');
        const country=node.querySelector('.wg-geoip-country');
-       if(!info)continue;
-       if(badge){
-         badge.textContent=info.icon||'?';
-         badge.dataset.custom=info.icon&&info.icon!=='?'?'1':'0';
-         badge.title=[info.cidr,info.label,info.country].filter(Boolean).join(' — ');
-       }
-       if(country&&/^[a-z]{2}\$/i.test(String(info.country||''))){
-         const code=info.country.toUpperCase();
-         country.textContent=window.WireGuardUI.flag(code)+' '+code;
-         country.title=code;
-       }
+       window.WireGuardUI.renderNetwork(badge,country,info,node.dataset.wgHistoryIp);
      }
    }catch(_){/* Cache lookup is optional and never sends WHOIS traffic. */}
  }
