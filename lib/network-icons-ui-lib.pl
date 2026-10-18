@@ -10,11 +10,7 @@ sub wg_network_icons_page_script
     my ($js_page_id)=@_;
     my $html=<<'NETWORK_UI';
 <style>
-.wg-network-form{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
-.wg-network-form label{display:inline-flex;flex-direction:column;gap:4px}
-.wg-network-edit-link{padding:0;border:0;background:none;color:inherit;text-decoration:underline;
-    text-underline-offset:2px;cursor:pointer;font:inherit}
-.wg-network-edit-link:hover,.wg-network-edit-link:focus{color:var(--link-color,#5bc0de)}
+.wg-ui .wg-network-edit-link{font:inherit}
 </style>
 <script>
 (function(){
@@ -36,9 +32,7 @@ sub wg_network_icons_page_script
             icon.focus({preventScroll:true});
         });
     });
-    function flagFor(code){
-        return String.fromCodePoint(...Array.from(code,c=>127397+c.charCodeAt(0)));
-    }
+    const flagFor=code=>window.WireGuardUI.flag(code);
     root.querySelectorAll('[data-wg-geoip-codes]').forEach(function(node){
         const codes=(node.dataset.wgGeoipCodes||'').split(',').map(s=>s.trim().toUpperCase())
             .filter(s=>/^[A-Z]{2}$/.test(s));
