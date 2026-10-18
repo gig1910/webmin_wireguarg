@@ -50,6 +50,8 @@ class RefreshTest(unittest.TestCase):
         with sqlite3.connect(self.db) as db:
             self.assertEqual(db.execute("SELECT COUNT(*) FROM unlocode_places").fetchone()[0],2)
         self.assertEqual(json.loads((self.state/"unlocode-status.json").read_text())["entries"],2)
+        self.assertTrue((self.state/"unlocode-last-error.txt").exists())
+        self.assertIn("partial", (self.state/"unlocode-last-error.txt").read_text())
 
     def test_rejects_non_official_sources(self):
         for url in ("http://service.unece.org/test.zip",
