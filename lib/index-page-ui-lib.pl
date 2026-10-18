@@ -99,8 +99,10 @@ $render .= "const configPendingText=$js_collector_config_pending, configUnverifi
         if(disposed)return;
         const button = event.target.closest('button[data-action]'); if (!button || !root.contains(button) || busy) return;
         const action = button.dataset.action;
-        if (action === 'stop' && !confirm(confirmStop)) return;
-        if (action === 'restart' && !confirm(confirmRestart)) return;
+        if (action === 'stop' &&
+            !await window.WireGuardUI.confirmAction(confirmStop)) return;
+        if (action === 'restart' &&
+            !await window.WireGuardUI.confirmAction(confirmRestart)) return;
         busy = true;
         setButtonVisibility({state: action === 'stop' ? 'active' : 'inactive'});
         if (consoleWrap) consoleWrap.style.display = 'block';
