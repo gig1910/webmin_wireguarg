@@ -225,7 +225,7 @@ sub direct_link_button
     }
     my $onclick="if (typeof event !== 'undefined' && event) { event.stopImmediatePropagation(); } window.location.assign(this.href); return false;";
     return '<a href="'.html_escape($url).'"'.
-        ' class="btn wg-ui-btn wg-ui-tone-neutral wg-direct-link" download'.
+        ' class="btn btn-default wg-ui-btn wg-ui-tone-neutral wg-direct-link" download'.
         ' data-wg-direct-download="1" onclick="'.html_escape($onclick).'">'.
         wg_ui_icon('download').' <span>'.html_escape($label).'</span></a>';
 }
