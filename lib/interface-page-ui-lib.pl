@@ -6,18 +6,9 @@ sub wg_interface_page_script
     my ($js_page_instance, $js_name, $js_network_icons_url, $js_active, $js_inactive, $js_not_running, $js_peer_enabled, $js_peer_disabled, $js_peer_enable, $js_peer_disable, $js_peer_busy, $js_confirm_disable, $js_runtime_loading, $js_runtime_updated, $js_refresh, $js_runtime_error_prefix, $csrf) = @_;
     return <<SCRIPT;
 <style>
-.wg-peer-toggle { margin: 0; display: inline-block; }
-.wg-peer-state-disabled { opacity: .75; }
-.wg-peer-action-pending { opacity: .65; }
-.wg-runtime-toolbar { margin: 10px 0; display: flex; align-items: center; gap: 10px; }
-.wg-endpoint-with-icon { display:inline-flex; align-items:center; gap:5px; }
-.wg-network-icon { display:inline-flex; flex:0 0 18px; width:18px;height:18px;
- align-items:center;justify-content:center;box-sizing:border-box;border:1.6px solid white;
- border-radius:50%;color:white;background:rgba(35,40,46,.55);font-weight:bold;font-size:12px;
- line-height:1;vertical-align:middle;white-space:nowrap;overflow:hidden; }
-.wg-network-icon[data-custom="1"] { font-size:11px; }
-.wg-geoip-country { font-size:11px; font-weight:600; letter-spacing:.04em; opacity:.9; }
-.wg-geoip-country[hidden] { display:none!important; }
+.wg-peer-toggle{margin:0;display:inline-flex;align-items:center}
+.wg-peer-state-disabled{opacity:.75}
+.wg-peer-action-pending{opacity:.65}
 </style>
 <script>
 (function() {
@@ -85,7 +76,7 @@ sub wg_interface_page_script
             if(country){
                 const code=info&&typeof info.country==='string'&&/^[A-Za-z]{2}\$/.test(info.country.trim())
                     ?info.country.trim().toUpperCase():'';
-                country.textContent=code;
+                country.textContent=code ? window.WireGuardUI.flag(code)+' '+code : '';
                 country.hidden=!code;
                 country.title=code ? ((info.country_source==='geoip'?'GeoIP':'WHOIS')+': '+code) : '';
             }
