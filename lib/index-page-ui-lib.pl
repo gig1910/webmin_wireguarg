@@ -163,7 +163,10 @@ sub wg_index_runtime_script
         const state = root.querySelector('[data-wg-state="' + CSS.escape(name) + '"]');
         if (state) {
             state.textContent = active ? activeText : inactiveText;
-            state.style.fontWeight = active ? 'bold' : 'normal';
+            if(state.classList){
+                state.classList.toggle('wg-ui-status--success',active);
+                state.classList.toggle('wg-ui-status--muted',!active);
+            }
         }
         const port = root.querySelector('[data-wg-port="' + CSS.escape(name) + '"]');
         if (port && active && iface.listen_port) port.textContent = iface.listen_port;
