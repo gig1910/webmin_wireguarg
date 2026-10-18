@@ -37,9 +37,16 @@ print ui_table_row($text{'interface_file'}, '<tt>'.html_escape($path).'</tt>');
 print ui_table_row($text{'interface_state'}, '<span id="wg-interface-state">'.html_escape($text{'runtime_loading'}).'</span>');
 print ui_table_row($text{'interface_addresses'}, html_escape(join(', ', get_section_values($ifc, 'Address')) || '-'));
 print ui_table_row($text{'interface_listen_port'}, '<span id="wg-interface-port">'.html_escape(get_section_value($ifc, 'ListenPort') || '-').'</span>');
-print ui_table_row($text{'interface_public_key'}, '<tt id="wg-interface-public-key">'.$public_display.'</tt>');
+print ui_table_row($text{'interface_public_key'},
+    '<span class="wg-ui-copy"><tt id="wg-interface-public-key">'.$public_display.'</tt>'.
+    wg_ui_icon_action(icon=>'copy',label=>'Копировать публичный ключ',
+        attrs=>{'data-wg-copy-target'=>'wg-interface-public-key'}).'</span>');
 print ui_table_row($text{'interface_private_key'}, html_escape($private_state));
-print ui_table_row($text{'interface_client_endpoint'}, html_escape(get_meta_value($ifc, 'clientendpoint') || '-'));
+print ui_table_row($text{'interface_client_endpoint'},
+    '<span class="wg-ui-copy"><span class="wg-ui-mono" id="wg-interface-client-endpoint">'.
+    html_escape(get_meta_value($ifc,'clientendpoint')||'-').'</span>'.
+    wg_ui_icon_action(icon=>'copy',label=>'Копировать Endpoint',
+       attrs=>{'data-wg-copy-target'=>'wg-interface-client-endpoint'}).'</span>');
 print ui_table_row($text{'interface_client_allowed'}, html_escape($client_allowed_display));
 print ui_table_end();
 
