@@ -530,3 +530,12 @@ ui_unknown_network=Unknown network
 
 ui_network_edit=Edit network assignment
 ui_network_maintenance=Network cache maintenance
+ui_confirm_title=Confirm operation
+ui_confirm_prompt=Continue with this action?
+ui_confirm_type=To confirm type
+ui_confirm_cancel=Cancel
+ui_confirm_accept=Confirm
+ui_copied=Copied
+ui_copy_unavailable=Clipboard unavailable
+ui_api_non_json=Server returned a non-JSON response
+ui_api_bad_json=Invalid JSON response
