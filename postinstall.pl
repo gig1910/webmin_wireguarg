@@ -157,8 +157,15 @@ sub _wg_install_unlocode_timer
     system($systemctl,'daemon-reload') if $changed;
     my $enable=system($systemctl,'enable','--now','webmin-wireguard-unlocode.timer');
     # Do not delay the installer for network downloads or CSV imports.
-    my $start=system($systemctl,'start','--no-block','webmin-wireguard-unlocode.service');
-    _wg_install_log($log,"UN/LOCODE: timer enable=$enable, initial queue=$start");
+    my $status_file="$state_dir/unlocode-status.json";
+    my $recent=0;
+    if (-f $status_file) {
+        my $mtime=(stat($status_file))[9] || 0;
+        $recent=$mtime && time()-$mtime<30*86400 ? 1 : 0;
+    }
+    my $start=$recent ? 0 :
+        system($systemctl,'start','--no-block','webmin-wireguard-unlocode.service');
+    _wg_install_log($log,"UN/LOCODE: timer enable=$enable, initial queue=$start, fresh=$recent");
 }
 
 sub module_install
