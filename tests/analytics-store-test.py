@@ -589,8 +589,10 @@ class AnalyticsTest(unittest.TestCase):
                 store.network_manage(self.conn,{
                     "action":"set_icon","cidr":"8.8.8.0/24","city_code":bad})
         # One country/name pointing to two distinct codes must never be guessed.
-        catalog.write_text(',"RU","MOW","Moskva","Moskva","","","AA","2401","","",""\\n'
-                           ',"RU","ABC","Moskva","Moskva","","","AA","2401","","",""\\n')
+        with catalog.open("w",encoding="utf-8",newline="") as f:
+            writer=csv.writer(f)
+            writer.writerow(row("RU","MOW","Moskva"))
+            writer.writerow(row("RU","ABC","Moskva"))
         locodes.import_release(self.conn,catalog)
         self.assertEqual(locodes.lookup(self.conn,"RU","Moscow"),"")
 
