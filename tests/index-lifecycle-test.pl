@@ -10,9 +10,9 @@ my $markup2=wg_index_runtime_script(q{"page2"},(map { q{"test"} } 1..4));
 my ($js1)=$markup1=~m{<script>\s*(.*?)</script>}s;
 my ($js2)=$markup2=~m{<script>\s*(.*?)</script>}s;
 die "Rendered dashboard page scripts missing\n" unless $js1 && $js2;
-my $js = "const vm=require('vm');\\n" .
-    "const js1=".encode_json($js1).";\\n" .
-    "const js2=".encode_json($js2).";\\n" . <<'JS';
+my $js = "const vm=require('vm');\n" .
+    "const js1=".encode_json($js1).";\n" .
+    "const js2=".encode_json($js2).";\n" . <<'JS';
 const events=new Map();
 const roots={
   page1:{isConnected:true,querySelectorAll(){return[]},querySelector(){return null}},
