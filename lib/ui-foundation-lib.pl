@@ -58,7 +58,10 @@ sub wg_ui_button {
     $tone='neutral' unless $tone =~ /^(?:neutral|success|warning|danger|info)$/;
     my $label=html_escape($a{'label'}||'');
     my $body=($a{'icon'}?wg_ui_icon($a{'icon'}).' ':'').'<span>'.$label.'</span>';
-    my $attr=' class="btn wg-ui-btn wg-ui-tone-'.$tone.'"'.wg_ui_attrs($a{'attrs'});
+    my $extra=($a{'class'}||'');
+    $extra='' if $extra =~ /[^A-Za-z0-9 _-]/;
+    my $attr=' class="btn wg-ui-btn wg-ui-tone-'.$tone.($extra?' '.$extra:'').'"'.
+        wg_ui_attrs($a{'attrs'});
     if($a{'href'}) {
         return '<a href="'.html_escape($a{'href'}).'"'.$attr.
             ' data-wg-module-navigation="1">'.$body.'</a>';
