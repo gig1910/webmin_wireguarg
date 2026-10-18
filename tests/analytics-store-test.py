@@ -53,6 +53,33 @@ class AnalyticsTest(unittest.TestCase):
             "SELECT handshake,handshake_ip FROM peers WHERE id=?",
             (self.key_a,)).fetchone(),(1209,"198.51.100.4"))
 
+    def test_historical_whois_restricted_to_retained_peer_endpoint_events(self):
+        self.sample(self.a, 1190, 1, 2, "8.8.8.8:50000", handshake=1188)
+        self.sample(self.a, 1210, 4, 5, "1.1.1.1:50000", handshake=1209)
+        self.sample(self.b, 1220, 1, 2, "9.9.9.9:50000", handshake=1219)
+        old = store.peer_handshake_ip(self.conn, {
+            "peer_id":self.key_a, "event_ip":"8.8.8.8", "event_at":1188
+        })
+        self.assertTrue(old["available"])
+        self.assertTrue(old["public"])
+        self.assertEqual(old["ip"],"8.8.8.8")
+        # Both new and old endpoints are stored on the change event.
+        former = store.peer_handshake_ip(self.conn, {
+            "peer_id":self.key_a, "event_ip":"8.8.8.8", "event_at":1209
+        })
+        self.assertEqual(former["ip"],"8.8.8.8")
+        # Arbitrary IP, foreign peer, wrong timestamp and missing credentials
+        # must all fail before any external WHOIS query can run.
+        for payload in [
+            {"peer_id":self.key_a,"event_ip":"9.9.9.9","event_at":1219},
+            {"peer_id":self.key_b,"event_ip":"8.8.8.8","event_at":1188},
+            {"peer_id":self.key_a,"event_ip":"8.8.8.8","event_at":9999},
+            {"peer_id":self.key_a,"event_ip":"8.8.8.8","event_at":True},
+            {"peer_id":self.key_a,"event_ip":"localhost","event_at":1188},
+        ]:
+            with self.assertRaises(ValueError):
+                store.peer_handshake_ip(self.conn, payload)
+
     def test_deactivate_recreate_same_ip_different_key(self):
         self.sample(self.a,1000,10,10)
         self.sample(self.a,1005,20,20)
