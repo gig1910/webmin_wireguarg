@@ -6,6 +6,7 @@ use lib "$FindBin::Bin/stub";
 use lib "$FindBin::Bin/..";
 use JSON::PP qw(decode_json);
 our (%config, %text, $module_name);
+our $WIREGUARD_WEBMIN_VERSION;
 $module_name = 'wireguard';
 require "$FindBin::Bin/../wireguard-lib.pl";
 
