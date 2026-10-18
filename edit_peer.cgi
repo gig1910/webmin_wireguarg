@@ -470,7 +470,9 @@ if ($peer) {
         '<option value="31536000">'.html_escape($text{'analytics_year'}).'</option>'.
         '</select></label> '.
         wg_ui_icon_action(icon=>'refresh',tone=>'info',
-        label=>$text{'journal_refresh'},attrs=>{'data-wg-peer-activity-refresh'=>'1'}).
+        label=>$text{'journal_refresh'},attrs=>{'data-wg-peer-activity-refresh'=>'1'}).' '.
+        wg_ui_button(href=>'config.cgi',icon=>'gear',
+            label=>$text{'dependency_open_settings'},action=>'navigate').
         '</div>';
     print '<p class="help-block">'.html_escape($text{'analytics_warning'}).'</p>';
     print '<div data-wg-peer-activity-status class="help-block" role="status"></div>';
