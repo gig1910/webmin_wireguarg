@@ -3,20 +3,16 @@ use strict;
 use warnings;
 use FindBin;
 use JSON::PP qw(encode_json);
-use File::Temp qw(tempfile);
+require "$FindBin::Bin/node-harness.pl";
 require "$FindBin::Bin/../lib/index-page-ui-lib.pl";
 my $markup1=wg_index_runtime_script(q{"page1"},(map { q{"test"} } 1..4));
 my $markup2=wg_index_runtime_script(q{"page2"},(map { q{"test"} } 1..4));
 my ($js1)=$markup1=~m{<script>\s*(.*?)</script>}s;
 my ($js2)=$markup2=~m{<script>\s*(.*?)</script>}s;
 die "Rendered dashboard page scripts missing\n" unless $js1 && $js2;
-my $node=qx(command -v node 2>/dev/null); $node=~s/[\r\n]+\z//;
-if($node){
-    my ($fh,$path)=tempfile(SUFFIX=>'.js',UNLINK=>1);
-    print {$fh} "const vm=require('vm');\n";
-    print {$fh} "const js1=".encode_json($js1).";\n";
-    print {$fh} "const js2=".encode_json($js2).";\n";
-    print {$fh} <<'JS';
+my $js = "const vm=require('vm');\\n" .
+    "const js1=".encode_json($js1).";\\n" .
+    "const js2=".encode_json($js2).";\\n" . <<'JS';
 const events=new Map();
 const roots={
   page1:{isConnected:true,querySelectorAll(){return[]},querySelector(){return null}},
@@ -59,8 +55,5 @@ for(const name of ['wg-runtime','wg-runtime-error','wg-runtime-warning']){
 }
 console.log('dashboard SPA listener lifecycle passed');
 JS
-    close($fh);
-    system($node,'--check',$path)==0 or die "Dashboard lifecycle script invalid\n";
-    system($node,$path)==0 or die "Dashboard SPA lifecycle test failed\n";
-}
+wg_test_node_script($js, 'dashboard SPA lifecycle');
 print "dashboard SPA lifecycle checks passed\n";
