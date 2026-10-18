@@ -44,8 +44,9 @@ my $strings = json_encode_utf8(\%labels);
 print wg_table_sort_script();
 print wg_chart_ui_script();
 print wg_ui_transport_script();
+print wg_ui_foundation();
 print <<HTML;
-<div id="wg-analytics" data-url="$url">
+<div id="wg-analytics" class="wg-ui" data-url="$url">
  <section class="panel panel-default wg-analytics-section">
   <div class="panel-heading"><strong>$text{'analytics_filters_heading'}</strong></div>
   <div class="panel-body">
