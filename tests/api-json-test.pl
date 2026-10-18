@@ -16,8 +16,9 @@ sub main::urlize {
     return $v;
 }
 
+my $version = $WIREGUARD_WEBMIN_VERSION;
 my $url = module_script_url('runtime.cgi', name => 'wg0');
-die "bad API URL: $url\n" if $url ne '/wireguard/runtime.cgi?_wg_api=0.2.0&name=wg0';
+die "bad API URL: $url\n" if $url ne "/wireguard/runtime.cgi?_wg_api=$version&name=wg0";
 
 my $output = '';
 {
