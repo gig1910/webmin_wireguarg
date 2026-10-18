@@ -169,15 +169,18 @@ sub wg_ui_foundation {
   });
  }
  document.addEventListener('submit',function(ev){
-  const form=ev.target.closest('form[data-wg-confirm]');
+  const form=ev.target.closest('form');
   if(!form||!form.closest('.wg-ui'))return;
+  const submitter=ev.submitter;
+  const message=form.dataset.wgConfirm || (submitter&&submitter.dataset.wgConfirm);
+  const word=form.dataset.wgConfirmWord || (submitter&&submitter.dataset.wgConfirmWord) || '';
+  if(!message)return;
   if(form.dataset.wgConfirmed==='1'){delete form.dataset.wgConfirmed;return;}
   ev.preventDefault();ev.stopImmediatePropagation();
-  const submitter=ev.submitter;
-  confirmModal(form.dataset.wgConfirm,form.dataset.wgConfirmWord||'').then(ok=>{
+  confirmModal(message,word).then(ok=>{
    if(!ok||!form.isConnected)return;
-   const token= form.querySelector('input[name="confirm"]');
-   if(token&&form.dataset.wgConfirmWord)token.value=form.dataset.wgConfirmWord;
+   const token=form.querySelector('input[name="confirm"]');
+   if(token&&word)token.value=word;
    form.dataset.wgConfirmed='1';
    if(typeof form.requestSubmit==='function')form.requestSubmit(submitter||undefined);
    else form.submit();
