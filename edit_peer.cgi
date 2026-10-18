@@ -48,19 +48,6 @@ if ($peer) {
     # Global network assignments are edited from the network directory,
     # while this peer retains its own on-demand WHOIS/GeoIP investigation.
     # On-demand IP investigation; no automatic WHOIS/network side effects.
-    my $ip_dom_id='wg-peer-ip-'.time().'-'.int(rand(1000000000));
-    my $ip_dom_json=json_encode_utf8($ip_dom_id);
-    my $ip_name_json=json_encode_utf8($name);
-    my $ip_index_json=json_encode_utf8("$in{'peer'}");
-    my $ip_csrf_json=json_encode_utf8($csrf);
-    my $ip_labels_json=json_encode_utf8({
-        busy=>$text{'peer_ip_busy'}, whois=>$text{'peer_ip_whois'},
-        cityNote=>$text{'ui_ip_city_note'},
-        geoip=>$text{'peer_ip_geoip'}, raw=>$text{'peer_ip_raw'},
-        handshake=>$text{'peer_ip_handshake_time'},
-        unavailable=>$text{'peer_ip_unavailable'}
-    });
-    my $ip_url_json=json_encode_utf8(module_script_url('peer_ip_info.cgi'));
     # Local-only health check: no remote IP requests just to view the peer.
     my $geo_status=wg_geoip_update_status();
     my $geo_dependencies=optional_dependency_quick_status('geoip');
@@ -94,14 +81,14 @@ if ($peer) {
         $geo_message .= ' — '.$text{'geoip_update_disabled'};
     }
     print wg_ui_panel_start($text{'peer_ip_title'}).
-        '<div id="'.html_escape($ip_dom_id).'">'.
+        '<div>'.
         '<p class="help-block">'.html_escape($text{'peer_ip_help'}).'</p>'.
         '<p class="'.($geo_status->{'stale'} ? 'alert alert-warning':'help-block').'">'.
         '<strong>'.html_escape($text{'geoip_update_title'}).':</strong> '.
         html_escape($geo_message).'</p>'.
         wg_ui_button(type=>'button',icon=>'globe',tone=>'info',
-            label=>$text{'peer_ip_lookup'},attrs=>{'data-role'=>'lookup'}).
-        '<div data-role="output" aria-live="polite"></div>';
+            label=>$text{'peer_ip_lookup'},
+            attrs=>{'data-wg-ip-inspect'=>"$in{'peer'}"});
     if (!$geo_dependencies->{'command_available'} &&
         $access{'install_dependencies'} && $geo_dependencies->{'package_manager_available'}) {
         print '<p>'.direct_link_button(
@@ -125,92 +112,6 @@ if ($peer) {
         print ui_form_end();
     }
     print '</div>'.wg_ui_panel_end();
-    print <<IP_LOOKUP_SCRIPT;
-<script>
-(function(){
-  'use strict';
-  const root=document.getElementById($ip_dom_json);
-  if(!root)return;
-  const button=root.querySelector('[data-role="lookup"]');
-  const output=root.querySelector('[data-role="output"]');
-  const detailsLabels=$ip_labels_json;
-  const info={name:$ip_name_json,peer:$ip_index_json,csrf:$ip_csrf_json,url:$ip_url_json};
-  function node(tag,text,parent,className){
-    const el=document.createElement(tag);
-    if(className)el.className=className;
-    if(text!==undefined&&text!==null)el.textContent=String(text);
-    (parent||output).append(el);
-    return el;
-  }
-  function renderSection(label,result){
-    const section=node('section',null,output,'wg-peer-ip-section');
-    node('h4',label,section);
-    if(!result||!result.ok){
-      node('p',(result&&result.detail)||detailsLabels.unavailable,section,'help-block');
-      return;
-    }
-    const table=node('table',null,section,'table table-striped');
-    const body=node('tbody',null,table);
-    for(const entry of result.fields||[]){
-      const tr=node('tr',null,body);
-      node('th',entry.label||'',tr);
-      const value=String(entry.value||''),prefix=value.trim().slice(0,2).toUpperCase();
-      const countryField=/country/i.test(String(entry.label||''));
-      const code=countryField&&/^[A-Z]{2}\$/.test(prefix)&&
-        (value.trim().length===2||value.trim().charAt(2)===',')?prefix:'';
-      const flag=window.WireGuardUI.flag(code||(countryField?result.country_code:''));
-      node('td',(flag?flag+' ':'')+value,tr);
-    }
-    if(label===detailsLabels.geoip && detailsLabels.cityNote &&
-      !(result.fields||[]).some(field=>field.label==='City'))
-      node('p',detailsLabels.cityNote,section,'help-block');
-    if(result.source)node('small',result.source,section,'help-block');
-    if(result.raw){
-      const expandable=node('details',null,section);
-      node('summary',detailsLabels.raw,expandable);
-      node('pre',result.raw,expandable);
-    }
-  }
-  button.addEventListener('click',async ()=>{
-    button.disabled=true;
-    output.replaceChildren();
-    node('p',detailsLabels.busy,output,'help-block');
-    try{
-      const params=new URLSearchParams({
-        name:info.name,peer:info.peer,_wg_csrf:info.csrf
-      });
-      const response=await fetch(info.url,{method:'POST',
-        credentials:'same-origin',cache:'no-store',
-        headers:{'Accept':'application/json',
-                 'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
-        body:params.toString()});
-      if(!(response.headers.get('content-type')||'').toLowerCase().includes('application/json'))
-        throw new Error('HTTP '+response.status);
-      const data=await response.json();
-      if(!data.ok)throw new Error(data.error||'HTTP '+response.status);
-      if(!root.isConnected)return;
-      output.replaceChildren();
-      if(!data.available){
-        node('p',data.detail||detailsLabels.unavailable,output,'alert alert-info');
-        return;
-      }
-      node('h4',data.ip,output);
-      node('p',detailsLabels.handshake+': '+
-        new Date(Number(data.handshake)*1000).toLocaleString(),output,'help-block');
-      renderSection(detailsLabels.whois,data.whois);
-      renderSection(detailsLabels.geoip,data.geoip);
-    }catch(error){
-      if(root.isConnected){
-        output.replaceChildren();
-        node('p',error.message||String(error),output,'alert alert-warning');
-      }
-    }finally{
-      if(root.isConnected)button.disabled=false;
-    }
-  });
-})();
-</script>
-IP_LOOKUP_SCRIPT
 }
 
 if ($access{'manage'}) {
