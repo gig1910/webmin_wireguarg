@@ -15,9 +15,11 @@ die "numeric IPv4/IPv6 parsing missing\n"
 die "runtime numeric sort keys missing\n"
     unless $html =~ /sortBytes/ && $html =~ /sortEpoch/;
 die "stable ordering missing\n" unless $html =~ /new WeakMap/;
-die "NULL highest-value comparator missing\n"
+die "NULL comparator missing\n"
     unless $html =~ /function missing\(v\)/ &&
            $html =~ /if\(missing\(a\)\)return missing\(b\)\?0:1/;
+die "NULL-last sorting must precede direction reversal\n"
+    unless $html =~ /if\(am!==bm\)return am\?1:-1/;
 my ($js)=$html =~ m{<script>\n(.*?)</script>}s;
 die "sort helper JavaScript missing\n" unless defined $js;
 my $node=qx(command -v node 2>/dev/null);
@@ -60,7 +62,8 @@ if(sort.compare(parse('2001:db8::2'),parse('2001:db8::10'),'ip')>=0)
 if(sort.compare(parse('10.0.0.2'),parse('::1'),'ip')>=0)
   throw new Error('IPv4/IPv6 ordering inconsistent');
 
-// NULL/"Никогда" is larger than ANY real value for ASC; DESC reverses it.
+// The base comparator orders NULL after real values; row sorting must retain
+// this order when descending as well.
 for(const kind of ['time','handshake','bytes','ip','endpoint','name']){
   const present=kind==='ip'||kind==='endpoint'?[4,10,66,66,2]:12345;
   if(sort.compare(null,present,kind)!==1)
@@ -69,8 +72,8 @@ for(const kind of ['time','handshake','bytes','ip','endpoint','name']){
       throw new Error('Present value must precede NULL: '+kind);
   if(sort.compare(null,null,kind)!==0)
       throw new Error('Identical NULL values should be stable: '+kind);
-  if(-sort.compare(null,present,kind)!==-1)
-      throw new Error('Descending must invert NULL placement: '+kind);
+  if(!sort.missing(null) || sort.missing(0))
+      throw new Error('Missing-value detection failed: '+kind);
 }
 // Table rows are built as text nodes, never parsed as HTML.
 global.document={
