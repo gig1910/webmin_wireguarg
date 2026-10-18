@@ -529,6 +529,28 @@ def peer_handshake_ip(conn, request):
     ident = request.get("peer_id")
     if not isinstance(ident,str) or not KEY.fullmatch(ident):
         raise ValueError("invalid peer key fingerprint")
+    requested=request.get("event_ip")
+    event_at=request.get("event_at")
+    if requested is not None or event_at is not None:
+        # Historical lookups cannot be arbitrary IP probes. The event must be
+        # an exact retained observation of the already-authorized peer key.
+        if not isinstance(requested,str) or not isinstance(event_at,int) or \
+           isinstance(event_at,bool) or event_at<=0:
+            raise ValueError("invalid historical event")
+        try:
+            historical_ip=ipaddress.ip_address(requested)
+        except ValueError:
+            raise ValueError("invalid historical IP")
+        event=conn.execute(
+            "SELECT 1 FROM events WHERE peer_id=? AND at=? "
+            "AND type IN ('endpoint_ip_observed','endpoint_ip_changed') "
+            "AND (endpoint=? OR previous_endpoint=?) LIMIT 1",
+            (ident,event_at,str(historical_ip),str(historical_ip))
+        ).fetchone()
+        if not event:
+            raise ValueError("historical endpoint not recorded for this peer")
+        return {"ok":True,"available":True,"ip":str(historical_ip),
+                "handshake":event_at,"public":historical_ip.is_global}
     row=conn.execute(
         "SELECT handshake,handshake_ip FROM peers WHERE id=?", (ident,)
     ).fetchone()
