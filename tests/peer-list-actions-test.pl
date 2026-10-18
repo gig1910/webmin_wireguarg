@@ -156,8 +156,11 @@ function loadPage(root) {
         root: second,
         dataset: {},
         textContent: 'Disable peer',
+        title: 'Disable peer',
         disabled: false,
         classList: makeClassList(),
+        setAttribute(name,value){ this[name]=value; },
+        removeAttribute(name){ delete this[name]; },
         closest(selector) { return selector === '.wg-peer-toggle' ? wrapper : null; }
     };
     const event = {
