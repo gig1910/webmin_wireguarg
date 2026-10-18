@@ -58,6 +58,7 @@ perl tests/chart-ui-test.pl
 perl tests/ui-transport-test.pl
 perl tests/ui-foundation-test.pl
 perl tests/ui-behavior-test.pl
+perl tests/ui-theme-contract-test.pl
 perl tests/index-page-ui-test.pl
 perl tests/index-lifecycle-test.pl
 perl tests/index-collector-lifecycle-test.pl
