@@ -110,9 +110,10 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
     my $state_html = '<span class="label '.$state_class.'" data-wg-peer-state="'.$id.'" data-disabled="'.($disabled ? '1' : '0').'">'.
         html_escape($disabled ? $text{'peer_disabled'} : $text{'peer_enabled'}).'</span>';
 
-    my $ip_action=wg_ui_icon_action(
-        icon=>'globe',label=>$text{'peer_ip_lookup'}||'WHOIS / GeoIP',tone=>'info',
-        attrs=>{'data-wg-ip-inspect'=>"$i",'data-wg-ip-action'=>$id});
+    my $ip_action='<span data-wg-ip-action="'.$id.'" hidden>'.
+        wg_ui_icon_action(
+            icon=>'globe',label=>$text{'peer_ip_lookup'}||'WHOIS / GeoIP',tone=>'info',
+            attrs=>{'data-wg-ip-inspect'=>"$i"}).'</span>';
     my $edit_action=wg_ui_icon_action(
         icon=>'edit',label=>$text{'peer_edit_title'}||'Edit',action=>'edit',
         href=>$peer_url);
