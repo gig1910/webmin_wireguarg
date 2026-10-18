@@ -520,6 +520,39 @@ class AnalyticsTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             store.network_lookup(self.conn,{"ips":["1.1.1.1"]*129})
 
+    def test_existing_network_database_city_migration(self):
+        old = Path(self.tmp.name) / "legacy.sqlite3"
+        connection = sqlite3.connect(old)
+        connection.executescript("""
+            CREATE TABLE network_icons (
+              cidr TEXT PRIMARY KEY, icon TEXT NOT NULL DEFAULT '?',
+              label TEXT NOT NULL DEFAULT ''
+            );
+            CREATE TABLE geoip_cache (
+              ip TEXT PRIMARY KEY, country_code TEXT NOT NULL,
+              observed_at INTEGER NOT NULL DEFAULT 0
+            );
+            INSERT INTO network_icons(cidr,icon,label)
+              VALUES('8.8.8.0/24','?','Existing assignment');
+            INSERT INTO geoip_cache(ip,country_code,observed_at)
+              VALUES('8.8.8.8','US',9999999999);
+        """)
+        connection.commit()
+        connection.close()
+        upgraded = store.connect(str(old))
+        try:
+            result = store.network_lookup(
+                upgraded, {"ips": ["8.8.8.8"]})["results"]["8.8.8.8"]
+            self.assertEqual(result["label"], "Existing assignment")
+            self.assertEqual(result["country"], "US")
+            self.assertEqual(result["city_code"], "")
+            self.assertIn("city", [x[1] for x in upgraded.execute(
+                "PRAGMA table_info(network_icons)")])
+            self.assertIn("city_code", [x[1] for x in upgraded.execute(
+                "PRAGMA table_info(geoip_cache)")])
+        finally:
+            upgraded.close()
+
     def test_city_observation_manual_override_and_cache_lifecycle(self):
         store.network_record(self.conn, {
             "ip": "8.8.8.8", "geoip_country_code": "RU",
