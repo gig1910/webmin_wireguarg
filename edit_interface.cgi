@@ -47,7 +47,7 @@ print ui_table_row($text{'interface_client_endpoint'},
     html_escape(get_meta_value($ifc,'clientendpoint')||'-').'</span>'.
     wg_ui_icon_action(icon=>'copy',label=>$text{'ui_copy_endpoint'},
        attrs=>{'data-wg-copy-target'=>'wg-interface-client-endpoint'}).'</span>');
-print ui_table_row($text{'interface_client_allowed'}, html_escape($client_allowed_display));
+print ui_table_row($text{'interface_client_allowed'}, wg_ui_ip_value($client_allowed_display,kind=>'cidr'));
 print ui_table_end();
 
 my $interface_toolbar_left= '';
