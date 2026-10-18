@@ -367,21 +367,27 @@ if ($access{'manage'}) {
     }
     print ui_table_end();
 
-    print '<button class="btn btn-success" name="save" value="1">'.$text{'save_only'}.'</button></form>';
-
+    print '<div class="wg-ui-button-row"><div class="wg-ui-action-group">'.
+        wg_ui_button(type=>'submit',icon=>'save',tone=>'success',
+            label=>$text{'save_only'},attrs=>{name=>'save',value=>1});
     if ($peer) {
-        my $toggle_url = module_script_url('toggle_peer.cgi');
-        my $toggle_label = $peer->{'disabled'} ? $text{'peer_enable'} : $text{'peer_disable'};
-        my $toggle_class = $peer->{'disabled'} ? 'btn-success' : 'btn-warning';
-        print '<div class="wg-peer-actions">'.
-            '<div id="wg-peer-toggle-result" class="alert" style="display:none"></div>'.
-            '<button type="button" id="wg-peer-toggle-detail" class="btn '.$toggle_class.'"'.
-            ' data-action-url="'.html_escape($toggle_url).'"'.
-            ' data-peer-index="'.html_escape($in{'peer'}).'"'.
-            ' data-peer-disabled="'.($peer->{'disabled'} ? '1' : '0').'"'.
-            ' data-config-digest="'.html_escape($cfg->{'digest'}).'"'.
-            ' data-public-key="'.html_escape($public_key).'">'.html_escape($toggle_label).'</button>'.
-            '</div>';
+        my $toggle_label=$peer->{'disabled'} ? $text{'peer_enable'} : $text{'peer_disable'};
+        my $toggle_icon=$peer->{'disabled'} ? 'play' : 'stop';
+        my $toggle_tone=$peer->{'disabled'} ? 'success' : 'warning';
+        print wg_ui_button(type=>'button',icon=>$toggle_icon,
+            label=>$toggle_label,tone=>$toggle_tone,
+            attrs=>{
+                id=>'wg-peer-toggle-detail',
+                'data-action-url'=>module_script_url('toggle_peer.cgi'),
+                'data-peer-index'=>"$in{'peer'}",
+                'data-peer-disabled'=>$peer->{'disabled'} ? 1 : 0,
+                'data-config-digest'=>$cfg->{'digest'},
+                'data-public-key'=>$public_key,
+            });
+    }
+    print '</div></div></form>';
+    if ($peer) {
+        print '<div id="wg-peer-toggle-result" class="alert" style="display:none"></div>';
         my $delete_url='delete_peer.cgi?name='.urlize($name).'&peer='.
             urlize($in{'peer'}).'&public_key='.urlize($public_key);
         print wg_ui_danger_zone(
@@ -420,7 +426,7 @@ if ($access{'manage'}) {
         event.preventDefault();
         const currentlyDisabled = button.dataset.peerDisabled === '1';
         if (!currentlyDisabled && !window.confirm(confirmDisable)) return;
-        const originalText = button.textContent;
+        const originalHtml = button.innerHTML;
         button.disabled = true;
         button.textContent = busyText;
         if (result) result.style.display = 'none';
@@ -457,7 +463,7 @@ if ($access{'manage'}) {
                 result.textContent = error.message || String(error);
                 result.style.display = 'block';
             }
-            button.textContent = originalText;
+            button.innerHTML = originalHtml;
             button.disabled = false;
         }
     });
@@ -468,7 +474,9 @@ TOGGLE_SCRIPT
 }
 
 if ($peer && $access{'logs'}) {
-    print '<p>'.ui_link_button('journal.cgi?name='.urlize($name), $text{'interface_logs'}).'</p>';
+    print wg_ui_button(icon=>'log',
+        label=>$text{'interface_logs'},
+        href=>'journal.cgi?name='.urlize($name));
 }
 
 if ($peer && $access{'diagnostics'}) {
@@ -530,8 +538,9 @@ if ($peer) {
         '<option value="2592000">'.html_escape($text{'analytics_month'}).'</option>'.
         '<option value="31536000">'.html_escape($text{'analytics_year'}).'</option>'.
         '</select></label> '.
-        '<button type="button" data-wg-peer-activity-refresh class="btn btn-default">'.
-        html_escape($text{'journal_refresh'}).'</button></div>';
+        wg_ui_icon_action(icon=>'refresh',tone=>'info',
+        label=>$text{'journal_refresh'},attrs=>{'data-wg-peer-activity-refresh'=>'1'}).
+        '</div>';
     print '<p class="help-block">'.html_escape($text{'analytics_warning'}).'</p>';
     print '<div data-wg-peer-activity-status class="help-block" role="status"></div>';
     print '<div class="table-responsive" data-wg-peer-activity-sort>'.
