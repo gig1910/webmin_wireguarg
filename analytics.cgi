@@ -6,9 +6,7 @@ assert_view_access();
 
 ui_print_header(undef,$text{'analytics_title'},'',undef,1,1);
 print wg_build_banner();
-print '<ul class="nav nav-tabs" style="margin-bottom:15px"><li><a href="index.cgi">'.
-    html_escape($text{'analytics_interfaces_tab'}).'</a></li><li class="active"><a href="analytics.cgi">'.
-    html_escape($text{'analytics_title'}).'</a></li></ul>';
+print wg_ui_main_tabs('analytics');
 my $settings = collector_effective_settings(\%config);
 print ui_alert_box(html_escape($text{'analytics_error_disabled'}),'warning')
     if (!$settings->{'analytics_enabled'});
