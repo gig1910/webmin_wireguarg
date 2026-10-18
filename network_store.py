@@ -100,7 +100,8 @@ def network_record(conn, req):
             # A GeoIP observation describes one IP, not its WHOIS parent CIDR.
             conn.execute(
                 "INSERT INTO geoip_cache(ip,country_code,city,city_code,observed_at) VALUES(?,?,?,?,?) "
-                "ON CONFLICT(ip) DO UPDATE SET country_code=excluded.country_code,"\n                "city=excluded.city,city_code=excluded.city_code,"
+                "ON CONFLICT(ip) DO UPDATE SET country_code=excluded.country_code,"
+                "city=excluded.city,city_code=excluded.city_code,"
                 "observed_at=excluded.observed_at",
                 (str(ip), geoip_country, geoip_city,geoip_city_code,int(time.time())))
     return {"ok": True, "cidr": cidr}
@@ -201,7 +202,8 @@ def network_manage(conn, req):
         raise ValueError("invalid manual city code")
     with conn:
         conn.execute("INSERT INTO network_icons(cidr,icon,label,city,city_code) VALUES(?,?,?,?,?) "
-                     "ON CONFLICT(cidr) DO UPDATE SET icon=excluded.icon,label=excluded.label,"\n                     "city=excluded.city,city_code=excluded.city_code",
+                     "ON CONFLICT(cidr) DO UPDATE SET icon=excluded.icon,label=excluded.label,"
+                     "city=excluded.city,city_code=excluded.city_code",
                      (cidr, icon, label, city,city_code))
     return {"ok": True}
 
