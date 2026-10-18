@@ -17,26 +17,62 @@ sub wg_ui_icon {
       chevron=>'<path d="m6 9 6 6 6-6"/>',
       info=>'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>',
       gear=>'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+      save=>'<path d="M4 3h14l3 3v15H3V3zM7 3v7h9V3M7 21v-8h10v8"/>',
+      download=>'<path d="M12 3v13M7 11l5 5 5-5M4 17v4h16v-4"/>',
+      network=>'<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="9" y="15" width="6" height="6" rx="1"/><path d="M6 9v3h12V9M12 12v3"/>',
+      chart=>'<path d="M3 3v18h18M7 16l4-5 4 3 5-7"/>',
+      check=>'<path d="m4 12 5 5L20 6"/>',
+      database=>'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 4 18 4 18 0V5M3 12c0 4 18 4 18 0"/>',
     );
     return '' unless exists $paths{$name};
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'.$paths{$name}.'</svg>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'.$paths{$name}.'</svg>';
+}
+# Single whitelist and tone contract for links, buttons and table controls.
+sub wg_ui_attrs {
+    my ($attrs)=@_;
+    return '' unless ref($attrs) eq 'HASH';
+    my $html='';
+    for my $key (sort keys %$attrs) {
+        next unless $key =~ /^(?:data-[a-z0-9-]+|aria-[a-z0-9-]+|name|value|id|disabled|form)$/;
+        $html.=' '.$key.'="'.html_escape($attrs->{$key}).'"';
+    }
+    return $html;
 }
 sub wg_ui_icon_action {
     my (%a)=@_;
     my $label=html_escape($a{'label'}||'');
-    my $klass='wg-ui-icon-btn'.($a{'danger'}?' wg-ui-icon-danger':'');
-    my $attributes=' class="'.html_escape($klass).'" title="'.$label.'" aria-label="'.$label.'"';
-    if ($a{'attrs'} && ref($a{'attrs'}) eq 'HASH') {
-        for my $key (sort keys %{$a{'attrs'}}) {
-            next unless $key =~ /^(?:data-[a-z0-9-]+|aria-[a-z0-9-]+)$/;
-            $attributes.=' '.$key.'="'.html_escape($a{'attrs'}{$key}).'"';
-        }
-    }
+    my $tone=$a{'tone'}||($a{'danger'}?'danger':'neutral');
+    $tone='neutral' unless $tone =~ /^(?:neutral|success|warning|danger|info)$/;
+    my $attr=' class="wg-ui-icon-btn wg-ui-tone-'.$tone.'" title="'.$label.
+        '" aria-label="'.$label.'"'.wg_ui_attrs($a{'attrs'});
     if($a{'href'}) {
-        return '<a href="'.html_escape($a{'href'}).'"'.$attributes.'>'.wg_ui_icon($a{'icon'}).'</a>';
+        return '<a href="'.html_escape($a{'href'}).'"'.$attr.
+            ' data-wg-module-navigation="1">'.wg_ui_icon($a{'icon'}).'</a>';
     }
-    return '<button type="'.html_escape($a{'type'}||'button').'"'.$attributes.'>'.
+    return '<button type="'.html_escape($a{'type'}||'button').'"'.$attr.'>'.
         wg_ui_icon($a{'icon'}).'</button>';
+}
+sub wg_ui_button {
+    my (%a)=@_;
+    my $tone=$a{'tone'}||'neutral';
+    $tone='neutral' unless $tone =~ /^(?:neutral|success|warning|danger|info)$/;
+    my $label=html_escape($a{'label'}||'');
+    my $body=($a{'icon'}?wg_ui_icon($a{'icon'}).' ':'').'<span>'.$label.'</span>';
+    my $attr=' class="btn wg-ui-btn wg-ui-tone-'.$tone.'"'.wg_ui_attrs($a{'attrs'});
+    if($a{'href'}) {
+        return '<a href="'.html_escape($a{'href'}).'"'.$attr.
+            ' data-wg-module-navigation="1">'.$body.'</a>';
+    }
+    return '<button type="'.html_escape($a{'type'}||'button').'"'.$attr.'>'.$body.'</button>';
+}
+sub wg_ui_panel {
+    my ($title,$body,%opts)=@_;
+    my $danger=($opts{'tone'}||'') eq 'danger';
+    return '<details class="wg-ui-panel '.($danger?'wg-ui-danger':'wg-ui-tools').'"'.
+        ($danger?' data-wg-danger-zone':' data-wg-tool-panel').'>'.
+        '<summary>'.wg_ui_icon('chevron').' '.html_escape($title||'').'</summary>'.
+        '<div class="'.($danger?'wg-ui-danger-body':'wg-ui-tools-body').'">'.
+        ($body||'').'</div></details>';
 }
 sub wg_ui_action_bar {
     my ($left,$right)=@_;
@@ -46,10 +82,8 @@ sub wg_ui_action_bar {
 }
 sub wg_ui_danger_zone {
     my ($body,$title)=@_;
-    $title||=$text{'danger_zone'}||'Опасные операции';
-    return '<details class="wg-ui-danger" data-wg-danger-zone>'.
-        '<summary>'.wg_ui_icon('chevron').' '.html_escape($title).'</summary>'.
-        '<div class="wg-ui-danger-body">'.($body||'').'</div></details>';
+    $title||=$text{'danger_zone'}||'Dangerous operations';
+    return wg_ui_panel($title,$body,tone=>'danger');
 }
 sub wg_ui_foundation {
     return <<'WG_UI_FOUNDATION';
@@ -107,7 +141,12 @@ sub wg_ui_foundation {
      throw Error('Clipboard unavailable');
    await navigator.clipboard.writeText(value);
   },
-  confirm(message){return window.confirm(message);}
+  confirm(message){return window.confirm(message);},
+  flag(code){
+   const value=String(code||'').trim().toUpperCase();
+   return /^[A-Z]{2}$/.test(value)
+    ? String.fromCodePoint(...Array.from(value,c=>127397+c.charCodeAt(0))) : '';
+  }
  };
  window.WireGuardUI=Object.freeze(ui);
  document.addEventListener('click',function(ev){
@@ -118,7 +157,7 @@ sub wg_ui_foundation {
    const target=root.querySelector('#'+CSS.escape(button.dataset.wgCopyTarget));
    if(!target)return;
    ev.preventDefault();
-   ui.copy(target.textContent.trim()).then(()=>{
+   ui.copy(('value' in target?target.value:target.textContent).trim()).then(()=>{
      button.dataset.wgCopied='1';
      const original=button.title;
      button.title=button.dataset.wgCopiedLabel||'Скопировано';
