@@ -136,3 +136,26 @@ These changes have not yet been confirmed by a full release build.
   of creating transient fixture files under `tests/`.
 - The full release suite for these latest changes must still be run locally;
   the preceding confirmed checkpoint is `3d68978` (PASSED).
+
+## Live UI feedback — 2026-10-18 (post-0.3.0 deployment)
+
+The user's Authentic Theme screenshots revealed defects not caught by the
+headless component gallery. A subsequent UI correction batch changes:
+
+- native semantic actions: green start, orange restart, red stop and delete,
+  blue edit; collector VACUUM is orange (maintenance, not deletion).
+- per-peer WHOIS controls: do not display a lookup action without a numeric
+  current Endpoint IP, and use `HTMLTemplateElement.content` when cloning
+  event-history lookup buttons.
+- shared table sorting: `NULL`, `(none)`, absent handshakes and equivalent
+  placeholders remain at the bottom for ASC and DESC, with numeric zero
+  remaining a valid value. A Node test now clicks both directions.
+- interface properties and optional dependencies: present semantic responsive
+  cards rather than fixed pseudo-table alignment, with common native
+  disclosure styling retained.
+- peer activity: a navigation link opens module configuration to reach GeoIP
+  settings.
+
+**Verification pending:** this new batch is distinct from the confirmed
+`d20eb92` release. Re-run the complete local suite and check in installed
+Authentic Theme before calling these visual fixes verified.
