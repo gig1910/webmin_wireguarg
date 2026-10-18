@@ -288,7 +288,7 @@ if ($access{'manage'}) {
     print ui_table_end();
 
     print '<div class="wg-ui-button-row"><div class="wg-ui-action-group">'.
-        wg_ui_button(type=>'submit',icon=>'save',tone=>'success',
+        wg_ui_button(type=>'submit',icon=>'save',action=>'save',
             label=>$text{'save_only'},attrs=>{name=>'save',value=>1});
     if ($peer) {
         my $toggle_label=$peer->{'disabled'} ? $text{'peer_enable'} : $text{'peer_disable'};
