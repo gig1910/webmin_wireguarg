@@ -46,6 +46,7 @@ stats-collector.pl
 analytics-store.py
 network_store.py
 unlocode_store.py
+scripts/import-unlocode.py
 diagnostic.cgi
 diagnostic_status.cgi
 diagnostic_stop.cgi
@@ -86,6 +87,7 @@ docs/INSTALLATION.md
 docs/CONFIGURATION.md
 docs/ANALYTICS.md
 docs/ANALYTICS.ru.md
+docs/UNLOCODE.ru.md
 docs/ACL.md
 docs/ARCHITECTURE.md
 docs/SECURITY-REVIEW.md
