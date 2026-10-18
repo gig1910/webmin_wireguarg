@@ -134,7 +134,7 @@ sub preshared_key_form_rows_for_state
         my $label=preshared_key_text('configured');
         my $notice='<span class="label label-success">'.
             html_escape($label).'</span>';
-        my $remove='<button type="submit" class="wg-ui-icon-btn wg-ui-icon-danger"'.
+        my $remove='<button type="submit" class="wg-ui-icon-btn wg-ui-tone-warning"'.
             ' name="remove_preshared_key" value="1"'.
             ' title="'.html_escape(preshared_key_text('remove')).'"'.
             ' aria-label="'.html_escape(preshared_key_text('remove')).'"'.
