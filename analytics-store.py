@@ -15,6 +15,7 @@ import hashlib
 import ipaddress
 from pathlib import Path
 from network_store import NETWORK_SCHEMA, network_record, network_lookup, network_manage
+from unlocode_store import SCHEMA as UNLOCODE_SCHEMA
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS peers (
@@ -72,6 +73,7 @@ def connect(path):
     conn.execute("PRAGMA journal_size_limit=4194304")  # 4 MiB after checkpoint
     conn.executescript(SCHEMA)
     conn.executescript(NETWORK_SCHEMA)
+    conn.executescript(UNLOCODE_SCHEMA)
     # CREATE TABLE IF NOT EXISTS does not add columns to pre-existing databases.
     columns = {row[1] for row in conn.execute("PRAGMA table_info(peers)")}
     if "handshake_ip" not in columns:
