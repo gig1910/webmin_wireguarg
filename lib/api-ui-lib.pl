@@ -209,31 +209,25 @@ sub module_script_url
     return $url;
 }
 
+# All module-to-module navigation now uses the same labelled button renderer.
+# Raw download remains separate from SPA navigation and clipboard handlers.
 sub direct_link_button
 {
-    my ($script, $label, $params, %opts) = @_;
-    $params ||= {};
-    my $url = ref($params) eq 'HASH'
-        ? module_script_url($script, %$params)
-        : $script;
-    my $class = 'btn btn-default wg-direct-link';
-    $class .= ' '.$opts{'class'} if (defined($opts{'class'}) && length($opts{'class'}));
-
-    # View pages must be ordinary same-origin links. Authentic Theme then loads
-    # them through its normal module navigation and keeps the Webmin shell,
-    # sidebar and back stack. Forcing window.location.assign() here turns the
-    # CGI into a standalone top-level document.
+    my ($script,$label,$params,%opts)=@_;
+    $params||={};
+    my $url=ref($params) eq 'HASH' ? module_script_url($script,%$params) : $script;
+    my $class='wg-direct-link';
+    $class.=' '.$opts{'class'} if defined($opts{'class'});
     if (!$opts{'download'}) {
-        return '<a href="'.html_escape($url).'" class="'.html_escape($class).'"'.
-            ' data-wg-module-navigation="1">'.html_escape($label).'</a>';
+        return wg_ui_button(
+            href=>$url,label=>$label,icon=>$opts{'icon'}||'',
+            tone=>$opts{'tone'}||'neutral',class=>$class);
     }
-
-    # A download is intentionally a raw response rather than a Webmin page.
-    # Keep it out of SPA/clipboard handlers while allowing the browser to
-    # process Content-Disposition: attachment normally.
-    my $onclick = "if (typeof event !== 'undefined' && event) { event.stopImmediatePropagation(); } window.location.assign(this.href); return false;";
-    return '<a href="'.html_escape($url).'" class="'.html_escape($class).'" download'.
-        ' data-wg-direct-download="1" onclick="'.html_escape($onclick).'">'.html_escape($label).'</a>';
+    my $onclick="if (typeof event !== 'undefined' && event) { event.stopImmediatePropagation(); } window.location.assign(this.href); return false;";
+    return '<a href="'.html_escape($url).'"'.
+        ' class="btn wg-ui-btn wg-ui-tone-neutral wg-direct-link" download'.
+        ' data-wg-direct-download="1" onclick="'.html_escape($onclick).'">'.
+        wg_ui_icon('download').' <span>'.html_escape($label).'</span></a>';
 }
 
 sub mini_action_form
