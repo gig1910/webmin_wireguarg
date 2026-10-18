@@ -572,3 +572,5 @@ geoip_city_credentials_required=Supply MaxMind Account ID and License Key.
 geoip_city_write_failed=Cannot safely update GeoIP.conf.
 geoip_city_download_failed=Configuration saved but City download failed. Check credentials and server network.
 geoip_city_success=GeoLite2 City updated; vendor update timer enabled.
+
+unlocode_return=Return to network directory
