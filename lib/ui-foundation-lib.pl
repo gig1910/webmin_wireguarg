@@ -114,6 +114,21 @@ sub wg_ui_main_tabs {
             ' data-wg-module-navigation="1">'.html_escape($label||'').'</a></li>'
         } @tabs).'</ul>';
 }
+# Consistent escaped IP/CIDR and endpoint display. Keep complete values in the
+# DOM for copying and sorting; visual wrapping is handled by shared CSS.
+sub wg_ui_ip_value {
+    my ($value,%opts)=@_;
+    $value='-' unless defined($value) && length($value);
+    my $kind=$opts{'kind'}||'ip';
+    $kind='ip' unless $kind =~ /^(?:ip|cidr|endpoint)$/;
+    my $attrs=wg_ui_attrs($opts{'attrs'});
+    return '<span class="wg-ui-mono wg-ui-address" data-wg-address-kind="'.$kind.'"'.
+        $attrs.'>'.html_escape($value).'</span>';
+}
+sub wg_ui_table_actions {
+    my (@actions)=@_;
+    return '<span class="wg-ui-table-actions">'.join('',grep {defined($_) && length($_)} @actions).'</span>';
+}
 # Field controls stay browser-native; the backend remains the authority for
 # CIDR parsing, port ranges and concurrent configuration changes.
 sub wg_ui_number_input {
@@ -181,6 +196,7 @@ sub wg_ui_foundation {
 .wg-ui .wg-ui-compact-table td:last-child,.wg-ui .wg-ui-compact-table th:last-child{text-align:center;white-space:nowrap}
 .wg-ui .wg-ui-compact-table td:nth-last-child(2),.wg-ui .wg-ui-compact-table th:nth-last-child(2){text-align:center}
 .wg-ui .wg-ui-mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-variant-numeric:tabular-nums}
+.wg-ui .wg-ui-address{overflow-wrap:anywhere;word-break:normal;white-space:normal}
 .wg-ui .wg-ui-copy{display:inline-flex;align-items:center;gap:5px}
 .wg-ui .wg-ui-panel,.wg-ui .wg-ui-danger,.wg-ui .wg-ui-tools{margin:12px 0;border:1px solid var(--wg-border);border-radius:5px}
 .wg-ui .wg-ui-danger{border-color:rgba(190,75,75,.4)}
