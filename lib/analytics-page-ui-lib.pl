@@ -18,7 +18,7 @@ sub wg_analytics_controller_script
   const end=root.querySelector('[data-to]'), output=root.querySelector('[data-error]');
   const graph=root.querySelector('[data-chart]'), chartSvg=root.querySelector('[data-chart-svg]');
   const eventSort=window.WireGuardTableSort && window.WireGuardTableSort.attach(
-    root.querySelector('[data-wg-event-sort-table]'),['time','name','text','ip','ip']);
+    root.querySelector('[data-wg-event-sort-table]'),['time','text','name','text','text','ip','ip']);
   let data=null, seq=0, controller=null, autoTimer=null;
   function localInput(t) {
     const d=new Date(t), pad=x=>String(x).padStart(2,'0');
@@ -170,16 +170,16 @@ sub wg_analytics_controller_script
       peer.append(opt);
     }
     peer.value=options.some(o=>o.id===previous)?previous:'';
-    root.querySelector('[data-rx]').textContent=labels.analytics_rx+': '+bytes(Number(result.totals.rx));
-    root.querySelector('[data-tx]').textContent=labels.analytics_tx+': '+bytes(Number(result.totals.tx));
+    root.querySelector('[data-rx]').textContent=bytes(Number(result.totals.rx));
+    root.querySelector('[data-tx]').textContent=bytes(Number(result.totals.tx));
     root.querySelector('[data-db-size]').textContent=labels.analytics_db_size+': '+
       bytes(Number(result.db_bytes));
     const selectedPeer=(result.peers||[]).find(p=>p.id===peer.value);
-    root.querySelector('[data-last-handshake]').textContent=labels.analytics_last_handshake+': '+
+    root.querySelector('[data-last-handshake]').textContent=
       (selectedPeer && Number(selectedPeer.handshake)>0
        ? new Date(Number(selectedPeer.handshake)*1000).toLocaleString()
        : (selectedPeer ? labels.analytics_no_handshake : '—'));
-    root.querySelector('[data-handshake-ip]').textContent=labels.analytics_handshake_ip+': '+
+    root.querySelector('[data-handshake-ip]').textContent=
       (selectedPeer && selectedPeer.handshake_ip ? selectedPeer.handshake_ip : '—');
     const notes=[];
     if(!result.buckets.length && !result.events.length)notes.push(labels.analytics_empty);
@@ -197,22 +197,28 @@ sub wg_analytics_controller_script
     body.replaceChildren();
     for(const e of result.events){
       const peerData=(result.peers||[]).find(p=>p.id===e.peer_id);
+      const key=String(peerData&&peerData.public_key||'');
+      const id=key||String(e.peer_id||'');
+      const abbreviated=id.length>12?id.slice(0,5)+'…'+id.slice(-5):id;
       const columns=[
         new Date(e.at*1000).toLocaleString(),
-        peerData?peerLabel(peerData):e.peer_id.slice(0,16)+'…',
+        peerData&&peerData.interface||e.interface||'—',
+        peerData&&peerData.name||'—',
+        abbreviated?'['+abbreviated+']':'—',
         labels['analytics_event_'+e.type]||e.type,e.endpoint||'—',e.previous||'—'
       ];
       const row=window.WireGuardTableSort.appendTextRow(body,columns);
+      row.cells[3].classList.add('wg-ui-mono');
       if(peerData && peerData.peer_url){
         const url=new URL(peerData.peer_url,window.location.href);
         if(url.origin===window.location.origin && url.pathname.endsWith('/wireguard/edit_peer.cgi')){
           const link=document.createElement('a');
           link.href=url.toString();
-          link.textContent=columns[1];
+          link.textContent=columns[2];
           link.className='wg-analytics-peer-link';
           link.setAttribute('data-wg-module-navigation','1');
           link.title=labels.analytics_peer_open;
-          row.cells[1].replaceChildren(link);
+          row.cells[2].replaceChildren(link);
         }
       }
     }
