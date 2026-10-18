@@ -29,7 +29,7 @@ print '<div class="wg-ui-button-row"><div class="wg-ui-action-group">'.
     wg_ui_button(type=>'submit',icon=>'save',tone=>'success',
         label=>$text{'save_only'},attrs=>{name=>'save',value=>1});
 if (length($name)) {
-    print wg_ui_button(type=>'submit',icon=>'check',
+    print wg_ui_button(type=>'submit',icon=>'check',tone=>'success',
         label=>$text{'save_apply_short'},attrs=>{name=>'save_apply',value=>1});
     print wg_ui_button(type=>'submit',icon=>'refresh',tone=>'warning',
         label=>$text{'save_restart_short'},
