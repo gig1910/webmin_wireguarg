@@ -127,7 +127,8 @@ for my $cidr (sort keys %ranges) {
     my $city_code=$manual && $manual->{'city_code'} ? $manual->{'city_code'} : ''; 
     my @city_observations=@{$item->{'geoip_cities'}||[]};
     my $cities=join(', ',map {
-        /^[A-Z]{2}([A-Z0-9]{3})$/ ? $1 : $_
+        /^[A-Z]{2}([A-Z0-9]{3})$/ ? $1 :
+        /^[A-Za-z][A-Za-z .'-]{1,79}$/ ? $_ : ()
     } @city_observations);
     my $city_hint=join(', ',@city_observations);
     my $geoip_codes=join(',', @{$item->{'geoip_countries'}||[]});
