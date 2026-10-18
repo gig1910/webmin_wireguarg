@@ -18,27 +18,32 @@ error($client_error) if (!$client);
 
 my $peer_name = peer_display_name($peer, $in{'peer'});
 ui_print_header(undef, text('client_config_title', $peer_name), '', undef, 1, 1);
+print wg_ui_foundation();
+print '<div class="wg-ui">';
 print ui_alert_box($text{'client_config_sensitive'}, 'warn');
 my $client_warnings = client_config_warnings($cfg, $peer);
 print ui_alert_box(join(' ', @$client_warnings), 'warn') if (@$client_warnings);
-print '<textarea readonly rows="18" style="width:100%;font-family:monospace;white-space:pre">'.
+print '<textarea id="wg-client-config-text" readonly rows="18" aria-label="'.html_escape($text{'peer_show_config'}).'" style="width:100%;font-family:monospace;white-space:pre">'.
     html_escape($client).'</textarea>';
-print '<p>'.
-    direct_link_button(
+my $client_actions=direct_link_button(
         'download_client.cgi', $text{'peer_download'},
         { name => $name, peer => $in{'peer'} }, download => 1
-    ).' ';
+    );
 my $qr = command_path('qrencode_cmd', '/usr/bin/qrencode');
 if (has_command($qr)) {
-    print direct_link_button(
+    $client_actions.=' '.direct_link_button(
         'peer_qr.cgi', $text{'peer_qr'},
         { name => $name, peer => $in{'peer'} }
     );
 }
 else {
-    print '<small>'.html_escape(text('qr_command_missing', $qr)).'</small>';
+    $client_actions.=' <small>'.html_escape(text('qr_command_missing', $qr)).'</small>';
 }
-print '</p>';
+my $copy=wg_ui_icon_action(icon=>'copy',
+    label=>'Копировать конфигурацию',
+    attrs=>{'data-wg-copy-target'=>'wg-client-config-text'});
+print wg_ui_action_bar($client_actions,$copy);
+print '</div>';
 ui_print_footer(
     'edit_peer.cgi?name='.urlize($name).'&peer='.urlize($in{'peer'}),
     text('peer_title', $peer_name)
