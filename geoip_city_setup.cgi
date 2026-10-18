@@ -42,12 +42,20 @@ if (($ENV{'REQUEST_METHOD'}||'GET') eq 'POST') {
         if (!$error_message) {
             my $output=$existing;
             # Preserve unrelated vendor configuration options.
+            my @editions;
+            for my $line (split(/\r?\n/,$output)) {
+                if ($line =~ /^\s*EditionIDs\s+(.+?)\s*$/) {
+                    push @editions,grep { /^[A-Za-z0-9-]{1,64}$/ } split(/\s+/,$1);
+                }
+            }
             $output =~ s/^\s*EditionIDs\s+[^\r\n]*\r?\n//mg;
             if (length($account)) {
                 $output =~ s/^\s*(?:AccountID|LicenseKey)\s+[^\r\n]*\r?\n//mg;
                 $output.="\nAccountID $account\nLicenseKey $key\n";
             }
-            $output.="\nEditionIDs GeoLite2-City GeoLite2-Country\n";
+            my %seen;
+            @editions=grep { !$seen{$_}++ } (@editions,'GeoLite2-City');
+            $output.="\nEditionIDs ".join(' ',@editions)."\n";
             my $dir=dirname($conf);
             if ($conf !~ m{^/[A-Za-z0-9_/.-]+$} || !-d $dir || -l $dir) {
                 $error_message=$text{'geoip_city_unsafe_conf'};
