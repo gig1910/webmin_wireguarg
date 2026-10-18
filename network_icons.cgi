@@ -70,8 +70,8 @@ if ($access{'manage'} && $geo->{'configured'} && $geo->{'command_available'} &&
     $geo->{'timer_available'} && (!$geo->{'timer_enabled'} || !$geo->{'timer_active'})) {
     print ui_form_start('geoip_timer.cgi','post');
     print csrf_hidden();
-    print '<button type="submit" class="btn btn-default">'.
-        html_escape($text{'geoip_update_enable'}).'</button>';
+    print wg_ui_button(type=>'submit',icon=>'play',tone=>'success',
+        label=>$text{'geoip_update_enable'});
     print ui_form_end();
 }
 print '</div></section>';
@@ -141,19 +141,18 @@ for my $cidr (sort keys %ranges) {
     print '</span></td></tr>';
 }
 print '</tbody></table>';
-print '<details class="wg-ui-danger" data-wg-danger-zone>'.
-    '<summary>'.wg_ui_icon('chevron').' '.html_escape($text{'ui_network_maintenance'}).'</summary>'.
-    '<div class="wg-ui-danger-body">'.
+print wg_ui_panel_start($text{'ui_network_maintenance'}).
     '<p class="help-block">'.html_escape($text{'network_icons_cache_help'}).'</p>';
 print ui_form_start(module_script_url('network_icons.cgi'),'post');
 print csrf_hidden();
 print ui_hidden('action','clear_cache');
 print '<input type="hidden" name="confirm" value="">';
-print '<button type="submit" class="btn btn-danger"'.
-    ' data-wg-confirm="'.html_escape($text{'network_icons_clear'}).'"'.
-    ' data-wg-confirm-word="CLEAR">'.html_escape($text{'network_icons_clear'}).'</button>';
+print wg_ui_button(type=>'submit',icon=>'trash',tone=>'danger',
+    label=>$text{'network_icons_clear'},attrs=>{
+        'data-wg-confirm'=>$text{'network_icons_clear'},
+        'data-wg-confirm-word'=>'CLEAR'});
 print ui_form_end();
-print '</div></details>';
+print wg_ui_panel_end();
 print wg_network_icons_page_script(json_encode_utf8($network_page_id));
 print '</div>';
 ui_print_footer('index.cgi',$text{'index_title'});
