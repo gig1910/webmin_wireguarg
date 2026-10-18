@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 use FindBin;
-use File::Temp qw(tempfile);
+require "$FindBin::Bin/node-harness.pl";
 sub read_file {
     open(my $f,'<',$_[0]) or die "Cannot read $_[0]: $!";
     local $/;return <$f>;
@@ -117,16 +117,8 @@ require "$FindBin::Bin/../lib/network-icons-ui-lib.pl";
 my $network_markup=wg_network_icons_page_script(q{"test-network-page"});
 my ($network_js)=$network_markup=~m{<script>\s*(.*?)\s*</script>}s;
 die "rendered network directory JavaScript missing\n" unless $network_js;
-my $node=qx(command -v node 2>/dev/null);
-$node =~ s/[\r\n]+\z//;
-if($node){
-    my ($netfh,$netpath)=tempfile(SUFFIX=>'.js',UNLINK=>1);
-    print {$netfh} $network_js;close($netfh);
-    system($node,'--check',$netpath)==0 or die "network editor rendered JavaScript invalid\n";
-    my ($fh,$path)=tempfile(SUFFIX=>'.js',UNLINK=>1);
-    print {$fh} $js;close($fh);
-    system($node,'--check',$path)==0 or die "generated peer tabs JS invalid\n";
-}
+wg_test_node_check($network_js, 'network directory editor');
+wg_test_node_check($js, 'peer tabs');
 # Unlike direct Node syntax checks of CGI source, evaluate the interpolation
 # performed by MiniServ's Perl heredoc. JS regex '$/' is otherwise swallowed by
 # Perl's input-record separator and produces a broken endpoint parser.
@@ -135,10 +127,7 @@ die "IPv4/IPv6 icon endpoint parser missing\n" if !defined $ip_body;
 my $ip_render=eval "sub {return <<NETWORK_IP;\n$ip_body\nNETWORK_IP\n}";
 die "IP endpoint interpolation failed: $@\n" if !$ip_render || $@;
 my $ip_js=$ip_render->();
-if($node){
-    my ($fh,$path)=tempfile(SUFFIX=>'.js',UNLINK=>1);
-    print {$fh} $ip_js."\n";
-    print {$fh} <<'CHECK';
+my $ip_fixture=$ip_js."\n".<<'CHECK';
 if(endpointIp('8.8.8.8:58142')!=='8.8.8.8')
   throw new Error('IPv4 endpoint regex was destroyed by Perl interpolation');
 if(endpointIp('[2001:4860:4860::8888]:443')!=='2001:4860:4860::8888')
@@ -150,10 +139,7 @@ if(endpointIp('2001:4860:4860::8888')!=='2001:4860:4860::8888')
 if(endpointIp('hostname.example:55822')!=='')
   throw new Error('Network icons must not resolve hostname endpoints');
 CHECK
-    close($fh);
-    system($node,'--check',$path)==0 or die "rendered network icon IP parser syntax invalid\n";
-    system($node,$path)==0 or die "rendered network icon IP parser behavior invalid\n";
-}
+wg_test_node_script($ip_fixture, 'rendered endpoint parser');
 # ISO validation lives in the shared, NON-interpolating UI foundation.
 # The browser behavior test runs the rendered code in Node and verifies flags.
 # Both live rows and activity/history must use the same renderer.
