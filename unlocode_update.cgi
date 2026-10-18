@@ -13,6 +13,6 @@ print '<div class="wg-ui"><div class="'.($ok?'alert alert-success':'alert alert-
     html_escape($ok ? $text{'unlocode_update_queued'} :
         ($out||$text{'unlocode_update_failed'})).'</div>';
 print wg_ui_button(href=>'network_icons.cgi',icon=>'external',action=>'navigate',
-    label=>$text{'back'});
+    label=>$text{'unlocode_return'});
 print '</div>';
 ui_print_footer();
