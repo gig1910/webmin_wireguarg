@@ -14,5 +14,10 @@ if (($ENV{'REQUEST_METHOD'}||'') eq 'POST' && $in{'confirm'}) {
 }
 ui_print_header(undef,$text{'delete_title'},'',undef,1,1);
 print ui_alert_box(text('delete_interface_confirm',html_escape($name)),'danger');
-print ui_form_start('delete_interface.cgi','post'); print csrf_hidden(); print ui_hidden('name',$name); print ui_hidden('confirm',1); print ui_form_end([['delete',$text{'interface_delete'}]]);
+print wg_ui_foundation(); print '<div class="wg-ui">';
+print ui_form_start('delete_interface.cgi','post');
+print csrf_hidden(); print ui_hidden('name',$name);print ui_hidden('confirm',1);
+print wg_ui_button(type=>'submit',icon=>'trash',tone=>'danger',
+    label=>$text{'interface_delete'},attrs=>{name=>'delete',value=>1});
+print ui_form_end();print '</div>';
 ui_print_footer('edit_interface.cgi?name='.urlize($name),text('interface_title',$name));
