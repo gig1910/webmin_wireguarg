@@ -138,7 +138,7 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
     push @rows, [
         $name_link,
         $state_html,
-        '<span title="'.html_escape($allowed).'">'.html_escape($short_allowed).'</span>',
+        wg_ui_ip_value($allowed,kind=>'cidr'),
         '<span class="wg-network-icon" data-wg-net-icon="'.$id.'"'.
          ($endpoint eq '-'?' hidden':'').' title="'.html_escape($text{'network_icons_unknown'}).'">?</span>',
         '<span class="wg-geoip-country" data-wg-geoip-country="'.$id.'" hidden></span>',
