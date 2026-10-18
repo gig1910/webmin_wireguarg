@@ -539,3 +539,4 @@ ui_copied=Скопировано
 ui_copy_unavailable=Копирование недоступно
 ui_api_non_json=Сервер вернул не JSON
 ui_api_bad_json=Некорректный JSON-ответ
+interface_advanced_hooks=Дополнительные команды интерфейса (PreUp, PostUp, PreDown, PostDown)
