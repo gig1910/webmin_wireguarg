@@ -56,7 +56,7 @@ die "Mutation over GET reached backend or skipped POST/CSRF gate\n"
     if $get_mutation->{ok} || $get_mutation->{checks}!=1 || $get_mutation->{writes};
 my $accepted=run_case('POST',{
     action=>'set_icon',cidr=>'203.0.113.0/24',icon=>'?',label=>'Sample',
-    city=>'Moscow',city_code=>'msk'
+    city=>'Moscow',city_code=>'rumow'
 },1);
 die "Authorized POST cannot update network icon\n"
     unless $accepted->{ok} && $accepted->{checks}==1 &&
@@ -66,7 +66,7 @@ die "Network mutation payload lost CIDR or label\n"
            $last_payload->{'cidr'} eq '203.0.113.0/24' &&
            $last_payload->{'label'} eq 'Sample' &&
            $last_payload->{'city'} eq 'Moscow' &&
-           $last_payload->{'city_code'} eq 'MSK';
+           $last_payload->{'city_code'} eq 'RUMOW';
 my $removed=run_case('POST',{action=>'delete_icon',cidr=>'198.51.100.0/24'},1);
 die "Authorized deletion is not dispatched\n"
     unless $removed->{ok} && $removed->{checks}==1 &&
