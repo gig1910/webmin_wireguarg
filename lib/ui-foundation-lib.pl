@@ -39,7 +39,7 @@ sub wg_ui_action_tone {
     my %tones=(
         start=>'success', add=>'success', save=>'success',
         apply=>'success', enable=>'success', install=>'success',
-        stop=>'warning', restart=>'warning', disable=>'warning',
+        stop=>'danger', restart=>'warning', disable=>'warning',
         edit=>'info', modify=>'info',
         delete=>'danger', clear=>'danger', reset=>'danger',
         view=>'neutral', navigate=>'neutral', refresh=>'neutral',
