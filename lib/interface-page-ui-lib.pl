@@ -329,6 +329,10 @@ sub wg_interface_page_script
             const peer = peers.get(id);
             element.textContent = peer ? (peer.endpoint || '(none)') : (active ? '—' : notRunningText);
         });
+        root.querySelectorAll('[data-wg-ip-action]').forEach(function(button) {
+            const endpoint=root.querySelector('[data-wg-endpoint="'+CSS.escape(button.dataset.wgIpAction)+'"]');
+            button.hidden=!endpoint||!endpointIp(endpoint.textContent);
+        });
         updateNetworkIcons();
         root.querySelectorAll('[data-wg-handshake]').forEach(function(element) {
             const id = element.dataset.wgHandshake;
