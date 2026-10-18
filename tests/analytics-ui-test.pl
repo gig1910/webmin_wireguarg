@@ -44,20 +44,32 @@ die "selected analytics tab is incorrect\n"
     unless $tabs_analytics =~ /class="active"><a href="analytics\.cgi" aria-current="page"/;
 die "selected interfaces tab is incorrect\n"
     unless $tabs_interfaces =~ /class="active"><a href="index\.cgi" aria-current="page"/;
-die "date and peer filters missing\n" if $ui !~ /data-peer/ || $ui !~ /data-from/ || $ui !~ /data-to/;
-die "historical range presets incomplete or shorter than 6 hours\n"
-    unless $ui =~ /value="21600"/ && $ui =~ /value="86400"/ &&
-           $ui =~ /value="604800"/ && $ui =~ /value="month"/ &&
-           $ui =~ /value="quarter"/ && $ui =~ /value="halfyear"/ &&
-           $ui =~ /value="year"/ && $ui =~ /value="custom"/ &&
-           $ui !~ /value="2592000"/ && $ui =~ /to-from<21600/;
+# Match actual form controls instead of matching unrelated option values in JS.
+for my $control (qw(interface peer period auto-refresh)) {
+    die "analytics filter $control is missing or duplicated\n"
+        unless scalar(() = $ui =~ /<select\b[^>]*\bdata-\Q$control\E(?:\s|>)/g) == 1;
+}
+for my $control (qw(from to)) {
+    die "analytics datetime filter $control is missing\n"
+        unless $ui =~ /<input\b[^>]*type="datetime-local"[^>]*\bdata-\Q$control\E(?:\s|>)/;
+}
+my ($period_options)=$ui =~ /<select\b[^>]*\bdata-period\b[^>]*>(.*?)<\/select>/s;
+die "period selector missing\n" unless defined $period_options;
+my @period_values=($period_options =~ /<option\b[^>]*\bvalue="([^"]+)"/g);
+my @expected_periods=qw(21600 86400 604800 month quarter halfyear year custom);
+die "analytics period choices differ\n"
+    unless join(',',@period_values) eq join(',',@expected_periods);
+die "minimum history window shorter than six hours\n" unless $ui =~ /to-from<21600/;
 die "calendar periods may overflow at month-end\n"
     unless $ui =~ /d\.setDate\(1\)/ &&
            $ui =~ /Math\.min\(day,new Date\(d\.getFullYear\(\),d\.getMonth\(\)\+1,0\)\.getDate\(\)\)/;
-die "auto refresh cadence must be off, 10m or 30m only\n"
-    unless $ui =~ /data-auto-refresh/ && $ui =~ /value="0" selected/ &&
-           $ui =~ /value="600"/ && $ui =~ /value="1800"/ &&
-           $ui !~ /value="300"/ && $ui !~ /value="5"/;
+my ($refresh_options)=$ui =~ /<select\b[^>]*\bdata-auto-refresh\b[^>]*>(.*?)<\/select>/s;
+die "auto-refresh selector missing\n" unless defined $refresh_options;
+my @refresh_values=($refresh_options =~ /<option\b[^>]*\bvalue="([^"]+)"/g);
+die "auto refresh must offer off, 10m and 30m only\n"
+    unless join(',',@refresh_values) eq '0,600,1800';
+die "auto refresh must default to off\n"
+    unless $refresh_options =~ /<option\b[^>]*\bvalue="0"[^>]*\bselected\b/;
 die "auto refresh must pause for hidden and fixed custom periods\n"
     unless $ui =~ /document\.hidden/ && $ui =~ /period\.value==='custom'/ &&
            $ui =~ /clearTimeout\(autoTimer\)/ &&
