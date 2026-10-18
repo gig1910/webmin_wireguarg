@@ -45,6 +45,7 @@ collector_status.cgi
 stats-collector.pl
 analytics-store.py
 network_store.py
+unlocode_store.py
 diagnostic.cgi
 diagnostic_status.cgi
 diagnostic_stop.cgi
