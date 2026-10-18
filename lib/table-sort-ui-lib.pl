@@ -29,8 +29,13 @@ function bytes(t){
 }
 function ip(t){
   t=String(t||'').split(',')[0].trim().split('/')[0].trim();
-  if(t.startsWith('['))t=t.slice(1).split(']')[0];
-  else if(t.split(':').length===2)t=t.split(':')[0];
+  if(t.startsWith('[')){
+    const match=t.match(/^\[([^\]]+)\](?::\d{1,5})?$/);
+    if(!match)return null;
+    t=match[1];
+  }else if(/^\d{1,3}(?:\.\d{1,3}){3}:\d{1,5}$/.test(t)){
+    t=t.slice(0,t.lastIndexOf(':'));
+  }
   const a=t.split('.');
   if(a.length===4&&a.every(v=>/^\d{1,3}$/.test(v)&&Number(v)<=255))
     return [4,...a.map(Number)];
