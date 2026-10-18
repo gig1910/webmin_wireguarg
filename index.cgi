@@ -25,7 +25,7 @@ my @rows;
 foreach my $item (@$items) {
     my $name = $item->{'name'};
     my $summary = interface_summary($item, 0, undef);
-    my $status = '<span data-wg-state="'.html_escape($name).'">'.html_escape($text{'runtime_loading'}).'</span>';
+    my $status = '<span class="wg-ui-status" data-wg-state="'.html_escape($name).'">'.html_escape($text{'runtime_loading'}).'</span>';
     $status .= '<br>'.html_escape($item->{'error'}) if ($item->{'error'});
     my $peers = $summary->{'peer_count'};
     $peers .= ' <small>('.text('index_disabled_count', $summary->{'disabled_count'}).')</small>' if ($summary->{'disabled_count'});
