@@ -99,8 +99,8 @@ if ($peer) {
         '<p class="'.($geo_status->{'stale'} ? 'alert alert-warning':'help-block').'">'.
         '<strong>'.html_escape($text{'geoip_update_title'}).':</strong> '.
         html_escape($geo_message).'</p>'.
-        '<button type="button" class="btn btn-default" data-role="lookup">'.
-        html_escape($text{'peer_ip_lookup'}).'</button>'.
+        wg_ui_button(type=>'button',icon=>'globe',tone=>'info',
+            label=>$text{'peer_ip_lookup'},attrs=>{'data-role'=>'lookup'}).
         '<div data-role="output" aria-live="polite"></div>';
     if (!$geo_dependencies->{'command_available'} &&
         $access{'install_dependencies'} && $geo_dependencies->{'package_manager_available'}) {
@@ -526,10 +526,16 @@ if ($peer && $access{'diagnostics'}) {
         '<label>'.$text{'diagnostics_port'}.'<input data-role="port" type="number" min="1" max="65535" class="form-control"></label>'.
         '<label><input data-role="infinite" type="checkbox"> '.$text{'diagnostics_infinite'}.'</label>'.
         '</div><p>'.
-        '<button type="button" class="btn" data-diag="ping">'.$text{'diagnostics_ping'}.'</button> '.
-        '<button type="button" class="btn" data-diag="trace">'.$text{'diagnostics_trace'}.'</button> '.
-        '<button type="button" class="btn" data-diag="port_test">'.$text{'diagnostics_port_test'}.'</button> '.
-        '<button type="button" class="btn btn-danger" data-role="stop" style="display:none">'.$text{'diagnostics_stop'}.'</button>'.
+        wg_ui_button(type=>'button',icon=>'network',label=>$text{'diagnostics_ping'},
+            attrs=>{'data-diag'=>'ping'}).
+        wg_ui_button(type=>'button',icon=>'chart',label=>$text{'diagnostics_trace'},
+            attrs=>{'data-diag'=>'trace'}).
+        wg_ui_button(type=>'button',icon=>'shield',label=>$text{'diagnostics_port_test'},
+            attrs=>{'data-diag'=>'port_test'}).
+        '<span data-wg-diag-stop hidden>'.
+        wg_ui_button(type=>'button',icon=>'stop',tone=>'warning',
+            label=>$text{'diagnostics_stop'},attrs=>{'data-role'=>'stop'}).
+        '</span>'.
         '</p><pre data-role="output" style="display:none;min-height:130px;max-height:420px;overflow:auto;white-space:pre-wrap"></pre>'.
         '</div></details>';
 
