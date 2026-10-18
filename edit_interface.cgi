@@ -134,6 +134,7 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
             '<span data-wg-toggle-stop'.($disabled?' hidden':'').'>'.wg_ui_icon('stop').'</span>'.
             '</button></div>';
     }
+    push @row_actions, '' while @row_actions < 3;
     my $actions='<div class="wg-peer-action-slots">'.join('',map { '<div class="wg-peer-action-slot">'.($_||'').'</div>' } @row_actions).'</div>';
 
     push @rows, [
@@ -143,6 +144,7 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
         '<span class="wg-network-icon" data-wg-net-icon="'.$id.'"'.
          ($endpoint eq '-'?' hidden':'').' title="'.html_escape($text{'network_icons_unknown'}).'">?</span>',
         '<span class="wg-geoip-country" data-wg-geoip-country="'.$id.'" hidden></span>',
+        '<span class="wg-geoip-city" data-wg-geoip-city="'.$id.'" hidden></span>',
         wg_ui_ip_value($endpoint,kind=>'endpoint',attrs=>{'data-wg-endpoint'=>$id}),
         '<span data-wg-handshake="'.$id.'">'.html_escape($handshake).'</span>',
         '<span data-wg-rx="'.$id.'">—</span>',
@@ -156,7 +158,7 @@ if (@rows) {
     print '<div class="wg-runtime-time">'.$text{'runtime_updated'}.': <span data-wg-runtime-time>'.$text{'runtime_loading'}.'</span></div>';
     print '<div class="wg-ui-compact-table" data-wg-peer-sort-table="1">';
     print ui_columns_start(
-        [$text{'interface_peer_name'}, $text{'interface_peer_state'}, $text{'interface_peer_allowed'}, '', '', $text{'interface_peer_endpoint'}, $text{'interface_peer_handshake'}, $text{'interface_peer_rx'}, $text{'interface_peer_tx'}, $text{'analytics_peer_short'}, $text{'interface_peer_actions'}],
+        [$text{'interface_peer_name'}, $text{'interface_peer_state'}, $text{'interface_peer_allowed'}, '', '', $text{'network_icons_city_code'}, $text{'interface_peer_endpoint'}, $text{'interface_peer_handshake'}, $text{'interface_peer_rx'}, $text{'interface_peer_tx'}, $text{'analytics_peer_short'}, $text{'interface_peer_actions'}],
         100, 0, undef, $text{'interface_peers'}
     );
     print ui_columns_row($_) for @rows;
