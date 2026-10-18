@@ -65,6 +65,22 @@ sub wg_ui_button {
     }
     return '<button type="'.html_escape($a{'type'}||'button').'"'.$attr.'>'.$body.'</button>';
 }
+# Field controls stay browser-native; the backend remains the authority for
+# CIDR parsing, port ranges and concurrent configuration changes.
+sub wg_ui_number_input {
+    my ($name,$value,$min,$max)=@_;
+    return '<input type="number" class="form-control wg-ui-number-input"'.
+        ' name="'.html_escape($name).'" value="'.html_escape($value||'').'"'.
+        ' min="'.int($min).'" max="'.int($max).'" step="1" inputmode="numeric">';
+}
+sub wg_ui_validated_input {
+    my ($name,$value,$size,$validator,$hint)=@_;
+    my $attr=$validator ? ' data-wg-validate="'.html_escape($validator).'"' : '';
+    $attr.=' title="'.html_escape($hint).'"' if $hint;
+    return '<input type="text" class="form-control wg-ui-validated-input"'.
+        ' name="'.html_escape($name).'" value="'.html_escape($value||'').'"'.
+        ' size="'.int($size||42).'"'.$attr.'>';
+}
 sub wg_ui_panel_start {
     my ($title,%opts)=@_;
     my $danger=($opts{'tone'}||'') eq 'danger';
@@ -139,6 +155,10 @@ sub wg_ui_foundation {
 .wg-ui .wg-ui-form-row{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
 .wg-ui .wg-ui-form-row label{display:flex;flex-direction:column;gap:4px}
 .wg-ui .wg-ui-form-row input,.wg-ui .wg-ui-form-row select{font:inherit}
+.wg-ui .wg-ui-number-input{width:105px;max-width:100%;display:inline-block}
+.wg-ui .wg-ui-validated-input{width:auto;max-width:100%;display:inline-block}
+.wg-ui [data-wg-validate]:invalid{border-color:var(--wg-danger)}
+
 .wg-ui .wg-analytics-table td,.wg-ui .wg-analytics-table th{font-variant-numeric:tabular-nums}
 .wg-ui-modal[hidden]{display:none!important}
 .wg-ui-modal{position:fixed;inset:0;z-index:100001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);padding:20px}
@@ -236,9 +256,55 @@ sub wg_ui_foundation {
    (field||cancel).focus();
   });
  }
+ // Validation offers early feedback; server-side validation remains required.
+ function validCIDR(value){
+  const p=value.lastIndexOf('/');
+  if(p<1||!/^\\d+$/.test(value.slice(p+1)))return false;
+  const address=value.slice(0,p),mask=Number(value.slice(p+1));
+  if(address.includes(':')){
+   if(mask<0||mask>128)return false;
+   try{new URL('http://['+address+']/');return true;}catch(_){return false;}
+  }
+  if(mask<0||mask>32)return false;
+  const octets=address.split('.');
+  return octets.length===4&&octets.every(x=>/^\\d{1,3}$/.test(x)&&Number(x)<=255);
+ }
+ function validEndpoint(value){
+  if(!value)return true;
+  let host=value,port='';
+  if(value.startsWith('[')){
+   const end=value.indexOf(']');
+   if(end<2)return false;
+   host=value.slice(1,end);
+   const rest=value.slice(end+1);
+   if(rest&&rest.charAt(0)!==':')return false;
+   if(rest)port=rest.slice(1);
+   try{new URL('http://['+host+']/');}catch(_){return false;}
+  }else if(value.indexOf(':')===value.lastIndexOf(':')&&value.includes(':')){
+   const idx=value.lastIndexOf(':');
+   host=value.slice(0,idx);port=value.slice(idx+1);
+   if(!/^[a-zA-Z0-9_.-]+$/.test(host))return false;
+  }else if(!/^[a-zA-Z0-9_.-]+$/.test(value))return false;
+  return !port||(/^\\d{1,5}$/.test(port)&&Number(port)>=1&&Number(port)<=65535);
+ }
+ function validateField(field){
+  const value=field.value.trim(),kind=field.dataset.wgValidate;
+  let ok=true;
+  if(value&&kind==='cidr-list')
+   ok=value.split(/[,\\n]+/).every(x=>validCIDR(x.trim()));
+  if(value&&kind==='endpoint')ok=validEndpoint(value);
+  field.setCustomValidity(ok?'':field.dataset.wgInvalidMessage||'Invalid value');
+  return ok;
+ }
+ document.addEventListener('input',function(ev){
+  if(ev.target.matches&&ev.target.matches('[data-wg-validate]'))validateField(ev.target);
+ },true);
  document.addEventListener('submit',function(ev){
   const form=ev.target.closest('form');
   if(!form||!form.closest('.wg-ui'))return;
+  for(const field of form.querySelectorAll('[data-wg-validate]')){
+   if(!validateField(field)){ev.preventDefault();field.reportValidity();return;}
+  }
   const submitter=ev.submitter;
   const message=form.dataset.wgConfirm || (submitter&&submitter.dataset.wgConfirm);
   const word=form.dataset.wgConfirmWord || (submitter&&submitter.dataset.wgConfirmWord) || '';
