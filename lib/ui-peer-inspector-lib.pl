@@ -38,8 +38,9 @@ sub wg_ui_peer_inspector_script {
  if(!root)return;
  const dialog=root.querySelector('[data-wg-ip-dialog]');
  const out=root.querySelector('[data-wg-ip-output]');
- const opts=root.querySelector('[data-wg-ip-options]').dataset;
- if(!dialog||!out)return;
+ const options=root.querySelector('[data-wg-ip-options]');
+ if(!dialog||!out||!options)return;
+ const opts=options.dataset;
  let request=null,oldFocus=null;
  function element(tag,value,parent,klass){
   const n=document.createElement(tag);
@@ -105,7 +106,7 @@ sub wg_ui_peer_inspector_script {
      headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
      body:payload.toString()
    },{requireOk:true});
-   if(controller.signal.aborted||!root.isConnected)return;
+   if(controller.signal.aborted||request!==controller||dialog.hidden||!root.isConnected)return;
    out.replaceChildren();
    if(!data.available){
     element('p',data.detail||opts.wgIpUnavailable,out,'alert alert-info');return;
@@ -116,7 +117,7 @@ sub wg_ui_peer_inspector_script {
    if(data.network_cached)
      root.dispatchEvent(new CustomEvent('wg-network-cache-updated',{bubbles:true}));
   }catch(err){
-   if(!controller.signal.aborted&&root.isConnected){
+   if(!controller.signal.aborted&&request===controller&&!dialog.hidden&&root.isConnected){
     out.replaceChildren();element('p',err.message||String(err),out,'alert alert-warning');
    }
   }finally{if(request===controller)request=null;}
@@ -124,7 +125,7 @@ sub wg_ui_peer_inspector_script {
  function onClick(e){
   const trigger=e.target.closest('[data-wg-ip-inspect]');
   if(trigger&&root.contains(trigger)){e.preventDefault();open(trigger);return;}
-  if(e.target.closest('[data-wg-ip-close]')||e.target===dialog)close();
+  if(!dialog.hidden&&(e.target.closest('[data-wg-ip-close]')||e.target===dialog))close();
  }
  function onKey(e){if(e.key==='Escape'&&!dialog.hidden){e.preventDefault();close();}}
  root.addEventListener('click',onClick);
