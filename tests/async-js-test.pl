@@ -23,9 +23,10 @@ my $peer_html = graph_html('wg0', 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='
 die "peer period selector missing\n" if $peer_html !~ /data-wg-period/;
 die "peer custom date inputs missing\n" if $peer_html !~ /data-wg-from/ || $peer_html !~ /data-wg-to/;
 die "peer range URL missing\n" if $peer_html !~ /url.searchParams.set\('from'/;
+my $expected_version = $WIREGUARD_WEBMIN_VERSION;
 my $html = graph_html('wg0', '', 'Traffic').runtime_poll_html('wg0').$peer_html;
-die "runtime URL is not module-absolute/versioned\n" if $html !~ m{/wireguard/runtime\.cgi\?_wg_api=0\.2\.0&amp;name=wg0};
-die "history URL is not module-absolute/versioned\n" if $html !~ m{/wireguard/history\.cgi\?_wg_api=0\.2\.0&amp;name=wg0};
+die "runtime URL is not module-absolute/versioned\n" if $html !~ m{/wireguard/runtime\.cgi\?_wg_api=\Q$expected_version\E&amp;name=wg0};
+die "history URL is not module-absolute/versioned\n" if $html !~ m{/wireguard/history\.cgi\?_wg_api=\Q$expected_version\E&amp;name=wg0};
 die "runtime poller has no detached-page cleanup\n" if $html !~ /root\.isConnected/ || $html !~ /state\.cleanup/;
 die "runtime poller does not stop on non-JSON response\n" if $html !~ /if\(error\.nonJson\)cleanup\(\)/;
 die "runtime poller does not validate Content-Type\n" if $html !~ /content-type/;
