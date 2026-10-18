@@ -73,7 +73,7 @@ sub wg_ui_button {
 sub wg_ui_number_input {
     my ($name,$value,$min,$max)=@_;
     return '<input type="number" class="form-control wg-ui-number-input"'.
-        ' name="'.html_escape($name).'" value="'.html_escape($value||'').'"'.
+        ' name="'.html_escape($name).'" value="'.html_escape(defined($value)?$value:'').'"'.
         ' min="'.int($min).'" max="'.int($max).'" step="1" inputmode="numeric">';
 }
 sub wg_ui_validated_input {
@@ -81,7 +81,7 @@ sub wg_ui_validated_input {
     my $attr=$validator ? ' data-wg-validate="'.html_escape($validator).'"' : '';
     $attr.=' title="'.html_escape($hint).'"' if $hint;
     return '<input type="text" class="form-control wg-ui-validated-input"'.
-        ' name="'.html_escape($name).'" value="'.html_escape($value||'').'"'.
+        ' name="'.html_escape($name).'" value="'.html_escape(defined($value)?$value:'').'"'.
         ' size="'.int($size||42).'"'.$attr.'>';
 }
 sub wg_ui_panel_start {
