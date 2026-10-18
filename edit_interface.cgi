@@ -61,33 +61,44 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
     my $allowed = join(', ', get_section_values($peer, 'AllowedIPs')) || '-';
     my $short_allowed = shorten_text($allowed, 55);
     my $id = substr(sha256_hex($public_key), 0, 16);
-    my $name_link = '<a href="edit_peer.cgi?name='.urlize($name).'&peer='.$i.'"><b>'.html_escape(peer_display_name($peer, $i)).'</b></a>';
-    # Analytics is addressed solely by public-key fingerprint. Neither a
-    # peer's name nor its AllowedIPs participates in historical identity.
-    if (length($public_key)) {
-        $name_link .= ' <small>&middot; <a href="analytics.cgi?peer_id='.
-            urlize(sha256_hex($public_key)).'" data-wg-module-navigation="1">'.
-            html_escape($text{'analytics_peer_short'}).'</a></small>';
-    }
+    my $peer_url='edit_peer.cgi?name='.urlize($name).'&peer='.$i;
+    my $name_link='<a href="'.html_escape($peer_url).'"><b>'.
+        html_escape(peer_display_name($peer, $i)).'</b></a>';
+    # Persistent analytics identity is the fingerprint, never the display name.
+    my $history_action=length($public_key)
+        ? wg_ui_icon_action(icon=>'history',
+            label=>$text{'analytics_peer_link'}||$text{'analytics_peer_short'}||'История',
+            href=>'analytics.cgi?peer_id='.urlize(sha256_hex($public_key)))
+        : '—';
     my $handshake = $disabled ? $text{'peer_disabled'} : $text{'runtime_loading'};
     my $state_class = $disabled ? 'label-default wg-peer-state-disabled' : 'label-success wg-peer-state-enabled';
     my $state_html = '<span class="label '.$state_class.'" data-wg-peer-state="'.$id.'" data-disabled="'.($disabled ? '1' : '0').'">'.
         html_escape($disabled ? $text{'peer_disabled'} : $text{'peer_enabled'}).'</span>';
 
-    my $actions = '—';
+    my $ip_action=wg_ui_icon_action(
+        icon=>'globe',label=>$text{'peer_ip_lookup'}||'WHOIS / GeoIP',
+        attrs=>{'data-wg-ip-inspect'=>"$i"});
+    my $edit_action=wg_ui_icon_action(
+        icon=>'edit',label=>$text{'peer_edit_title'}||'Редактировать',
+        href=>$peer_url);
+    my $actions='<span class="wg-ui-table-actions">'.$ip_action.$edit_action;
     if ($access{'manage'}) {
         my $button_class = $disabled ? 'btn-success' : 'btn-warning';
         my $button_text = $disabled ? $text{'peer_enable'} : $text{'peer_disable'};
-        $actions = '<div class="wg-peer-toggle"'.
+        $actions .= '<div class="wg-peer-toggle"'.
             ' data-peer-id="'.$id.'"'.
             ' data-peer-index="'.$i.'"'.
             ' data-peer-disabled="'.($disabled ? '1' : '0').'"'.
             ' data-config-digest="'.html_escape($cfg->{'digest'}).'"'.
             ' data-public-key="'.html_escape($public_key).'"'.
             ' data-action-url="'.html_escape($toggle_peer_url).'">'.
-            '<button type="button" class="btn btn-xs '.$button_class.'" data-peer-toggle-button>'.html_escape($button_text).'</button>'.
-            '</div>';
+            '<button type="button" class="wg-ui-icon-btn" data-peer-toggle-button'.
+            ' title="'.html_escape($button_text).'" aria-label="'.html_escape($button_text).'">'.
+            '<span data-wg-toggle-play'.($disabled?'':' hidden').'>'.wg_ui_icon('play').'</span>'.
+            '<span data-wg-toggle-stop'.($disabled?' hidden':'').'>'.wg_ui_icon('stop').'</span>'.
+            '</button></div>';
     }
+    $actions.='</span>';
 
     push @rows, [
         $name_link,
@@ -98,15 +109,16 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
         '<span data-wg-handshake="'.$id.'">'.html_escape($handshake).'</span>',
         '<span data-wg-rx="'.$id.'">—</span>',
         '<span data-wg-tx="'.$id.'">—</span>',
+        $history_action,
         $actions,
     ];
 }
 
 if (@rows) {
     print '<div class="wg-runtime-time">'.$text{'runtime_updated'}.': <span data-wg-runtime-time>'.$text{'runtime_loading'}.'</span></div>';
-    print '<div data-wg-peer-sort-table="1">';
+    print '<div class="wg-ui-compact-table" data-wg-peer-sort-table="1">';
     print ui_columns_start(
-        [$text{'interface_peer_name'}, $text{'interface_peer_state'}, $text{'interface_peer_allowed'}, $text{'interface_peer_endpoint'}, $text{'interface_peer_handshake'}, $text{'interface_peer_rx'}, $text{'interface_peer_tx'}, $text{'interface_peer_actions'}],
+        [$text{'interface_peer_name'}, $text{'interface_peer_state'}, $text{'interface_peer_allowed'}, $text{'interface_peer_endpoint'}, $text{'interface_peer_handshake'}, $text{'interface_peer_rx'}, $text{'interface_peer_tx'}, $text{'analytics_peer_short'}, $text{'interface_peer_actions'}],
         100, 0, undef, $text{'interface_peers'}
     );
     print ui_columns_row($_) for @rows;
@@ -155,6 +167,7 @@ my $js_runtime_error_prefix = json_encode_utf8($runtime_error_prefix);
 my $js_network_icons_url = json_encode_utf8(module_script_url('network_icon_data.cgi'));
 print wg_table_sort_script();
 print wg_ui_transport_script();
+print wg_ui_peer_inspector($name,$csrf,$page_instance);
 print wg_interface_page_script(
     $js_page_instance, $js_name, $js_network_icons_url, $js_active, $js_inactive, $js_not_running, $js_peer_enabled, $js_peer_disabled, $js_peer_enable, $js_peer_disable, $js_peer_busy, $js_confirm_disable, $js_runtime_loading, $js_runtime_updated, $js_refresh, $js_runtime_error_prefix, $csrf);
 
