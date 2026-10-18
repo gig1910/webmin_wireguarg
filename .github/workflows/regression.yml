@@ -29,6 +29,20 @@ jobs:
         run: ./scripts/build-release.sh
       - name: Smoke-test packaged Webmin module
         run: sh ./scripts/smoke-release.sh
+      # This is an isolated component gallery, not a live Authentic Theme capture.
+      - name: Render shared UI component preview
+        if: success() && github.event_name != 'pull_request'
+        run: |
+          PERL5LIB=tests/stub perl scripts/render-ui-preview.pl > dist/UI-COMPONENTS.html
+          if command -v google-chrome >/dev/null 2>&1; then
+            timeout 45s google-chrome --headless=new --no-sandbox --disable-dev-shm-usage \
+              --disable-gpu --hide-scrollbars --window-size=1440,1800 \
+              --screenshot="$PWD/dist/UI-COMPONENTS.png" \
+              "file://$PWD/dist/UI-COMPONENTS.html"
+            test -s dist/UI-COMPONENTS.png
+          else
+            echo "Chrome unavailable: HTML preview generated without screenshot"
+          fi
       # Publishing only after the smoke gate prevents deploying untested WBM archives.
       # This is a CI artifact, not a production installation or GitHub release.
       - name: Upload verified WBM and checksums
