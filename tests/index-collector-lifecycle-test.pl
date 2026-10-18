@@ -11,9 +11,9 @@ my $markup2=wg_index_collector_script(q{"collector-two"},(map { q{"test"} } 1..1
 my ($js1)=$markup1=~m{<script>\s*(.*?)</script>}s;
 my ($js2)=$markup2=~m{<script>\s*(.*?)</script>}s;
 die "Collector scripts not generated\n" unless $js1 && $js2;
-my $js = "const vm=require('vm');\\n" .
-    "const first=".encode_json($js1).";\\n" .
-    "const second=".encode_json($js2).";\\n" . <<'JS';
+my $js = "const vm=require('vm');\n" .
+    "const first=".encode_json($js1).";\n" .
+    "const second=".encode_json($js2).";\n" . <<'JS';
 const timers=new Map(),pagehide=new Set();
 let timerId=0;
 global.window=global;
