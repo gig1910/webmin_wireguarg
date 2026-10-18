@@ -59,7 +59,7 @@ sub run_case {
 my $read_get=run_case('GET',{},0);
 die "GET directory view unexpectedly requires CSRF or mutates the cache\n"
     unless $read_get->{ok} && !$read_get->{checks} && !$read_get->{writes};
-my $nav=run_case('POST',{navigation=>'1',_wg_api=>'0.2.0+fixture'},0);
+my $nav=run_case('POST',{navigation=>'1',_wg_api=>'fixture-navigation'},0);
 die "Authentic Theme read-only navigation POST was rejected or wrote data\n"
     unless $nav->{ok} && !$nav->{checks} && !$nav->{writes} && !$nav->{rate};
 my $blocked=run_case('POST',{action=>'set_icon',cidr=>'203.0.113.0/24'},0);
