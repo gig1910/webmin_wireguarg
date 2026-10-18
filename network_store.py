@@ -7,6 +7,7 @@ and API functions are separate. No network queries are issued on page load.
 import ipaddress
 import re
 import time
+from unlocode_store import lookup as locode_lookup
 
 NETWORK_SCHEMA = """
 CREATE TABLE IF NOT EXISTS network_cache (
@@ -27,32 +28,6 @@ CREATE TABLE IF NOT EXISTS geoip_cache (
 
 # WHOIS prefix facts and administrator-assigned icons have independent lifecycles.
 # A cache reset never removes icon mappings. Everything here is local SQLite.
-def short_city_code(city):
-    """A display abbreviation, not an ISO city identifier."""
-    aliases = {
-        "moscow": "MSK", "москва": "MSK",
-        "saint petersburg": "LED", "st petersburg": "LED",
-        "санкт-петербург": "LED",
-        "belgrade": "BEG", "белград": "BEG",
-        "new york": "NYC", "london": "LON", "paris": "PAR",
-    }
-    if not city:
-        return ""
-    normalized = city.strip().lower()
-    if normalized in aliases:
-        return aliases[normalized]
-    translit = str.maketrans({
-        "а":"a","б":"b","в":"v","г":"g","д":"d","е":"e",
-        "ё":"e","ж":"zh","з":"z","и":"i","й":"y","к":"k",
-        "л":"l","м":"m","н":"n","о":"o","п":"p","р":"r",
-        "с":"s","т":"t","у":"u","ф":"f","х":"h","ц":"ts",
-        "ч":"ch","ш":"sh","щ":"sch","ы":"y","э":"e","ю":"yu",
-        "я":"ya"
-    })
-    letters = re.sub(r"[^A-Z0-9]", "", normalized.translate(translit).upper())
-    return letters[:3]
-
-
 def valid_network(value):
     if not isinstance(value, str) or len(value) > 64:
         raise ValueError("invalid network prefix")
@@ -76,10 +51,10 @@ def network_record(conn, req):
             not re.fullmatch(r"[A-Z]{2}", geoip_country)):
         raise ValueError("invalid GeoIP country code")
     geoip_city = req.get("geoip_city") or ""
-    geoip_city_code = req.get("geoip_city_code") or ""
+    geoip_city_code = locode_lookup(conn, geoip_country, geoip_city)
     if not isinstance(geoip_city, str) or len(geoip_city) > 100 or any(ord(c)<32 for c in geoip_city):
         raise ValueError("invalid GeoIP city")
-    if not isinstance(geoip_city_code, str) or not re.fullmatch(r"[A-Z0-9]{0,8}",geoip_city_code):
+    if not isinstance(geoip_city_code, str) or not re.fullmatch(r"(?:[A-Z]{2}[A-Z0-9]{3})?",geoip_city_code):
         raise ValueError("invalid GeoIP city abbreviation")
     fields = req.get("whois_fields") or []
     if not isinstance(fields, list) or len(fields) > 30:
@@ -157,6 +132,8 @@ def network_lookup(conn, req):
         manual = max((entry for entry in icons if ip in entry[0]),
                      key=lambda entry: entry[0].prefixlen, default=None)
         country_code,city,city_code = geoip.get(str(ip), ("","",""))
+        if city and country_code:
+            city_code = locode_lookup(conn,country_code,city)
         registered_country = hit[2] if hit else ""
         # Preserve the exact request literal as the map key. Browser runtime
         # endpoints can use a non-canonical IPv6 spelling (e.g. leading zeros).
@@ -170,7 +147,7 @@ def network_lookup(conn, req):
             "geoip_country": country_code,
             "city": (manual[3] if manual and manual[3] else city),
             "city_code": (manual[4] if manual and manual[4] else city_code),
-            "city_source": "manual" if manual and (manual[3] or manual[4]) else ("geoip" if city else ""),
+            "city_source": "manual" if manual and (manual[3] or manual[4]) else ("unlocode" if city_code else ("geoip" if city else "")),
             "cached": bool(hit or country_code),
         }
     return {"ok": True, "results": result}
@@ -197,8 +174,9 @@ def network_manage(conn, req):
                 code for ip, code, city, city_code in observations if ip in prefix
             })
             item["geoip_cities"] = sorted({
-                city_code or city for ip, code, city, city_code in observations
-                if ip in prefix and (city_code or city)
+                locode_lookup(conn, code, city) or city
+                for ip, code, city, city_code in observations
+                if ip in prefix and city
             })
         return {"ok": True, "cache": cache, "icons": icons}
     if action == "clear_cache":
@@ -222,11 +200,21 @@ def network_manage(conn, req):
     if not isinstance(label, str) or len(label) > 100 or any(ord(c) < 32 for c in label):
         raise ValueError("invalid label")
     city,city_code=req.get("city") or "",req.get("city_code") or ""
-    if isinstance(city,str) and not city_code:
-        city_code=short_city_code(city)
+    # A manually supplied 5-character UN/LOCODE is allowed only if catalog-backed.
+    city_code = city_code.strip().upper() if isinstance(city_code,str) else city_code
+    if city_code:
+        if not re.fullmatch(r"[A-Z]{2}[A-Z0-9]{3}", city_code):
+            raise ValueError("invalid UN/LOCODE")
+        found=conn.execute("SELECT 1 FROM unlocode_places WHERE country=? AND code=?",
+                           (city_code[:2],city_code[2:])).fetchone()
+        if not found:
+            raise ValueError("unknown UN/LOCODE: import UNECE catalog first")
+    elif city:
+        # A CIDR override may span locations; without explicit country no guessing.
+        city_code = ""
     if not isinstance(city,str) or len(city)>100 or any(ord(c)<32 for c in city):
         raise ValueError("invalid manual city")
-    if not isinstance(city_code,str) or not re.fullmatch(r"[A-Z0-9]{0,8}",city_code):
+    if not isinstance(city_code,str) or not re.fullmatch(r"(?:[A-Z]{2}[A-Z0-9]{3})?",city_code):
         raise ValueError("invalid manual city code")
     with conn:
         conn.execute("INSERT INTO network_icons(cidr,icon,label,city,city_code) VALUES(?,?,?,?,?) "
