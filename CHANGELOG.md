@@ -2,6 +2,28 @@
 
 ## [Unreleased]
 
+### Unified admin console UX
+
+- Add a reusable Webmin UI foundation for inline SVG icon actions, accessible
+  hints, shared toolbars, non-sensitive copy controls, compact status cards,
+  collapsed danger panels and modal confirmations. Confirmation tokens are
+  supplied in a popup; existing server-side CSRF, ACL and typed DELETE/CLEAR
+  validation remain authoritative.
+- Add a manual WHOIS/GeoIP inspector dialog directly to peer-table rows,
+  reusing `peer_ip_info.cgi` (POST+CSRF+rate limiting); no automatic WHOIS
+  requests are introduced by opening the interface.
+- Move peer history into its own icon column and keep names separate; use
+  icon-only edit and toggle actions with accessible text in tooltips.
+- Align primary and secondary interface/dashboard actions, provide copy
+  actions for public endpoint metadata and exported client configuration.
+- Present analytics totals as labelled cards, separate interface/peer/public
+  key into event columns, and collapse destructive SQLite maintenance.
+- Compact PresharedKey status/removal, collapse peer diagnostics, and use
+  the shared network-cache reset and row deletion interaction.
+- Expand source and packaged-WBM smoke regressions for shared controls and
+  the protected WHOIS/GeoIP dialog.
+
+
 ### Network directory navigation
 
 - Treat navigation to `network_icons.cgi` as read-only when no mutation action
