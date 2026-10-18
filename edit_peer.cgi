@@ -55,6 +55,7 @@ if ($peer) {
     my $ip_csrf_json=json_encode_utf8($csrf);
     my $ip_labels_json=json_encode_utf8({
         busy=>$text{'peer_ip_busy'}, whois=>$text{'peer_ip_whois'},
+        cityNote=>$text{'ui_ip_city_note'},
         geoip=>$text{'peer_ip_geoip'}, raw=>$text{'peer_ip_raw'},
         handshake=>$text{'peer_ip_handshake_time'},
         unavailable=>$text{'peer_ip_unavailable'}
@@ -153,8 +154,16 @@ if ($peer) {
     for(const entry of result.fields||[]){
       const tr=node('tr',null,body);
       node('th',entry.label||'',tr);
-      node('td',entry.value||'',tr);
+      const value=String(entry.value||''),prefix=value.trim().slice(0,2).toUpperCase();
+      const countryField=/country/i.test(String(entry.label||''));
+      const code=countryField&&/^[A-Z]{2}$/.test(prefix)&&
+        (value.trim().length===2||value.trim().charAt(2)===',')?prefix:'';
+      const flag=window.WireGuardUI.flag(code||(countryField?result.country_code:''));
+      node('td',(flag?flag+' ':'')+value,tr);
     }
+    if(label===detailsLabels.geoip && detailsLabels.cityNote &&
+      !(result.fields||[]).some(field=>field.label==='City'))
+      node('p',detailsLabels.cityNote,section,'help-block');
     if(result.source)node('small',result.source,section,'help-block');
     if(result.raw){
       const expandable=node('details',null,section);
@@ -207,8 +216,10 @@ IP_LOOKUP_SCRIPT
 if ($access{'manage'}) {
     sub textarea_field {
         my ($field_name, $value, $rows) = @_;
-        return '<textarea name="'.html_escape($field_name).'" rows="'.$rows.'" style="width:100%">'.
-            html_escape($value || '').'</textarea>';
+        return '<textarea name="'.html_escape($field_name).'" rows="'.$rows.'"'.
+            ($field_name eq 'allowed_ips' ? ' data-wg-validate="cidr-list"'.
+                ' data-wg-invalid-message="'.html_escape($text{'ui_form_invalid'}).'"' : '').
+            ' style="width:100%">'.html_escape($value || '').'</textarea>';
     }
 
     my ($client_address, $routes_ref, $auto_address_network);
@@ -246,15 +257,21 @@ if ($access{'manage'}) {
     }
     print ui_table_row(
         $text{'peer_client_address'},
-        ui_textbox('clientaddress', $client_address, 48).'<br><small>'.$client_address_help.'</small>'
+        wg_ui_validated_input('clientaddress',$client_address,48,'cidr-list',
+             $text{'ui_form_invalid'}).'<br><small>'.$client_address_help.'</small>'
     );
     print ui_table_row(
         $text{'peer_allowed_ips'},
         textarea_field('allowed_ips', $routes, 3).'<br><small>'.$text{'peer_allowed_ips_help'}.'</small>'
     );
-    print ui_table_row($text{'peer_endpoint'}, ui_textbox('endpoint', $peer ? (get_section_value($peer, 'Endpoint') || '') : '', 52));
-    print ui_table_row($text{'peer_keepalive'}, ui_textbox('keepalive', $peer ? (get_section_value($peer, 'PersistentKeepalive') || '') : '', 10));
-    print ui_table_row($text{'peer_client_endpoint'}, ui_textbox('clientendpoint', $peer ? (get_meta_value($peer, 'clientendpoint') || '') : '', 52));
+    print ui_table_row($text{'peer_endpoint'}, wg_ui_validated_input('endpoint',$peer ?
+             (get_section_value($peer,'Endpoint')||'') : '',52,'endpoint',
+             $text{'ui_form_endpoint'}));
+    print ui_table_row($text{'peer_keepalive'}, wg_ui_number_input('keepalive',$peer ?
+             (get_section_value($peer,'PersistentKeepalive')||'') : '',0,65535));
+    print ui_table_row($text{'peer_client_endpoint'}, wg_ui_validated_input('clientendpoint',$peer ?
+             (get_meta_value($peer,'clientendpoint')||'') : '',52,'endpoint',
+             $text{'ui_form_endpoint'}));
     print ui_table_row($text{'peer_client_dns'}, ui_textbox('clientdns', $peer ? (get_meta_value($peer, 'clientdns') || '') : '', 52));
     my $client_allowed_override = $peer ? (get_meta_value($peer, 'clientallowedips') || '') : '';
     my ($resolved_client_allowed, $client_allowed_source) = resolve_client_allowed_ips($cfg, $peer);
@@ -272,9 +289,11 @@ if ($access{'manage'}) {
     }
     print ui_table_row(
         $text{'peer_client_allowed'},
-        ui_textbox('clientallowedips', $client_allowed_override, 60).'<br><small>'.$client_allowed_help.'</small>'
+        wg_ui_validated_input('clientallowedips',$client_allowed_override,60,'cidr-list',
+             $text{'ui_form_invalid'}).'<br><small>'.$client_allowed_help.'</small>'
     );
-    print ui_table_row($text{'peer_client_mtu'}, ui_textbox('clientmtu', $peer ? (get_meta_value($peer, 'clientmtu') || '') : '', 10));
+    print ui_table_row($text{'peer_client_mtu'}, wg_ui_number_input('clientmtu',$peer ?
+             (get_meta_value($peer,'clientmtu')||'') : '',1,65535));
     print ui_table_row($text{'peer_disabled_field'}, ui_yesno_radio('disabled', $peer && $peer->{'disabled'} ? 1 : 0));
     print ui_table_end();
 
