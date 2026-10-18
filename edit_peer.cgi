@@ -484,7 +484,7 @@ if ($peer) {
         '<th>'.html_escape($text{'analytics_event_time'}).'</th>'.
         '<th>'.html_escape($text{'analytics_event_type'}).'</th>'.
         '<th aria-label="Network"></th><th aria-label="Country"></th>'.
-        '<th>'.html_escape($text{'network_icons_city_code'}).'</th>'.
+        '<th>'.html_escape($text{'network_icons_city'}).'</th>'.
         '<th>'.html_escape($text{'analytics_event_endpoint'}).'</th>'.
         '<th>'.html_escape($text{'analytics_event_previous'}).'</th>'.
         '<th aria-label="WHOIS / GeoIP"></th>'.
