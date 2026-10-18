@@ -156,7 +156,7 @@ if ($peer) {
       node('th',entry.label||'',tr);
       const value=String(entry.value||''),prefix=value.trim().slice(0,2).toUpperCase();
       const countryField=/country/i.test(String(entry.label||''));
-      const code=countryField&&/^[A-Z]{2}$/.test(prefix)&&
+      const code=countryField&&/^[A-Z]{2}\$/.test(prefix)&&
         (value.trim().length===2||value.trim().charAt(2)===',')?prefix:'';
       const flag=window.WireGuardUI.flag(code||(countryField?result.country_code:''));
       node('td',(flag?flag+' ':'')+value,tr);
