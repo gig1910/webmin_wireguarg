@@ -57,7 +57,7 @@ if ($access{'manage'}) {
         href=>'interface_form.cgi?name='.urlize($name),
         icon=>'edit',label=>$text{'interface_edit'},action=>'edit').
         wg_ui_button(href=>'edit_peer.cgi?name='.urlize($name),
-        icon=>'plus',label=>$text{'interface_add_peer'},tone=>'success');
+        icon=>'plus',label=>$text{'interface_add_peer'},action=>'add');
     $interface_toolbar_left.='<span class="wg-actions">'.
         '<span id="wg-actions-loading">'.html_escape($text{'runtime_loading'}).'</span>'.
         '<span id="wg-actions-active" style="display:none">'.
