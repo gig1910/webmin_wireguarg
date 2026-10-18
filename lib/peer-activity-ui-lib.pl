@@ -34,6 +34,7 @@ sub wg_peer_activity_tabs_script
  const body=root.querySelector('[data-wg-peer-activity-rows]');
  const ipTemplate=root.querySelector('[data-wg-ip-template] button');
  let request=null,seq=0,networkRequest=null;
+ root.addEventListener('wg-network-cache-updated',()=>fillKnownNetworks(seq));
  function isNumericIp(value){
    const t=String(value||'').trim();
    return t.length>=3&&t.length<=45&&/^[0-9a-f:.]+\$/.test(t) &&
