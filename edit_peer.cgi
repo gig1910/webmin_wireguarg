@@ -120,8 +120,8 @@ if ($peer) {
         print csrf_hidden();
         print ui_hidden('name',$name);
         print ui_hidden('peer',$in{'peer'});
-        print '<button type="submit" class="btn btn-default">'.
-            html_escape($text{'geoip_update_enable'}).'</button>';
+        print wg_ui_button(type=>'submit',icon=>'play',tone=>'success',
+            label=>$text{'geoip_update_enable'});
         print ui_form_end();
     }
     print '</div></section>';
@@ -351,7 +351,7 @@ if ($access{'manage'}) {
             elsif ($qr_status->{'package_installed'}) {
                 $export_html .= '<br><div class="alert alert-warning">'.html_escape(
                     text('qr_package_path_missing', $qr_status->{'package_version'}, $qr_status->{'command'})
-                ).' '.ui_link_button('config.cgi', $text{'dependency_open_settings'}).'</div>';
+                ).' '.wg_ui_button(href=>'config.cgi',icon=>'gear',label=>$text{'dependency_open_settings'}).'</div>';
             }
             else {
                 $export_html .= '<br><div class="alert alert-info">'.html_escape(
