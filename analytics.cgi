@@ -45,6 +45,9 @@ print wg_table_sort_script();
 print wg_chart_ui_script();
 print wg_ui_transport_script();
 print wg_ui_foundation();
+my $apply_button=wg_ui_button(
+    type=>'button',icon=>'refresh',label=>$text{'analytics_apply'},
+    attrs=>{'data-apply'=>'1'});
 print <<HTML;
 <div id="wg-analytics" class="wg-ui" data-url="$url">
  <section class="panel panel-default wg-analytics-section">
@@ -72,7 +75,7 @@ print <<HTML;
     <option value="600">$text{'analytics_auto_10m'}</option>
     <option value="1800">$text{'analytics_auto_30m'}</option>
   </select></label>
-  <button class="btn btn-default" data-apply type="button">$text{'analytics_apply'}</button>
+  $apply_button
  </div>
  <p class="help-block" data-auto-custom-note hidden>$text{'analytics_auto_custom_note'}</p>
  <div data-error class="alert alert-warning" hidden></div>
@@ -168,11 +171,8 @@ HTML
 print wg_analytics_controller_script($strings, $selected_json, $initial_interface_json);
 
 if ($access{'manage'}) {
-    print '<details class="wg-ui-danger" data-wg-danger-zone>'.
-          '<summary>'.wg_ui_icon('chevron').' '.
-          html_escape($text{'danger_zone'}.' — '.$text{'analytics_maintenance'}).
-          '</summary><div class="wg-ui-danger-body">'.
-          '<p class="help-block">'.html_escape($text{'analytics_maintenance_help'}).
+    print wg_ui_panel_start($text{'ui_storage_maintenance'},tone=>'danger');
+    print '<p class="help-block">'.html_escape($text{'analytics_maintenance_help'}).
           '</p><div class="wg-analytics-steps">';
     for my $item (
         [ 'delete_before', 'analytics_delete_before' ],
@@ -193,14 +193,15 @@ if ($access{'manage'}) {
             print '<label>'.html_escape($text{'analytics_peer'}).
                 ' <select name="peer_id" class="form-control" data-maintenance-peer></select></label> ';
         }
-        my $button_class = $action eq 'vacuum' ? 'btn btn-default' : 'btn btn-danger';
-        print '<button type="submit" class="'.$button_class.'"'.
-            ' data-wg-confirm="'.html_escape($text{$key}).'"'.
-            ($action eq 'vacuum'?'':' data-wg-confirm-word="DELETE"').
-            '>'.html_escape($text{$key}).'</button>';
+        my %attr=('data-wg-confirm'=>$text{$key});
+        $attr{'data-wg-confirm-word'}='DELETE' if $action ne 'vacuum';
+        print wg_ui_button(type=>'submit',
+            icon=>$action eq 'vacuum' ? 'database' : 'trash',
+            tone=>$action eq 'vacuum' ? 'neutral' : 'danger',
+            label=>$text{$key},attrs=>\\%attr);
         print '</form>';
     }
-    print '</div></div></details>';
+    print '</div>'.wg_ui_panel_end();
     print <<'SCRIPT';
 <script>
 (function(){
