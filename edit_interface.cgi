@@ -127,7 +127,7 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
             ' data-config-digest="'.html_escape($cfg->{'digest'}).'"'.
             ' data-public-key="'.html_escape($public_key).'"'.
             ' data-action-url="'.html_escape($toggle_peer_url).'">'.
-            '<button type="button" class="wg-ui-icon-btn '.$button_class.'" data-peer-toggle-button'.
+            '<button type="button" class="btn btn-link wg-ui-icon-btn '.$button_class.'" data-peer-toggle-button'.
             ' title="'.html_escape($button_text).'" aria-label="'.html_escape($button_text).'">'.
             '<span data-wg-toggle-play'.($disabled?'':' hidden').'>'.wg_ui_icon('play').'</span>'.
             '<span data-wg-toggle-stop'.($disabled?' hidden':'').'>'.wg_ui_icon('stop').'</span>'.
