@@ -72,6 +72,26 @@ sub module_uninstall
             if (defined($systemctl) && -x $systemctl);
     }
 
+    # Only remove module-owned UN/LOCODE services; keep imported catalog.
+    my $unit_dir=dirname($unit);
+    my $removed_unlocode=0;
+    for my $name ('webmin-wireguard-unlocode.timer',
+                  'webmin-wireguard-unlocode.service') {
+        my $file="$unit_dir/$name";
+        my $data=_wg_uninstall_slurp($file);
+        next unless defined($data) && _wg_uninstall_managed_unit($data);
+        system($systemctl,'disable','--now',$name)
+            if defined($systemctl) && -x $systemctl && $name =~ /timer$/;
+        if (unlink($file)) {
+            $removed_unlocode=1;
+        }
+        else {
+            _wg_uninstall_log($state_dir,"cannot remove $file: $!");
+        }
+    }
+    system($systemctl,'daemon-reload')
+        if $removed_unlocode && defined($systemctl) && -x $systemctl;
+
     # Module configuration, WireGuard configuration, metrics history, backups,
     # diagnostics and systemd drop-ins are deliberately preserved.  Removing
     # operational data must remain an explicit administrator action.
