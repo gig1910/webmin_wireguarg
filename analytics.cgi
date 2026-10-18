@@ -81,11 +81,11 @@ print <<HTML;
  <section class="panel panel-default wg-analytics-section">
   <div class="panel-heading"><strong>$text{'analytics_summary_heading'}</strong></div>
   <div class="panel-body">
-   <div class="wg-analytics-summary">
-    <div class="wg-analytics-summary-item" data-rx></div>
-    <div class="wg-analytics-summary-item" data-tx></div>
-    <div class="wg-analytics-summary-item" data-last-handshake></div>
-    <div class="wg-analytics-summary-item" data-handshake-ip></div>
+   <div class="wg-ui-summary">
+    <div class="wg-ui-summary-card"><span>$text{'analytics_rx'}</span><strong data-rx>—</strong></div>
+    <div class="wg-ui-summary-card"><span>$text{'analytics_tx'}</span><strong data-tx>—</strong></div>
+    <div class="wg-ui-summary-card"><span>$text{'analytics_last_handshake'}</span><strong data-last-handshake>—</strong></div>
+    <div class="wg-ui-summary-card"><span>$text{'analytics_handshake_ip'}</span><strong data-handshake-ip class="wg-ui-mono">—</strong></div>
    </div>
    <p class="help-block" data-db-size></p>
   </div>
@@ -116,7 +116,7 @@ print <<HTML;
   <div class="panel-heading"><strong>$text{'analytics_events'}</strong></div>
   <div class="panel-body">
  <div class="table-responsive wg-analytics-table" data-wg-event-sort-table><table class="table table-striped table-hover">
- <thead><tr><th>$text{'analytics_event_time'}</th><th>$text{'analytics_peer'}</th><th>$text{'analytics_event_type'}</th><th>$text{'analytics_event_endpoint'}</th><th>$text{'analytics_event_previous'}</th></tr></thead>
+ <thead><tr><th>$text{'analytics_event_time'}</th><th>$text{'analytics_interface'}</th><th>$text{'analytics_peer'}</th><th>$text{'analytics_event_type'}</th><th>$text{'analytics_event_endpoint'}</th><th>$text{'analytics_event_previous'}</th></tr></thead>
  <tbody data-events></tbody></table></div>
  <p class="help-block">$text{'analytics_warning'}</p>
   </div>
@@ -137,9 +137,11 @@ print <<HTML;
 .wg-analytics-filters [data-peer]{min-width:260px}
 .wg-analytics-filters [data-custom]{display:flex;flex-wrap:wrap;gap:10px}
 .wg-analytics-filters [hidden],#wg-analytics [hidden]{display:none!important}
-.wg-analytics-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
-.wg-analytics-summary-item{padding:9px 12px;border:1px solid rgba(127,127,127,.25);border-radius:3px}
-.wg-analytics-summary-item:empty::after{content:'—'}
+.wg-analytics-table th:first-child,.wg-analytics-table td:first-child{min-width:165px;white-space:nowrap}
+.wg-analytics-table th:nth-child(5),.wg-analytics-table td:nth-child(5),
+.wg-analytics-table th:nth-child(6),.wg-analytics-table td:nth-child(6){min-width:155px;white-space:nowrap;font-family:ui-monospace,Consolas,monospace}
+.wg-analytics-table th:nth-child(2),.wg-analytics-table td:nth-child(2){min-width:85px}
+.wg-analytics-table th:nth-child(3),.wg-analytics-table td:nth-child(3){min-width:175px}
 .wg-analytics-notes{margin-top:8px}
 .wg-analytics-table{overflow:auto;max-height:420px}
 .wg-analytics-table table{width:100%;margin:0}
