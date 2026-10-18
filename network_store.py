@@ -100,7 +100,7 @@ def network_record(conn, req):
             # A GeoIP observation describes one IP, not its WHOIS parent CIDR.
             conn.execute(
                 "INSERT INTO geoip_cache(ip,country_code,city,city_code,observed_at) VALUES(?,?,?,?,?) "
-                "ON CONFLICT(ip) DO UPDATE SET country_code=excluded.country_code,\n                "city=excluded.city,city_code=excluded.city_code,"
+                "ON CONFLICT(ip) DO UPDATE SET country_code=excluded.country_code,"\n                "city=excluded.city,city_code=excluded.city_code,"
                 "observed_at=excluded.observed_at",
                 (str(ip), geoip_country, geoip_city,geoip_city_code,int(time.time())))
     return {"ok": True, "cidr": cidr}
@@ -140,7 +140,10 @@ def network_lookup(conn, req):
             "country": country_code or registered_country,
             "country_source": "geoip" if country_code else ("whois" if registered_country else ""),
             "whois_country": registered_country,
-            "geoip_country": country_code,\n            "city": (manual[3] if manual and manual[3] else city),\n            "city_code": (manual[4] if manual and manual[4] else city_code),\n            "city_source": "manual" if manual and (manual[3] or manual[4]) else ("geoip" if city else ""),
+            "geoip_country": country_code,
+            "city": (manual[3] if manual and manual[3] else city),
+            "city_code": (manual[4] if manual and manual[4] else city_code),
+            "city_source": "manual" if manual and (manual[3] or manual[4]) else ("geoip" if city else ""),
             "cached": bool(hit or country_code),
         }
     return {"ok": True, "results": result}
@@ -153,18 +156,22 @@ def network_manage(conn, req):
                  in conn.execute("SELECT cidr,owner,country,observed_at FROM network_cache "
                                  "ORDER BY observed_at DESC LIMIT 1000")]
         icons = [dict(zip(("cidr", "icon", "label", "city", "city_code"), row)) for row in
-                 conn.execute("SELECT cidr,icon,label FROM network_icons ORDER BY cidr LIMIT 1000")]
+                 conn.execute("SELECT cidr,icon,label,city,city_code FROM network_icons ORDER BY cidr LIMIT 1000")]
         observations = [
-            (ipaddress.ip_address(ip), code)
+            (ipaddress.ip_address(ip), code,city,city_code)
             for ip, code, city, city_code in conn.execute(
-                "SELECT ip,country_code FROM geoip_cache WHERE observed_at>=? "
+                "SELECT ip,country_code,city,city_code FROM geoip_cache WHERE observed_at>=? "
                 "ORDER BY observed_at DESC LIMIT 1000", (int(time.time())-30*86400,))]
         for item in cache:
             prefix = ipaddress.ip_network(item["cidr"])
             # These are observed IP countries, NOT a location assigned to
             # the entire WHOIS prefix. Preserve this distinction in the UI.
             item["geoip_countries"] = sorted({
-                code for ip, code in observations if ip in prefix
+                code for ip, code, city, city_code in observations if ip in prefix
+            })
+            item["geoip_cities"] = sorted({
+                city_code or city for ip, code, city, city_code in observations
+                if ip in prefix and (city_code or city)
             })
         return {"ok": True, "cache": cache, "icons": icons}
     if action == "clear_cache":
