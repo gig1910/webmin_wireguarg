@@ -15,12 +15,19 @@ my ($client, $client_error) = build_client_config($cfg, $peer, $runtime);
 error($client_error) if (!$client);
 my $image_url = module_script_url('qr_image.cgi', name => $name, peer => $in{'peer'}, nonce => time());
 ui_print_header(undef, text('qr_title', peer_display_name($peer, $in{'peer'})), '', undef, 1, 1);
+print wg_ui_foundation();
+print '<div class="wg-ui">';
 print '<div style="max-width:1000px;margin:auto;text-align:center"><img src="'.html_escape($image_url).'" alt="'.html_escape($text{'peer_qr'}).'" style="width:480px;max-width:100%;height:auto"></div>';
 print ui_alert_box($text{'qr_sensitive'}, 'warn');
 my $client_warnings = client_config_warnings($cfg, $peer);
 print ui_alert_box(join(' ', @$client_warnings), 'warn') if (@$client_warnings);
-print '<p>'.direct_link_button(
+my $qr_actions=direct_link_button(
     'download_client.cgi', $text{'peer_download'},
     { name => $name, peer => $in{'peer'} }, download => 1
-).'</p>';
+).' '.direct_link_button(
+    'client_config.cgi',$text{'peer_show_config'},
+    {name=>$name,peer=>$in{'peer'}}
+);
+print wg_ui_action_bar($qr_actions,'');
+print '</div>';
 ui_print_footer('edit_peer.cgi?name='.urlize($name).'&peer='.urlize($in{'peer'}), text('peer_title', peer_display_name($peer, $in{'peer'})));
