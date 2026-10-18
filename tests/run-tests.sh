@@ -10,6 +10,7 @@ done
 for file in ./lib/*.pl; do
     perl -c "$file"
 done
+perl tests/runner-coverage-test.pl
 perl tests/parser-test.pl
 perl tests/parser-fuzz-test.pl
 perl tests/ip-allocation-test.pl
