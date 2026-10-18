@@ -532,7 +532,7 @@ if ($peer && $access{'diagnostics'}) {
             attrs=>{'data-diag'=>'trace'}).
         wg_ui_button(type=>'button',icon=>'shield',label=>$text{'diagnostics_port_test'},
             attrs=>{'data-diag'=>'port_test'}).
-        '<span data-wg-diag-stop hidden>'.
+        '<span data-wg-diag-stop style="display:none">'.
         wg_ui_button(type=>'button',icon=>'stop',tone=>'warning',
             label=>$text{'diagnostics_stop'},attrs=>{'data-role'=>'stop'}).
         '</span>'.
