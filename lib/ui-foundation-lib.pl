@@ -283,7 +283,7 @@ sub wg_ui_foundation {
    const code=/^[A-Z]{2}$/.test(raw)?raw:'';
    const city=network&&typeof network.city==='string'?network.city.trim():'';
    const abbreviation=network&&typeof network.city_code==='string'?network.city_code.trim().toUpperCase():'';
-   const short=/^[A-Z0-9]{1,8}$/.test(abbreviation)?abbreviation:'';
+   const short=/^[A-Z]{2}[A-Z0-9]{3}$/.test(abbreviation)?abbreviation.slice(2):'';
    if(country){
     country.textContent=code?this.flag(code)+' '+code:'';
     if(!cityNode&&short)country.textContent+=(code?' · ':'')+short;
@@ -294,7 +294,7 @@ sub wg_ui_foundation {
    if(cityNode){
     cityNode.textContent=short;
     cityNode.hidden=!short;
-    cityNode.title=city ? city+' ('+(network.city_source||'GeoIP')+')' : short;
+    cityNode.title=city ? city+' — '+(abbreviation||'') : abbreviation;
    }
   }
  };
