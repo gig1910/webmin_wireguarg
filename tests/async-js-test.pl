@@ -5,6 +5,7 @@ use FindBin;
 use lib "$FindBin::Bin/stub";
 use lib "$FindBin::Bin/..";
 our (%config, %text);
+our $WIREGUARD_WEBMIN_VERSION;
 $config{'stats_enabled'} = 1;
 $config{'stats_refresh_interval'} = 5;
 $config{'stats_live_window'} = 900;
