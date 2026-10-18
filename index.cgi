@@ -33,10 +33,10 @@ foreach my $item (@$items) {
     if ($access{'manage'}) {
         $actions = '<span data-wg-actions-loading="'.html_escape($name).'">'.html_escape($text{'runtime_loading'}).'</span>'.
             '<span data-wg-action-start="'.html_escape($name).'" style="display:none">'.
-                mini_action_form($name, 'start', $text{'interface_start'}, 'success', '').
+                mini_action_form($name, 'start', $text{'interface_start'}, 'success', '', 'play').
             '</span>'.
             '<span data-wg-action-stop="'.html_escape($name).'" style="display:none">'.
-                mini_action_form($name, 'stop', $text{'interface_stop'}, 'danger', $text{'confirm_stop'}).
+                mini_action_form($name, 'stop', $text{'interface_stop'}, 'danger', $text{'confirm_stop'}, 'stop').
             '</span>';
     }
     push @rows, [
@@ -54,7 +54,7 @@ if (@rows) {
     print ui_columns_start(
         [$text{'index_name'}, $text{'index_status'}, $text{'index_addresses'}, $text{'index_port'}, $text{'index_peers'}, $text{'index_actions'}],
         100, 0,
-        ['width=18%', 'width=18%', 'width=25%', 'width=10%', 'width=10%', 'width=19%'],
+        ['width=19%', 'width=18%', 'width=29%', 'width=12%', 'width=12%', 'width=10%'],
         $text{'index_interfaces'}
     );
     print ui_columns_row($_) for @rows;
@@ -65,10 +65,10 @@ else {
 }
 print '</div>';
 
-if ($access{'manage'}) {
-    print '<p>'.ui_link_button('interface_form.cgi', $text{'index_add'}).'</p>';
-}
-print '<p>'.ui_link_button('journal.cgi', $text{'index_logs'}).'</p>' if ($access{'logs'});
+my $index_left=$access{'manage'} ? ui_link_button('interface_form.cgi', $text{'index_add'}) : '';
+my $index_right=($access{'logs'} ? ui_link_button('journal.cgi',$text{'index_logs'}) : '').
+    ($access{'manage'} ? ' '.direct_link_button('network_icons.cgi',$text{'network_icons_title'},{}) : '');
+print wg_ui_action_bar($index_left,$index_right);
 
 
 my $collector_url = module_script_url('collector_status.cgi');
@@ -117,7 +117,7 @@ print wg_index_collector_script(
     $js_collector_id, $js_collector_healthy, $js_collector_stale, $js_collector_stopped, $js_collector_failed, $js_collector_starting, $js_collector_stopping, $js_collector_unavailable, $js_collector_last_update, $js_collector_storage, $js_collector_service_state, $js_collector_confirm_stop, $js_collector_confirm_restart, $js_collector_running_action, $js_collector_compacting, $js_collector_restart_required, $js_collector_last_compaction, $js_collector_config_pending, $js_collector_config_unverified, $js_collector_config_different);
 
 my $qr_status = optional_dependency_quick_status('qrencode');
-print '<p>'.direct_link_button('network_icons.cgi',$text{'network_icons_title'},{}).'</p>' if $access{'manage'};
+
 print '<div class="panel panel-default"><div class="panel-heading"><b>'.html_escape($text{'dependencies_title'}).'</b></div><div class="panel-body">';
 if ($qr_status->{'command_available'}) {
     print '<span class="text-success">'.html_escape(text('dependency_command_available', $qr_status->{'command'})).'</span>';
