@@ -539,3 +539,4 @@ ui_copied=Copied
 ui_copy_unavailable=Clipboard unavailable
 ui_api_non_json=Server returned a non-JSON response
 ui_api_bad_json=Invalid JSON response
+interface_advanced_hooks=Advanced interface lifecycle hooks (PreUp, PostUp, PreDown, PostDown)
