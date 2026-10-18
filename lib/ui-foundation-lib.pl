@@ -151,7 +151,8 @@ sub wg_ui_foundation {
 .wg-ui .wg-ui-panel>summary,.wg-ui .wg-ui-danger>summary,.wg-ui .wg-ui-tools>summary{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:600;cursor:pointer;list-style:none}
 .wg-ui .wg-ui-danger>summary{color:var(--wg-danger)}
 .wg-ui .wg-ui-panel>summary::-webkit-details-marker,.wg-ui .wg-ui-danger>summary::-webkit-details-marker,.wg-ui .wg-ui-tools>summary::-webkit-details-marker{display:none}
-.wg-ui .wg-ui-panel[open]>summary svg,.wg-ui .wg-ui-danger[open]>summary svg,.wg-ui .wg-ui-tools[open]>summary svg{transform:rotate(180deg)}
+.wg-ui .wg-ui-panel>summary>svg:first-child,.wg-ui .wg-ui-danger>summary>svg:first-child,.wg-ui .wg-ui-tools>summary>svg:first-child{transition:transform .15s ease;flex:none}
+.wg-ui .wg-ui-panel[open]>summary>svg:first-child,.wg-ui .wg-ui-danger[open]>summary>svg:first-child,.wg-ui .wg-ui-tools[open]>summary>svg:first-child{transform:rotate(180deg)}
 .wg-ui .wg-ui-danger-body,.wg-ui .wg-ui-tools-body{padding:12px;border-top:1px solid var(--wg-border)}
 .wg-ui .wg-ui-danger-body form{display:inline-flex;flex-wrap:wrap;align-items:end;gap:8px;margin:6px 8px 6px 0}
 .wg-ui .wg-ui-danger-body label{display:flex;flex-direction:column;gap:4px}
