@@ -78,6 +78,24 @@ sub wg_ui_button {
     }
     return '<button type="'.html_escape($a{'type'}||'button').'"'.$attr.'>'.$body.'</button>';
 }
+# Module-level navigation uses the theme's native tab classes.
+sub wg_ui_main_tabs {
+    my ($current)=@_;
+    $current='' unless defined($current) && $current =~ /^(?:interfaces|analytics)$/;
+    my @tabs=(
+        ['interfaces','index.cgi',$text{'analytics_interfaces_tab'}],
+        ['analytics','analytics.cgi',$text{'analytics_title'}],
+    );
+    return '<ul class="nav nav-tabs" role="tablist">'.
+        join('',map {
+            my ($id,$href,$label)=@$_;
+            my $selected=($current eq $id);
+            '<li role="presentation"'.($selected?' class="active"':'').'>'.
+            '<a href="'.html_escape($href).'" role="tab"'.
+            ($selected?' aria-selected="true" aria-current="page"':' aria-selected="false"').
+            ' data-wg-module-navigation="1">'.html_escape($label||'').'</a></li>'
+        } @tabs).'</ul>';
+}
 # Field controls stay browser-native; the backend remains the authority for
 # CIDR parsing, port ranges and concurrent configuration changes.
 sub wg_ui_number_input {
