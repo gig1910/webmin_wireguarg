@@ -52,7 +52,8 @@ sub wg_geoip_database_paths
         push(@locations, "$dir/GeoLite2-City.mmdb", "$dir/GeoLite2-Country.mmdb");
     }
     my %seen;
-    return grep { $_ && !$seen{$_}++ && -f $_ && -r $_ } @locations;
+    my @found=grep { $_ && !$seen{$_}++ && -f $_ && -r $_ } @locations;
+    return (grep(/GeoLite2-City\.mmdb$/, @found), grep(!/GeoLite2-City\.mmdb$/, @found));
 }
 
 sub wg_geoip_update_status
