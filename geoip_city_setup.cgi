@@ -117,6 +117,6 @@ else {
     print ui_form_end();
 }
 print wg_ui_button(href=>'network_icons.cgi',icon=>'external',
-    action=>'navigate',label=>$text{'back'});
+    action=>'navigate',label=>$text{'unlocode_return'});
 print '</div>';
 ui_print_footer();
