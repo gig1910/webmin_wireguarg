@@ -80,3 +80,15 @@ heredoc interpolation. The helper provides both syntax-only and executable
 modes; tests retain their existing conditional Node skip behavior.
 
 These changes have not yet been confirmed by a full release build.
+
+### Diagnostic and interface controller fixture consolidation
+
+- `interface-controller-root-test.pl` now runs the same rendered controller
+  and manual-refresh event assertions through the common Node harness. No
+  test-generated JavaScript is left in the checked-out `tests/` directory.
+- `diagnostic-js-test.pl` uses the common syntax checker for both its
+  template and the script emitted after Perl heredoc interpolation. Its
+  separate Perl render step runs in a cleaned temporary directory instead
+  of creating transient fixture files under `tests/`.
+- The full release suite for these latest changes must still be run locally;
+  the preceding confirmed checkpoint is `3d68978` (PASSED).
