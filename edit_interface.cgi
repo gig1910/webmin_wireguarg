@@ -134,7 +134,7 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
             '<span data-wg-toggle-stop'.($disabled?' hidden':'').'>'.wg_ui_icon('stop').'</span>'.
             '</button></div>';
     }
-    my $actions=wg_ui_table_actions(@row_actions);
+    my $actions='<div class="wg-peer-action-slots">'.join('',map { '<div class="wg-peer-action-slot">'.($_||'').'</div>' } @row_actions).'</div>';
 
     push @rows, [
         $name_link,
