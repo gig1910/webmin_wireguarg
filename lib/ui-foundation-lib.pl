@@ -23,6 +23,9 @@ sub wg_ui_icon {
       chart=>'<path d="M3 3v18h18M7 16l4-5 4 3 5-7"/>',
       check=>'<path d="m4 12 5 5L20 6"/>',
       database=>'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 4 18 4 18 0V5M3 12c0 4 18 4 18 0"/>',
+      wrench=>'<path d="M14.5 6.3a5 5 0 0 0-6.1 6.1L3 17.8a2.1 2.1 0 0 0 3.2 3l5.3-5.4a5 5 0 0 0 6.2-6.1l-3.2 3.1-3.1-3.1z"/>',
+      shield=>'<path d="M12 2 4 5v6c0 5.2 3.1 8.8 8 11 4.9-2.2 8-5.8 8-11V5z"/><path d="m8 12 3 3 5-5"/>',
+
     );
     return '' unless exists $paths{$name};
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'.$paths{$name}.'</svg>';
@@ -94,7 +97,9 @@ sub wg_ui_panel_start {
     my $danger=($opts{'tone'}||'') eq 'danger';
     return '<details class="wg-ui-panel '.($danger?'wg-ui-danger':'wg-ui-tools').'"'.
         ($danger?' data-wg-danger-zone':' data-wg-tool-panel').'>'.
-        '<summary>'.wg_ui_icon('chevron').' '.html_escape($title||'').'</summary>'.
+        '<summary>'.wg_ui_icon('chevron').
+        ($danger ? wg_ui_icon('shield') : wg_ui_icon('wrench')).
+        ' '.html_escape($title||'').'</summary>'.
         '<div class="'.($danger?'wg-ui-danger-body':'wg-ui-tools-body').'">';
 }
 sub wg_ui_panel_end { return '</div></details>'; }
