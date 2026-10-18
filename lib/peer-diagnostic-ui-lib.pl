@@ -35,7 +35,10 @@ sub wg_peer_diagnostic_script
     }
 
     function showStop(show) {
-        stopButton.style.display = show ? 'inline-block' : 'none';
+        stopButton.style.display = show ? 'inline-flex' : 'none';
+        const wrap=typeof stopButton.closest==='function'
+            ? stopButton.closest('[data-wg-diag-stop]') : null;
+        if(wrap)wrap.style.display=show?'inline-flex':'none';
         stopButton.disabled = !show || stopping;
     }
 
