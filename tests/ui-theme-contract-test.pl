@@ -29,7 +29,7 @@ die "Installed QR component wrongly offers installation\n"
 my $analytics=read_text("$FindBin::Bin/../analytics.cgi");
 die "Storage maintenance should have neutral panel and destructive buttons\n"
     unless $analytics =~ /wg_ui_panel_start\(\$text\{'ui_storage_maintenance'\}\)/ &&
-      $analytics =~ /tone=>\$action eq 'vacuum' \? 'neutral' : 'danger'/;
+      $analytics =~ /action=>\$action eq 'vacuum' \? 'clear' : 'delete'/;
 # Navigation is always a labelled native theme button outside tables.
 die "Network directory still uses an icon-only or misleading WHOIS action\n"
     unless $index =~ /wg_ui_button\(\s*href=>'network_icons\.cgi',icon=>'network'/s &&
@@ -61,7 +61,7 @@ for my $lang ('','ru') {
             $sections{$lang}{$key}=1;
         } else { $fields{$lang}{$key}=1; }
     }
-    die "Expected eight grouped sections in $path\n" unless scalar(keys %{$sections{$lang}})==8;
+    die "Expected ten grouped sections in $path\n" unless scalar(keys %{$sections{$lang}})==10;
 }
 for my $key (keys %{$fields{''}}) { die "Missing RU $key\n" unless $fields{'ru'}{$key}; }
 die "EN/RU section mismatch\n" unless
