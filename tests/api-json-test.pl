@@ -28,7 +28,7 @@ my $output = '';
 }
 die "JSON response contains CGI Status header\n" if $output =~ /^Status:/m;
 die "JSON content type missing\n" if $output !~ /Content-Type: application\/json; charset=utf-8/;
-die "API build header missing\n" if $output !~ /X-WireGuard-Webmin-API: 0\.2\.0/;
+die "API build header missing\n" if $output !~ /X-WireGuard-Webmin-API: \Q$version\E/;
 my ($headers, $body) = split(/\r?\n\r?\n/, $output, 2);
 die "JSON body missing\n" if !defined($body);
 my $decoded = decode_json($body);
