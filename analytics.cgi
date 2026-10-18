@@ -168,10 +168,11 @@ HTML
 print wg_analytics_controller_script($strings, $selected_json, $initial_interface_json);
 
 if ($access{'manage'}) {
-    print '<section class="panel panel-default wg-analytics-section wg-analytics-danger wg-danger-zone">'.
-          '<div class="panel-heading"><strong>'.html_escape($text{'danger_zone'}).
-          ' — '.html_escape($text{'analytics_maintenance'}).'</strong></div>'.
-          '<div class="panel-body"><p class="help-block">'.html_escape($text{'analytics_maintenance_help'}).
+    print '<details class="wg-ui-danger" data-wg-danger-zone>'.
+          '<summary>'.wg_ui_icon('chevron').' '.
+          html_escape($text{'danger_zone'}.' — '.$text{'analytics_maintenance'}).
+          '</summary><div class="wg-ui-danger-body">'.
+          '<p class="help-block">'.html_escape($text{'analytics_maintenance_help'}).
           '</p><div class="wg-analytics-steps">';
     for my $item (
         [ 'delete_before', 'analytics_delete_before' ],
@@ -182,6 +183,7 @@ if ($access{'manage'}) {
         my ($action, $key) = @$item;
         print ui_form_start('analytics_maintenance.cgi','post'), csrf_hidden();
         print ui_hidden('action',$action);
+        print '<input type="hidden" name="confirm" value="">' if $action ne 'vacuum';
         if ($action eq 'delete_before') {
             print '<label>'.html_escape($text{'analytics_to'}).
                 ' <input type="datetime-local" class="form-control" data-maintenance-before></label> ';
@@ -191,15 +193,14 @@ if ($access{'manage'}) {
             print '<label>'.html_escape($text{'analytics_peer'}).
                 ' <select name="peer_id" class="form-control" data-maintenance-peer></select></label> ';
         }
-        if ($action ne 'vacuum') {
-            print '<label>'.html_escape($text{'analytics_confirm'}).
-                ' <input name="confirm" class="form-control" autocomplete="off" placeholder="DELETE" required></label> ';
-        }
         my $button_class = $action eq 'vacuum' ? 'btn btn-default' : 'btn btn-danger';
-        print '<button type="submit" class="'.$button_class.'">'.html_escape($text{$key}).'</button>';
+        print '<button type="submit" class="'.$button_class.'"'.
+            ' data-wg-confirm="'.html_escape($text{$key}).'"'.
+            ($action eq 'vacuum'?'':' data-wg-confirm-word="DELETE"').
+            '>'.html_escape($text{$key}).'</button>';
         print '</form>';
     }
-    print '</div></div></section>';
+    print '</div></div></details>';
     print <<'SCRIPT';
 <script>
 (function(){
@@ -219,6 +220,11 @@ if ($access{'manage'}) {
   new MutationObserver(sync).observe(peer,{childList:true});sync();
  }
  for(const form of document.querySelectorAll('form[action="analytics_maintenance.cgi"]')){
+  const trigger=form.querySelector('button[data-wg-confirm]');
+  if(trigger){
+   form.dataset.wgConfirm=trigger.dataset.wgConfirm;
+   if(trigger.dataset.wgConfirmWord)form.dataset.wgConfirmWord=trigger.dataset.wgConfirmWord;
+  }
   form.addEventListener('submit',e=>{
    const date=form.querySelector('[data-maintenance-before]');
    if(date){
@@ -228,8 +234,7 @@ if ($access{'manage'}) {
    }
    const action=form.querySelector('[name="action"]').value;
    if(action==='delete_peer' && !form.querySelector('[name="peer_id"]').value){e.preventDefault();return;}
-   if(action!=='vacuum' && form.querySelector('[name="confirm"]').value!=='DELETE'){e.preventDefault();return;}
-   if(!window.confirm('Proceed with analytics storage maintenance?'))e.preventDefault();
+   // Shared modal supplies DELETE only after explicit confirmation.
   });
  }
 })();
