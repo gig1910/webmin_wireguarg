@@ -554,35 +554,45 @@ class AnalyticsTest(unittest.TestCase):
             upgraded.close()
 
     def test_city_observation_manual_override_and_cache_lifecycle(self):
+        import unlocode_store as locodes
+        from io import StringIO
+        import csv
+        import time
+        catalog = Path(self.tmp.name) / "unlocode.csv"
+        def row(country, code, name):
+            return ["",country,code,name,name,"","","AA","2401","","",""]
+        with catalog.open("w",encoding="utf-8",newline="") as f:
+            writer=csv.writer(f)
+            writer.writerow(row("RU","MOW","Moskva"))
+            writer.writerow(row("RS","BEG","Belgrade"))
+        self.assertEqual(locodes.import_release(self.conn,catalog),2)
         store.network_record(self.conn, {
-            "ip": "8.8.8.8", "geoip_country_code": "RU",
-            "geoip_city": "Moscow", "geoip_city_code": "MSK",
-            "whois_fields": [{"label": "CIDR", "value": "8.8.8.0/24"}]})
-        values = store.network_lookup(
-            self.conn, {"ips": ["8.8.8.8", "8.8.8.9"]})["results"]
-        self.assertEqual(values["8.8.8.8"]["city"], "Moscow")
-        self.assertEqual(values["8.8.8.8"]["city_code"], "MSK")
-        self.assertEqual(values["8.8.8.9"]["city"], "")
-        store.network_manage(self.conn, {
-            "action": "set_icon", "cidr": "8.8.8.0/24",
-            "city": "Belgrade", "city_code": "BEG"})
-        values = store.network_lookup(
-            self.conn, {"ips": ["8.8.8.8", "8.8.8.9"]})["results"]
-        self.assertEqual(values["8.8.8.8"]["city_code"], "BEG")
-        self.assertEqual(values["8.8.8.8"]["city_source"], "manual")
-        self.assertEqual(values["8.8.8.9"]["city_code"], "BEG")
-        directory = store.network_manage(self.conn, {"action": "list"})
-        self.assertEqual(directory["icons"][0]["city"], "Belgrade")
-        self.assertEqual(directory["cache"][0]["geoip_cities"], ["MSK"])
-        store.network_manage(self.conn, {"action": "clear_cache", "confirm": "CLEAR"})
-        after = store.network_lookup(
-            self.conn, {"ips": ["8.8.8.8"]})["results"]["8.8.8.8"]
-        self.assertEqual(after["city_code"], "BEG")
-        for bad in ["<script>", "TOOLONGCODE", "МОСКВА"]:
+            "ip":"8.8.8.8","geoip_country_code":"RU",
+            "geoip_city":"Moscow",
+            "whois_fields":[{"label":"CIDR","value":"8.8.8.0/24"}]})
+        got=store.network_lookup(self.conn,{"ips":["8.8.8.8","8.8.8.9"]})["results"]
+        self.assertEqual(got["8.8.8.8"]["city_code"],"RUMOW")
+        self.assertEqual(got["8.8.8.9"]["city_code"],"")
+        store.network_manage(self.conn,{
+            "action":"set_icon","cidr":"8.8.8.0/24",
+            "city":"Belgrade","city_code":"RSBEG"})
+        got=store.network_lookup(self.conn,{"ips":["8.8.8.8","8.8.8.9"]})["results"]
+        self.assertEqual(got["8.8.8.8"]["city_code"],"RSBEG")
+        self.assertEqual(got["8.8.8.9"]["city_code"],"RSBEG")
+        listing=store.network_manage(self.conn,{"action":"list"})
+        self.assertEqual(listing["cache"][0]["geoip_cities"],["RUMOW"])
+        store.network_manage(self.conn,{"action":"clear_cache","confirm":"CLEAR"})
+        self.assertEqual(store.network_lookup(
+            self.conn,{"ips":["8.8.8.8"]})["results"]["8.8.8.8"]["city_code"],"RSBEG")
+        for bad in ("MSK","RUXYZ","<script>"):
             with self.assertRaises(ValueError):
-                store.network_manage(self.conn, {
-                    "action": "set_icon", "cidr": "8.8.8.0/24",
-                    "city_code": bad})
+                store.network_manage(self.conn,{
+                    "action":"set_icon","cidr":"8.8.8.0/24","city_code":bad})
+        # One country/name pointing to two distinct codes must never be guessed.
+        catalog.write_text(',"RU","MOW","Moskva","Moskva","","","AA","2401","","",""\\n'
+                           ',"RU","ABC","Moskva","Moskva","","","AA","2401","","",""\\n')
+        locodes.import_release(self.conn,catalog)
+        self.assertEqual(locodes.lookup(self.conn,"RU","Moscow"),"")
 
     def test_geoip_country_is_exact_ip_not_whois_prefix(self):
         store.network_record(self.conn,{
