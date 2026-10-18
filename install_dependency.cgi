@@ -63,6 +63,8 @@ my $show_job = sub {
     my $running_label=$text{'dependency_install_running'}
         ? text('dependency_install_running',$spec->{'package'}) : 'Installation running';
     ui_print_header(undef,$title,'',undef,1,1);
+    print wg_ui_foundation();
+    print '<div class="wg-ui">';
     print '<div id="wg-dependency-job" data-status-url="'.html_escape($url).'"'.
         ' data-running="'.html_escape($running_label).'"'.
         ' data-success="'.html_escape($text{'dependency_install_success_short'}||'Installation completed').'"'.
@@ -74,8 +76,9 @@ my $show_job = sub {
         job=>$id, dependency=>$dependency);
     print '<p><a href="'.html_escape($job_link).'">'.html_escape(
         $text{'dependency_job_link'}||'Open installation status').'</a></p>';
-    print '<p><a class="btn btn-default" href="'.html_escape($back_url).'">'.
-        html_escape($text{'dependency_return'}||'Return').'</a></p></div>';
+    print wg_ui_button(href=>$back_url,icon=>'external',
+        label=>$text{'dependency_return'}||'Return');
+    print '</div></div>';
     print <<'DEPENDENCY_JOB_SCRIPT';
 <script>
 (function(){
@@ -124,6 +127,8 @@ if (defined($in{'job'}) && length($in{'job'})) {
 my $status = optional_dependency_status($dependency);
 if (($ENV{'REQUEST_METHOD'} || 'GET') ne 'POST') {
     ui_print_header(undef, $title, '', undef, 1, 1);
+    print wg_ui_foundation();
+    print '<div class="wg-ui">';
 
     if ($status->{'command_available'}) {
         print '<div class="alert alert-success">'.html_escape(
@@ -137,7 +142,8 @@ if (($ENV{'REQUEST_METHOD'} || 'GET') ne 'POST') {
         print '<div class="alert alert-warning">'.html_escape(
             text('dependency_package_installed_path_missing', $status->{'package_version'}, $status->{'command'})
         ).'</div>';
-        print '<p>'.ui_link_button('config.cgi', $text{'dependency_open_settings'}).'</p>';
+        print wg_ui_button(href=>'config.cgi',icon=>'gear',
+            label=>$text{'dependency_open_settings'});
     }
     elsif (!$status->{'package_manager_available'}) {
         print '<div class="alert alert-danger">'.html_escape($text{'dependency_package_manager_missing'}).'</div>';
@@ -157,12 +163,12 @@ if (($ENV{'REQUEST_METHOD'} || 'GET') ne 'POST') {
         print ui_hidden('name', $name) if (length($name));
         print ui_hidden('peer', $peer) if (length("$peer"));
         print ui_hidden('confirm', 1);
-        print '<button type="submit" class="btn btn-warning">'.html_escape(
-            text('dependency_install_button', $spec->{'package'})
-        ).'</button>';
+        print wg_ui_button(type=>'submit',icon=>'download',tone=>'warning',
+            label=>text('dependency_install_button',$spec->{'package'}));
         print ui_form_end();
     }
 
+    print '</div>';
     ui_print_footer($back_url, $back_label);
     exit;
 }
