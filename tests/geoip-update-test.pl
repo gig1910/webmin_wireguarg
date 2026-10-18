@@ -120,6 +120,6 @@ die "City setup must require authenticated manage access and protected POST\n"
 die "City setup must protect credentials and use vendor config\n"
     unless $wizard =~ /autocomplete="new-password"/ &&
            $wizard =~ /chmod\(0600,\$temp\)/ &&
-           $wizard =~ /EditionIDs GeoLite2-City GeoLite2-Country/ &&
+           $wizard =~ /\(@editions,'GeoLite2-City'\)/ &&
            $wizard =~ /run_command\(\[\$exe,'-f',\$conf\]/;
 print "GeoIP freshness, secure configuration and vendor timer activation tests passed\n";
