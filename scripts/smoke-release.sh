@@ -31,6 +31,8 @@ tar -xzf "$PACKAGE" -C "$TMP"
         require "./lib/index-page-ui-lib.pl";
         require "./lib/network-icons-ui-lib.pl";
         require "./lib/ui-transport-lib.pl";
+        require "./lib/ui-foundation-lib.pl";
+        require "./lib/ui-peer-inspector-lib.pl";
         my $a=wg_analytics_controller_script(q{{}},q{""},q{""});
         my $p=wg_peer_activity_tabs_script(q{"peer-root"},q{"/wireguard/analytics_data.cgi"},
             q{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},q{{}});
@@ -61,6 +63,10 @@ tar -xzf "$PACKAGE" -C "$TMP"
             unless $network =~ /data-wg-edit-range/ && $network =~ /flagFor/;
         die "Packaged transport missing\n"
             unless wg_ui_transport_script() =~ /WireGuardTransport/;
+        die "Packaged UI foundation missing confirmation logic\n"
+            unless wg_ui_foundation() =~ /confirmModal/;
+        die "Packaged peer WHOIS modal missing protected API URL\n"
+            unless wg_ui_peer_inspector_script(q{"instance"}) =~ /WireGuardTransport.requestJson/;
         print "Packaged Perl UI controllers loaded\n";
     '
     export PYTHONDONTWRITEBYTECODE=1
