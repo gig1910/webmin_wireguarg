@@ -43,13 +43,30 @@ print ui_table_row($text{'interface_client_endpoint'}, html_escape(get_meta_valu
 print ui_table_row($text{'interface_client_allowed'}, html_escape($client_allowed_display));
 print ui_table_end();
 
-print '<p>'.direct_link_button('analytics.cgi', $text{'analytics_interface_link'}, { interface => $name }).'</p>';
-print '<p>'.direct_link_button('network_icons.cgi',$text{'network_icons_title'},{}).'</p>' if $access{'manage'};
+my $interface_toolbar_left= '';
+my $interface_toolbar_right= '';
+if ($access{'manage'}) {
+    $interface_toolbar_left=ui_link_button('interface_form.cgi?name='.urlize($name), $text{'interface_edit'}).' '.
+        ui_link_button('edit_peer.cgi?name='.urlize($name), $text{'interface_add_peer'});
+    $interface_toolbar_left.='<span class="wg-actions">'.
+        '<span id="wg-actions-loading">'.html_escape($text{'runtime_loading'}).'</span>'.
+        '<span id="wg-actions-active" style="display:none">'.
+            mini_action_form($name,'restart',$text{'interface_restart'},'warning',$text{'confirm_restart'}).
+            mini_action_form($name,'stop',$text{'interface_stop'},'danger',$text{'confirm_stop'}).
+        '</span>'.
+        '<span id="wg-actions-inactive" style="display:none">'.
+            mini_action_form($name,'start',$text{'interface_start'},'success','').
+        '</span></span>';
+}
+$interface_toolbar_right=wg_ui_icon_action(
+    icon=>'refresh',label=>$text{'journal_refresh'},
+    attrs=>{'data-wg-runtime-refresh'=>'1'}).
+    '<span data-wg-runtime-refresh-status></span> '.
+    direct_link_button('analytics.cgi',$text{'analytics_interface_link'},{interface=>$name}).
+    ($access{'logs'}?' '.ui_link_button('journal.cgi?name='.urlize($name),$text{'interface_logs'}):'').
+    ($access{'manage'}?' '.direct_link_button('network_icons.cgi',$text{'network_icons_title'},{}):'');
+print wg_ui_action_bar($interface_toolbar_left,$interface_toolbar_right);
 print graph_html($name, '', text('graph_interface_title', $name));
-print '<div class="wg-runtime-toolbar">'.
-    '<button type="button" class="btn btn-default" data-wg-runtime-refresh>'.html_escape($text{'journal_refresh'}).'</button> '.
-    '<span data-wg-runtime-refresh-status></span>'.
-    '</div>';
 
 my $toggle_peer_url = module_script_url('toggle_peer.cgi');
 my @rows;
@@ -130,22 +147,12 @@ else {
 }
 
 if ($access{'manage'}) {
-
-    print '<p>'.ui_link_button('interface_form.cgi?name='.urlize($name), $text{'interface_edit'}).' '.
-        ui_link_button('edit_peer.cgi?name='.urlize($name), $text{'interface_add_peer'}).'</p>';
-    print '<div class="wg-actions">'.
-        '<span id="wg-actions-loading">'.html_escape($text{'runtime_loading'}).'</span>'.
-        '<span id="wg-actions-active" style="display:none">'.
-            mini_action_form($name, 'restart', $text{'interface_restart'}, 'warning', $text{'confirm_restart'}).
-            mini_action_form($name, 'stop', $text{'interface_stop'}, 'danger', $text{'confirm_stop'}).
-        '</span>'.
-        '<span id="wg-actions-inactive" style="display:none">'.
-            mini_action_form($name, 'start', $text{'interface_start'}, 'success', '').
-        '</span>'.
-        '</div><hr><div class="wg-danger-zone"><b>'.$text{'danger_zone'}.'</b><br>'.
-        ui_link_button('delete_interface.cgi?name='.urlize($name), $text{'interface_delete'}).'</div>';
+    my $url='delete_interface.cgi?name='.urlize($name);
+    print wg_ui_danger_zone(
+        '<a href="'.html_escape($url).'" class="btn btn-danger"'.
+        ' data-wg-confirm="'.html_escape($text{'interface_delete'}.' '.$name).'">'.
+        html_escape($text{'interface_delete'}).'</a>');
 }
-print '<p>'.ui_link_button('journal.cgi?name='.urlize($name), $text{'interface_logs'}).'</p>' if ($access{'logs'});
 
 my $js_page_instance = json_encode_utf8($page_instance);
 my $js_name = json_encode_utf8($name);
