@@ -44,7 +44,7 @@ sub wg_interface_page_script
     const requestControllers = new Set();
     const tableSort = window.WireGuardTableSort && window.WireGuardTableSort.attach(
         root.querySelector('[data-wg-peer-sort-table]'),
-        ['name','state','ip','actions','actions','endpoint','handshake','bytes','bytes','actions','actions']);
+        ['name','state','ip','actions','actions','text','endpoint','handshake','bytes','bytes','actions','actions']);
     let destroyed = false;
     let knownNetworkIcons = {}, networkSignature = '', networkRequest = null;
     let networkLastCheck = 0;
@@ -69,7 +69,8 @@ sub wg_interface_page_script
             const address=endpoint?endpointIp(endpoint.textContent):'';
             const info=address&&knownNetworkIcons[address];
             const country=root.querySelector('[data-wg-geoip-country="'+CSS.escape(icon.dataset.wgNetIcon)+'"]');
-            window.WireGuardUI.renderNetwork(icon,country,info,address);
+            const city=root.querySelector('[data-wg-geoip-city="'+CSS.escape(icon.dataset.wgNetIcon)+'"]');
+            window.WireGuardUI.renderNetwork(icon,country,info,address,city);
         });
     }
     async function updateNetworkIcons() {
