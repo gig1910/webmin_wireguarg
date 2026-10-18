@@ -196,6 +196,7 @@ sub wg_ui_foundation {
    await navigator.clipboard.writeText(value);
   },
   confirm(message){return window.confirm(message);},
+  confirmAction(message,word){return confirmModal(message,word||'');},
   flag(code){
    const value=String(code||'').trim().toUpperCase();
    return /^[A-Z]{2}$/.test(value)
