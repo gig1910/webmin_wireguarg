@@ -15,6 +15,7 @@ sub wg_ui_icon {
       log=>'<path d="M7 3h10l4 4v14H7zM17 3v5h4M10 12h8M10 16h8"/>',
       external=>'<path d="M14 4h6v6M20 4l-9 9M20 14v6H4V4h6"/>',
       chevron=>'<path d="m6 9 6 6 6-6"/>',
+      close=>'<path d="M18 6 6 18M6 6l12 12"/>',
       info=>'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>',
       gear=>'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
       save=>'<path d="M4 3h14l3 3v15H3V3zM7 3v7h9V3M7 21v-8h10v8"/>',
@@ -176,7 +177,7 @@ sub wg_ui_foundation {
 .wg-ui .wg-analytics-table td,.wg-ui .wg-analytics-table th{font-variant-numeric:tabular-nums}
 .wg-ui-modal[hidden]{display:none!important}
 .wg-ui-modal{position:fixed;inset:0;z-index:100001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);padding:20px}
-.wg-ui-modal-panel{background:var(--bg-color,#252629);color:inherit;border:1px solid rgba(127,127,127,.4);box-shadow:0 12px 40px rgba(0,0,0,.35);border-radius:7px;max-width:760px;max-height:88vh;overflow:auto;width:100%;padding:16px}
+.wg-ui-modal-panel.panel{box-shadow:0 12px 40px rgba(0,0,0,.35);max-width:760px;max-height:88vh;overflow:auto;width:100%;padding:16px;margin:0}
 .wg-ui-modal-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .wg-ui-modal-body{padding-top:12px}
 .wg-ui-modal-body th{width:30%;overflow-wrap:anywhere}
@@ -244,7 +245,7 @@ sub wg_ui_foundation {
    overlay.className='wg-ui-modal wg-ui';
    overlay.setAttribute('role','presentation');
    const panel=document.createElement('div');
-   panel.className='wg-ui-modal-panel';
+   panel.className='wg-ui-modal-panel panel panel-default';
    panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');
    panel.setAttribute('aria-label',messages.confirmTitle);
    const heading=document.createElement('h3');heading.textContent=messages.confirmTitle;
@@ -262,9 +263,9 @@ sub wg_ui_foundation {
    const buttons=document.createElement('div');
    buttons.className='wg-ui-action-bar';
    const cancel=document.createElement('button');cancel.type='button';
-   cancel.className='btn btn-default';cancel.textContent=messages.cancel;
+   cancel.className='btn btn-default wg-ui-btn';cancel.textContent=messages.cancel;
    const accept=document.createElement('button');accept.type='button';
-   accept.className='btn btn-danger';accept.textContent=messages.accept;
+   accept.className='btn btn-danger wg-ui-btn';accept.textContent=messages.accept;
    if(word)accept.disabled=true;
    buttons.append(cancel,accept);panel.append(buttons);overlay.append(panel);
    const active=document.activeElement;
