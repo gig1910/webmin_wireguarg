@@ -14,6 +14,7 @@ sub slurp {
 my $client = slurp("$FindBin::Bin/../client_config.cgi");
 my $qr = slurp("$FindBin::Bin/../peer_qr.cgi");
 my $helper = slurp("$FindBin::Bin/../lib/api-ui-lib.pl");
+my $foundation = slurp("$FindBin::Bin/../lib/ui-foundation-lib.pl");
 
 for my $pair ([ client_config => $client ], [ peer_qr => $qr ]) {
     my ($name, $src) = @$pair;
@@ -25,7 +26,8 @@ die "QR image still uses a document-relative URL\n"
     if $qr !~ /module_script_url\('qr_image\.cgi'/;
 
 die "view-page helper marker is missing\n"
-    if $helper !~ /data-wg-module-navigation/;
+    if $foundation !~ /data-wg-module-navigation/ ||
+       $helper !~ /wg_ui_button/;
 
 die "raw download helper marker is missing\n"
     if $helper !~ /data-wg-direct-download/;
