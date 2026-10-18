@@ -53,7 +53,7 @@ sub wg_interface_page_script
     const requestControllers = new Set();
     const tableSort = window.WireGuardTableSort && window.WireGuardTableSort.attach(
         root.querySelector('[data-wg-peer-sort-table]'),
-        ['name','state','ip','endpoint','handshake','bytes','bytes','actions']);
+        ['name','state','ip','endpoint','handshake','bytes','bytes','actions','actions']);
     let destroyed = false;
     let knownNetworkIcons = {}, networkSignature = '', networkRequest = null;
     let networkLastCheck = 0;
@@ -161,9 +161,12 @@ sub wg_interface_page_script
             wrapper.dataset.peerDisabled = disabled ? '1' : '0';
             const button = wrapper.querySelector('[data-peer-toggle-button]');
             if (button) {
-                button.textContent = disabled ? peerEnableText : peerDisableText;
-                button.classList.toggle('btn-success', disabled);
-                button.classList.toggle('btn-warning', !disabled);
+                const hint=disabled ? peerEnableText : peerDisableText;
+                button.title=hint;button.setAttribute('aria-label',hint);
+                const play=button.querySelector('[data-wg-toggle-play]');
+                const stop=button.querySelector('[data-wg-toggle-stop]');
+                if(play)play.hidden=!disabled;
+                if(stop)stop.hidden=disabled;
             }
         }
         const handshake = root.querySelector('[data-wg-handshake="' + CSS.escape(id) + '"]');
@@ -243,9 +246,11 @@ sub wg_interface_page_script
         if (!currentlyDisabled && !window.confirm(confirmPeerDisable)) return;
 
         wrapper.dataset.actionPending = '1';
-        const originalText = button.textContent;
+        const originalHint = button.title;
         button.disabled = true;
-        button.textContent = peerBusyText;
+        button.title=peerBusyText;
+        button.setAttribute('aria-label',peerBusyText);
+        button.setAttribute('aria-busy','true');
         wrapper.classList.add('wg-peer-action-pending');
         showPeerResult('', 'success');
 
@@ -294,7 +299,8 @@ sub wg_interface_page_script
         catch (error) {
             if (!destroyed && error.name !== 'AbortError') {
                 showPeerResult(error.message || String(error), 'danger');
-                button.textContent = originalText;
+                button.title=originalHint;
+                button.setAttribute('aria-label',originalHint);
             }
         }
         finally {
@@ -303,6 +309,10 @@ sub wg_interface_page_script
                 delete wrapper.dataset.actionPending;
                 wrapper.classList.remove('wg-peer-action-pending');
                 button.disabled = false;
+                button.removeAttribute('aria-busy');
+                const nowDisabled=wrapper.dataset.peerDisabled==='1';
+                const hint=nowDisabled?peerEnableText:peerDisableText;
+                button.title=hint;button.setAttribute('aria-label',hint);
             }
         }
     }
