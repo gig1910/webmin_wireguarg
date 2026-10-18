@@ -2,6 +2,50 @@
 
 Scope: full GitHub tree under `tests/` on `main` (57 Perl/Python/JavaScript/shell files including the runner, a fixture and the JavaScript helper), plus `.github/workflows/regression.yml`. This is a static audit; no tests were executed during this review.
 
+## Closure status — 2026-10-18
+
+**P0/P1/P2 refactoring cycle closed at validated commit
+[`d20eb92`](https://github.com/gig1910/webmin_wireguarg/commit/d20eb9278621171a2e2e8866b1eb62df78c6035b).**
+The user-provided local build log `build-20261018-161510.log` reports
+`PASSED`, clean build tree, release content checks and generated 0.3.0 WBM
+and source archives. This confirms the current automated suite and packaging,
+**not** a live Webmin deployment.
+
+Final repository inventory: **55 executable test entry points** (`*-test.pl`,
+`*-test.py`, `*-test.sh`), all registered exactly once in the ordered
+`tests/run-tests.sh`. Supporting test files are
+`install-dependency-csrf-fixture.pl`, `ui-behavior-test.js` (invoked through
+its Perl wrapper), and `node-harness.pl`. The runner itself is not an entry
+point. `runner-coverage-test.pl` enforces registration integrity.
+
+**Closed scope:**
+- Version markers come from the module's version source; dependency and
+  package versions in fixtures are permitted.
+- Network icon mutations use a callable, CSRF-gated dispatch function with
+  real behavior tests (read-only navigation, blocked requests and payloads).
+- Shared theme button colors and navigation are checked through generated
+  HTML; analytics tabs, accessible initial state, and filter choice sets are
+  checked against rendered markup.
+- Dashboard, collector, network icon, interface root and diagnostic script
+  tests share temporary Node execution/syntax helpers where appropriate.
+  Perl heredoc interpolation checks and SPA event/timer cleanup tests remain.
+- Package contents and release build were confirmed by the user.
+
+**Explicitly outside closure / follow-up gates:**
+- Live installed Webmin/Authentic Theme smoke: navigation, actual ACL session,
+  installation/upgrade and SPA behavior against the real theme. The existing
+  component gallery does not substitute for this.
+- Remaining source-text assertions (especially analytics JS, diagnostics and
+  UI integration) are intentional regression guards until corresponding
+  executable browser scenarios are available. Do not label them as fully
+  converted behavioral coverage.
+- Non-failing Perl `used only once` warnings are warning hygiene, not P1/P2
+  release blockers.
+
+The findings and earlier checkpoint notes below are retained as **historical
+audit evidence**, not the current status. In particular, references below to
+tests “not yet validated” were superseded by the confirmed `d20eb92` build.
+
 ## Summary
 
 - The existing runner invokes the main Perl, Python and shell regressions; `ui-behavior-test.js` is invoked indirectly by `ui-behavior-test.pl`. `install-dependency-csrf-fixture.pl` is an indirectly invoked fixture, not a standalone test.
