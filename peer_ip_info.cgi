@@ -58,7 +58,9 @@ my $geoip=peer_ip_geoip($ip);
 # Best-effort storage must never mask WHOIS/GeoIP results.
 my ($cached,$cache_error)=analytics_backend('network_record', {
     ip=>$ip, whois_fields=>$whois->{'fields'} || [],
-    geoip_country_code=>$geoip->{'country_code'} || ''
+    geoip_country_code=>$geoip->{'country_code'} || '',
+    geoip_city=>$geoip->{'city'} || '',
+    geoip_city_code=>$geoip->{'city_code'} || ''
 });
 my $result={
     ok=>JSON::PP::true(),
