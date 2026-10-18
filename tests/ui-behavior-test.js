@@ -34,6 +34,16 @@ assert.equal(badge.hidden,false);
 assert.equal(badge.textContent,'T2');
 assert.equal(country.textContent,'🇷🇺 RU');
 assert.equal(country.hidden,false);
+const city={hidden:true,textContent:'',title:''};
+ui.renderNetwork(badge,country,{icon:'T2',country:'RU',city:'Moscow',
+  city_code:'MSK',city_source:'geoip'},'92.36.0.19',city);
+assert.equal(country.textContent,'🇷🇺 RU');
+assert.equal(city.textContent,'MSK');
+assert.equal(city.hidden,false);
+assert.match(city.title,/Moscow/);
+ui.renderNetwork(badge,country,null,'',city);
+assert.equal(city.hidden,true);
+assert.equal(city.textContent,'');
 ui.renderNetwork(badge,country,{},'92.36.0.19');
 assert.equal(badge.textContent,'?');
 assert.equal(country.textContent,'');
