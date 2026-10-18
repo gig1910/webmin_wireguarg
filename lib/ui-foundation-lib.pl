@@ -230,6 +230,8 @@ sub wg_ui_foundation {
 .wg-ui .wg-network-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 20px;width:20px;height:20px;box-sizing:border-box;border:1.5px solid currentColor;border-radius:50%;background:rgba(127,127,127,.12);font:inherit;font-weight:600;font-size:11px;line-height:1;white-space:nowrap;overflow:hidden}
 .wg-ui .wg-network-icon[data-custom="1"]{font-size:10px}
 .wg-ui .wg-geoip-country{font:inherit;font-size:11px;font-weight:600;white-space:nowrap;opacity:.9}
+.wg-ui .wg-geoip-city{font:inherit;font-size:11px;font-weight:600;white-space:nowrap;opacity:.9}
+.wg-ui [data-wg-geoip-city][hidden],.wg-ui .wg-geoip-city[hidden]{display:none!important}
 
 .wg-ui .wg-ui-form-row{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
 .wg-ui .wg-ui-form-row label{display:flex;flex-direction:column;gap:4px}
