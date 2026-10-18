@@ -81,6 +81,8 @@ if ($access{'manage'} && $geo->{'configured'} && $geo->{'command_available'} &&
         label=>$text{'geoip_update_enable'});
     print ui_form_end();
 }
+print '<p>'.wg_ui_button(href=>'geoip_city_setup.cgi',icon=>'download',action=>'navigate',
+    label=>$text{'geoip_city_title'}).'</p>' if $access{'manage'};
 print '</div></section>';
 
 my %ranges;
