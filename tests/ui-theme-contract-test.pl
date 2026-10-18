@@ -36,9 +36,9 @@ die "Dashboard stop action missing\n"
 die "Installed QR component wrongly offers installation\n"
     unless $index =~ /if \(!\$qr_status->\{'command_available'\}\)/;
 my $analytics=read_text("$FindBin::Bin/../analytics.cgi");
-die "Storage maintenance should have neutral panel and destructive buttons\n"
+die "Storage maintenance must distinguish vacuum from destructive actions\n"
     unless $analytics =~ /wg_ui_panel_start\(\$text\{'ui_storage_maintenance'\}\)/ &&
-      $analytics =~ /action=>\$action eq 'vacuum' \? 'clear' : 'delete'/;
+      $analytics =~ /action=>\$action eq 'vacuum' \? 'restart' : 'delete'/;
 # Navigation is always a labelled native theme button outside tables.
 die "Network directory still uses an icon-only or misleading WHOIS action\n"
     unless $index =~ /wg_ui_button\(\s*href=>'network_icons\.cgi',icon=>'network'/s &&
