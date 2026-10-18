@@ -40,6 +40,15 @@ if (-f $unlocode_state && -r $unlocode_state) {
     }
 }
 
+my $unlocode_error=File::Spec->catfile(_state_dir(),'unlocode-last-error.txt');
+if (-f $unlocode_error && -r $unlocode_error && -s $unlocode_error < 2048) {
+    my $message=read_file_contents($unlocode_error) || '';
+    $message =~ s/[\r\n]+/ /g;
+    print '<div class="alert alert-warning">'.
+        html_escape($text{'unlocode_update_warning'}).' '.
+        html_escape($message).'</div>';
+}
+
 # Shared network/GeoIP controls live here, independently of any peer.
 my $geo=wg_geoip_update_status();
 my $deps=optional_dependency_quick_status('geoip');
