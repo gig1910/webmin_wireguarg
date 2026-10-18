@@ -18,39 +18,37 @@ from pathlib import Path
 
 from unlocode_store import SCHEMA, import_release
 
-HOST = "service.unece.org"
-MAX_DOWNLOAD = 32 * 1024 * 1024
+HOST = "opensource.unicc.org"
+ALLOWED_HOSTS = frozenset((HOST, "service.unece.org"))
+RELEASE_URL = (
+    "https://opensource.unicc.org/un/unece/uncefact/vocab-locode/"
+    "-/jobs/artifacts/2025-1/download?job=package-release"
+)
+MAX_DOWNLOAD = 64 * 1024 * 1024
 MIN_ENTRIES = 50000
 
-
 def candidates(now=None):
-    year = (now or dt.datetime.now(dt.timezone.utc)).year
-    # UNECE's production code archives follow locYYNcsv.zip. Prefer newest.
-    # A failed/missing candidate is not an installation failure.
-    for y in range(year, max(2023, year - 3), -1):
-        for edition in (2, 1):
-            yield f"https://{HOST}/trade/locode/loc{y % 100:02d}{edition}csv.zip"
-
+    # Published production artifact, not guessed legacy filenames.
+    yield RELEASE_URL
 
 class OfficialOnlyRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, request, fp, code, msg, headers, newurl):
         from urllib.parse import urlsplit
         parsed = urlsplit(newurl)
-        if parsed.scheme != "https" or parsed.hostname != HOST or parsed.username:
-            raise ValueError("UN/LOCODE redirect outside official UNECE host")
+        if parsed.scheme != "https" or parsed.hostname not in ALLOWED_HOSTS or parsed.username:
+            raise ValueError("UN/LOCODE redirect outside trusted release hosts")
         return super().redirect_request(request, fp, code, msg, headers, newurl)
-
 
 def fetch(url):
     from urllib.parse import urlsplit
     parsed = urlsplit(url)
-    if parsed.scheme != "https" or parsed.hostname != HOST or parsed.username:
-        raise ValueError("only official UNECE HTTPS releases are permitted")
+    if parsed.scheme != "https" or parsed.hostname not in ALLOWED_HOSTS or parsed.username:
+        raise ValueError("only approved official release HTTPS hosts are permitted")
     opener = urllib.request.build_opener(OfficialOnlyRedirect())
     req = urllib.request.Request(url, headers={"User-Agent": "Webmin-WireGuard-UNLOCODE/1"})
-    with opener.open(req, timeout=20) as response:
+    with opener.open(req, timeout=30) as response:
         data = response.read(MAX_DOWNLOAD + 1)
-    if len(data) > MAX_DOWNLOAD or not data.startswith(b"PK\x03\x04"):
+    if len(data) > MAX_DOWNLOAD or not data.startswith(b"PK\\x03\\x04"):
         raise ValueError("UN/LOCODE download invalid or exceeds size limit")
     return data
 
