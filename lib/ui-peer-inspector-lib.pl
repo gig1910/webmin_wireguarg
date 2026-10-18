@@ -111,6 +111,8 @@ sub wg_ui_peer_inspector_script {
    element('h4',data.ip||'',out,'wg-ui-mono');
    section(opts.wgIpWhois,data.whois);
    section(opts.wgIpGeoip,data.geoip);
+   if(data.network_cached)
+     root.dispatchEvent(new CustomEvent('wg-network-cache-updated',{bubbles:true}));
   }catch(err){
    if(!controller.signal.aborted&&root.isConnected){
     out.replaceChildren();element('p',err.message||String(err),out,'alert alert-warning');
