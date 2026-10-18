@@ -84,27 +84,14 @@ die "Never use unverified static endpoint for on-demand WHOIS\n"
 die "Lookup dependencies not shipped\n"
     unless $manifest =~ /^peer_ip_info\.cgi$/m &&
            $manifest =~ /^lib\/peer-ip-info-lib\.pl$/m;
-die "Expected on-demand lookup; got automatic background calls\n"
-    unless $page =~ /button\.addEventListener\('click',async/ &&
-           $page =~ /fetch\(info\.url,\{method:'POST'/ &&
-           $page =~ /new URLSearchParams/;
-die "Rendered values must use DOM textContent\n"
-    unless $page =~ /el\.textContent=String\(text\)/;
-my ($template)=$page =~ /print <<IP_LOOKUP_SCRIPT;\n(.*?)\nIP_LOOKUP_SCRIPT\n/s;
-die "peer IP script template missing\n" if !defined $template;
-$ip_dom_json='"test-panel"'; $ip_name_json='"wg0"';$ip_index_json='"0"';
-$ip_csrf_json='"csrf-test"';$ip_labels_json='{}';$ip_url_json='"/wireguard/peer_ip_info.cgi"';
-my $generator=eval "sub {return <<IP_LOOKUP_SCRIPT;\n$template\nIP_LOOKUP_SCRIPT\n}";
-die "Unable to compile peer IP template: $@" if $@ || !$generator;
-my $html=$generator->();
-my ($js)=$html =~ m{<script>\n(.*?)</script>}s;
-die "Rendered peer IP JS missing\n" if !defined $js;
-my $node=qx(command -v node 2>/dev/null);
-$node =~ s/[\r\n]+\z//;
-if($node){
-    my ($tmp,$path)=tempfile(SUFFIX=>'.js',UNLINK=>1);
-    print {$tmp} $js;
-    close($tmp);
-    system($node,'--check',$path)==0 or die "Rendered peer IP JS invalid\n";
-}
+my $inspector=slurp("$FindBin::Bin/../lib/ui-peer-inspector-lib.pl");
+die "Peer WHOIS should reuse the authenticated shared on-demand modal\n"
+    unless $page =~ /wg_ui_peer_inspector\(\$name,\$csrf,\$peer_tabs_id\)/ &&
+           $page =~ /data-wg-ip-inspect/ &&
+           $inspector =~ /requestJson/ &&
+           $inspector =~ /payload\.set\('ip'/ &&
+           $inspector =~ /payload\.set\('at'/ &&
+           $inspector =~ /data-wg-ip-close/;
+die "On-demand peer WHOIS must not automatically run on page load\n"
+    if $page =~ /fetch\(info\.url,\{method:'POST'/;
 print "peer WHOIS and local GeoIP security, metadata, JS template tests passed\n";
