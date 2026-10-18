@@ -93,7 +93,7 @@ if ($access{'manage'}) {
             label=>$text{'collector_start'},attrs=>{'data-action'=>'start'}).
         wg_ui_button(type=>'button',icon=>'refresh',tone=>'warning',
             label=>$text{'collector_restart'},attrs=>{'data-action'=>'restart'}).
-        wg_ui_button(type=>'button',icon=>'stop',tone=>'warning',
+        wg_ui_button(type=>'button',icon=>'stop',action=>'stop',
             label=>$text{'collector_stop'},attrs=>{'data-action'=>'stop'}).
         '</div>'.
         '<div data-role="console-wrap" style="display:none;margin-top:10px">'.
