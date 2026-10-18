@@ -9,7 +9,7 @@ my $status=wg_geoip_update_status();
 my $conf=wg_geoip_update_conf_path();
 my $notice='';
 my $error_message='';
-if (($ENV{'REQUEST_METHOD'}||'GET') eq 'POST') {
+if (($ENV{'REQUEST_METHOD'}||'GET') eq 'POST' && ($in{'geoip_city_apply'}||'') eq '1') {
     assert_post_and_csrf();
     request_rate_limit('geoip_city_setup',3,600);
     my $account=$in{'account_id'}||'';
@@ -104,6 +104,7 @@ if (!$status->{'command_available'}) {
 else {
     print ui_form_start(module_script_url('geoip_city_setup.cgi'),'post');
     print csrf_hidden();
+    print ui_hidden('geoip_city_apply','1');
     print '<div class="wg-ui-form-row">'.
         '<label>'.html_escape($text{'geoip_city_account'}).
         ' <input name="account_id" inputmode="numeric" autocomplete="off" maxlength="20"></label> '.
