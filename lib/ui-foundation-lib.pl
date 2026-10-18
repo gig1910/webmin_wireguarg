@@ -213,6 +213,9 @@ sub wg_ui_foundation {
 .wg-ui .wg-ui-danger-body,.wg-ui .wg-ui-tools-body{padding:12px;border-top:1px solid var(--wg-border)}
 .wg-ui .wg-ui-danger-body form{display:inline-flex;flex-wrap:wrap;align-items:end;gap:8px;margin:6px 8px 6px 0}
 .wg-ui .wg-ui-danger-body label{display:flex;flex-direction:column;gap:4px}
+.wg-ui .wg-ui-info-section{border:1px solid var(--wg-border);border-radius:5px;padding:12px;margin:12px 0}
+.wg-ui .wg-ui-info-section>h3{font-size:14px;font-weight:600;margin:0 0 12px;line-height:1.4}
+.wg-ui .wg-ui-table-actions [hidden],.wg-ui [data-wg-ip-action][hidden]{display:none!important}
 .wg-ui .wg-ui-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
 .wg-ui .wg-ui-summary-card{border:1px solid var(--wg-border);border-radius:5px;padding:12px;min-width:0} .wg-ui .wg-ui-dependency-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:10px} .wg-ui .wg-ui-dependency-item{border:1px solid var(--wg-border);padding:12px;border-radius:5px;min-width:0} .wg-ui .wg-ui-dependency-item strong{display:block;margin-bottom:6px} .wg-ui .wg-ui-dependency-item small{display:block;overflow-wrap:anywhere;margin-top:5px}
 .wg-ui .wg-ui-summary-card>span{display:block;font-size:12px;opacity:.7;margin-bottom:6px}
