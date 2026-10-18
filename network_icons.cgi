@@ -70,6 +70,8 @@ print '<div class="wg-ui-form-row">'.
     '<label>'.html_escape($text{'network_icons_prefix'}).' <input name="cidr" required placeholder="203.0.113.0/24" maxlength="64"></label> '.
     '<label>'.html_escape($text{'network_icons_symbol'}).' <input name="icon" value="?" maxlength="8" size="5"></label> '.
     '<label>'.html_escape($text{'network_icons_label'}).' <input name="label" maxlength="100" size="30"></label> '.
+    '<label>Город <input name="city" maxlength="100" size="22"></label> '.
+    '<label>Код города <input name="city_code" maxlength="8" size="8" placeholder="MSK"></label> '.
     wg_ui_button(type=>'submit',icon=>'save',tone=>'success',
         label=>$text{'network_icons_save'}).'</div>';
 print ui_form_end();
@@ -78,7 +80,7 @@ print '<table class="table table-striped table-hover"><thead><tr><th>'.
     html_escape($text{'network_icons_prefix'}).'</th><th>'.html_escape($text{'network_icons_symbol'}).
     '</th><th>'.html_escape($text{'network_icons_label'}).'</th><th>'.
     html_escape($text{'network_icons_owner'}).'</th><th>'.
-    html_escape($text{'network_icons_country'}).'</th><th>'.
+    html_escape($text{'network_icons_country'}).'</th><th>Город</th><th>'.
     html_escape($text{'network_icons_geoip_samples'}).'</th><th>'.
     html_escape($text{'interface_peer_actions'}).'</th></tr></thead><tbody>';
 for my $cidr (sort keys %ranges) {
@@ -88,11 +90,15 @@ for my $cidr (sort keys %ranges) {
     my $label=$manual ? ($manual->{'label'}||'') : '';
     my $country=$item->{'country'} || '';
     my $owner=$item->{'owner'} || '';
+    my $city=$manual && $manual->{'city'} ? $manual->{'city'} : '';
+    my $city_code=$manual && $manual->{'city_code'} ? $manual->{'city_code'} : ''; 
+    my $cities=join(', ',@{$item->{'geoip_cities'}||[]});
     my $geoip_codes=join(',', @{$item->{'geoip_countries'}||[]});
     print '<tr><td><span class="wg-ui-mono">'.html_escape($cidr).'</span></td>'.
         '<td>'.html_escape($icon).'</td><td>'.html_escape($label).'</td>'.
         '<td>'.html_escape($owner).'</td>'.
         '<td><span data-wg-country="'.html_escape($country).'">'.html_escape($country).'</span></td>'.
+        '<td title="'.html_escape($city||$cities).'">'.html_escape($city_code||$cities||'—').'</td>'.
         '<td><span data-wg-geoip-codes="'.html_escape($geoip_codes).'" title="'.html_escape($text{'network_icons_geoip_help'}).'">'.html_escape($geoip_codes).'</span></td>'.
         '<td><span class="wg-ui-table-actions">'.
         wg_ui_icon_action(icon=>'edit',tone=>'info',
@@ -100,7 +106,7 @@ for my $cidr (sort keys %ranges) {
             attrs=>{
                 'data-wg-edit-range'=>'1',
                 'data-cidr'=>$cidr,'data-icon'=>$icon,
-                'data-label'=>$label,
+                'data-label'=>$label,'data-city'=>$city,'data-city-code'=>$city_code,
             });
     if ($manual) {
         print ui_form_start(module_script_url('network_icons.cgi'),'post');
