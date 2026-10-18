@@ -546,3 +546,9 @@ interface_advanced_hooks=Advanced interface lifecycle hooks (PreUp, PostUp, PreD
 
 unlocode_status=Local UN/LOCODE catalog: %s entries. Codes appear only for unambiguous country/city matches.
 unlocode_official=Official UNECE releases
+
+unlocode_update_title=UN/LOCODE directory update
+unlocode_update_button=Update UN/LOCODE now
+unlocode_update_queued=UN/LOCODE refresh queued through systemd. Status will update when complete.
+unlocode_update_failed=Cannot schedule UN/LOCODE update.
+unlocode_last_updated=UN/LOCODE last successful update: %s
