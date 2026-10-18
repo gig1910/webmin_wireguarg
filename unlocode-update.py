@@ -90,6 +90,7 @@ def refresh(database, state, *, urls=None):
                             "VALUES(?,?,?,?,?,?,?)", rows)
                 finally:
                     staged.close()
+            (state / "unlocode-last-error.txt").unlink(missing_ok=True)
             status = {"updated_at": int(dt.datetime.now(dt.timezone.utc).timestamp()),
                       "entries": count, "release_url": url, "sha256": digest, "error": ""}
             tmp_status = status_path.with_suffix(".json.tmp")
@@ -99,7 +100,13 @@ def refresh(database, state, *, urls=None):
             return status
         except (OSError, ValueError, sqlite3.Error, urllib.error.URLError) as exc:
             errors.append(f"{url}: {str(exc)[:160]}")
-    raise RuntimeError("No valid UNECE production release available: " + "; ".join(errors[-3:]))
+    message="No valid UNECE production release available: " + "; ".join(errors[-3:])
+    error_path=state / "unlocode-last-error.txt"
+    tmp_error=state / "unlocode-last-error.txt.tmp"
+    tmp_error.write_text(message[:1024],encoding="utf-8")
+    os.chmod(tmp_error,0o600)
+    tmp_error.replace(error_path)
+    raise RuntimeError(message)
 
 
 def main():
