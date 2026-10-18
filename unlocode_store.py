@@ -13,9 +13,12 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS unlocode_places (
  country TEXT NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL,
  ascii_name TEXT NOT NULL, subdivision TEXT NOT NULL DEFAULT '',
+ name_key TEXT NOT NULL DEFAULT '', ascii_key TEXT NOT NULL DEFAULT '',
  PRIMARY KEY(country,code)
 );
 CREATE INDEX IF NOT EXISTS unlocode_country ON unlocode_places(country);
+CREATE INDEX IF NOT EXISTS unlocode_names ON unlocode_places(country,name_key);
+CREATE INDEX IF NOT EXISTS unlocode_ascii_names ON unlocode_places(country,ascii_key);
 """
 
 ALIASES = {
@@ -35,11 +38,12 @@ def lookup(conn, country, city, subdivision=""):
     wanted = normalize(city)
     alias = ALIASES.get((country, wanted))
     accepted = {wanted, alias} - {None, ""}
-    rows = conn.execute(
-        "SELECT code,name,ascii_name,subdivision FROM unlocode_places WHERE country=?",
-        (country,)).fetchall()
-    matches = [(code,region) for code,name,plain,region in rows
-               if normalize(name) in accepted or normalize(plain) in accepted]
+    matches = []
+    for key in accepted:
+        matches.extend(conn.execute(
+            "SELECT code,subdivision FROM unlocode_places "
+            "WHERE country=? AND (name_key=? OR ascii_key=?)",
+            (country,key,key)).fetchall())
     if subdivision:
         matches = [(code,region) for code,region in matches
                    if region.upper() == subdivision.upper()]
@@ -79,13 +83,14 @@ def import_release(conn, file_path):
                 continue
             if not re.fullmatch(r"[A-Z]{2}", country) or not name:
                 continue
-            entries[(country,code)] = (country,code,name,plain or name,subdivision)
+            entries[(country,code)] = (country,code,name,plain or name,subdivision,
+                                       normalize(name),normalize(plain or name))
     if not entries:
         raise ValueError("No valid UN/LOCODE entries found; original catalog preserved")
     with conn:
         conn.executescript(SCHEMA)
         conn.execute("DELETE FROM unlocode_places")
         conn.executemany(
-            "INSERT INTO unlocode_places(country,code,name,ascii_name,subdivision) VALUES(?,?,?,?,?)",
+            "INSERT INTO unlocode_places(country,code,name,ascii_name,subdivision,name_key,ascii_key) VALUES(?,?,?,?,?,?,?)",
             list(entries.values()))
     return len(entries)
