@@ -76,7 +76,8 @@ die "analytics interface selector or backend filter missing\n"
 die "theme panel sections and history table missing\n"
     unless $ui =~ /panel panel-default wg-analytics-section/ &&
            $ui =~ /table table-striped table-hover/ &&
-           $ui =~ /wg-ui-danger/ && $ui =~ /data-wg-confirm-word/;
+           $ui =~ /wg_ui_panel_start/ && $ui =~ /ui_storage_maintenance/ &&
+           $ui =~ /data-wg-confirm-word/;
 die "live peer sorting or updated counter keys missing"
     unless $interface =~ /data-wg-peer-sort-table/ &&
            $interface =~ /WireGuardTableSort\.attach/ &&
