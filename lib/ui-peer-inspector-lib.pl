@@ -1,0 +1,122 @@
+# Inline peer IP investigation. Never contacts WHOIS until the administrator
+# explicitly clicks the globe icon. Uses the existing authenticated CGI.
+sub wg_ui_peer_inspector {
+    my ($name,$csrf,$page_id)=@_;
+    my $title=html_escape($text{'peer_ip_title'}||'WHOIS / GeoIP');
+    my $label=html_escape($text{'peer_ip_lookup'}||'WHOIS / GeoIP');
+    my $close=html_escape($text{'cancel'}||'Закрыть');
+    my $markup='<div class="wg-ui-modal" data-wg-ip-dialog hidden role="dialog" aria-modal="true" aria-label="'.$title.'">'.
+        '<div class="wg-ui-modal-panel">'.
+        '<div class="wg-ui-modal-header"><h3>'.$title.'</h3>'.
+        '<button type="button" class="btn btn-default" data-wg-ip-close>'.$close.'</button></div>'.
+        '<div class="wg-ui-modal-body" data-wg-ip-output role="status" aria-live="polite"></div>'.
+        '</div></div>';
+    $markup.='<div hidden data-wg-ip-options'.
+        ' data-wg-ip-name="'.html_escape($name).'"'.
+        ' data-wg-ip-token="'.html_escape($csrf).'"'.
+        ' data-wg-ip-url="'.html_escape(module_script_url('peer_ip_info.cgi')).'"'.
+        ' data-wg-ip-busy="'.html_escape($text{'peer_ip_busy'}||'Загрузка…').'"'.
+        ' data-wg-ip-unavailable="'.html_escape($text{'peer_ip_unavailable'}||'Нет данных').'"'.
+        ' data-wg-ip-whois="'.html_escape($text{'peer_ip_whois'}||'WHOIS').'"'.
+        ' data-wg-ip-geoip="'.html_escape($text{'peer_ip_geoip'}||'GeoIP').'"'.
+        ' data-wg-ip-raw="'.html_escape($text{'peer_ip_raw'}||'Исходный ответ').'"'.
+        '></div>';
+    $markup.=wg_ui_peer_inspector_script(json_encode_utf8($page_id));
+    return $markup;
+}
+sub wg_ui_peer_inspector_script {
+    my ($page_json)=@_;
+    return <<INSPECTOR_SCRIPT;
+<script>
+(function(){
+ 'use strict';
+ const pageId=$page_json;
+ const root=document.querySelector('[data-wg-interface-page="'+pageId+'"]');
+ if(!root)return;
+ const dialog=root.querySelector('[data-wg-ip-dialog]');
+ const out=root.querySelector('[data-wg-ip-output]');
+ const opts=root.querySelector('[data-wg-ip-options]').dataset;
+ if(!dialog||!out)return;
+ let request=null,oldFocus=null;
+ function element(tag,value,parent,klass){
+  const n=document.createElement(tag);
+  if(value!==undefined&&value!==null)n.textContent=String(value);
+  if(klass)n.className=klass;
+  (parent||out).append(n);return n;
+ }
+ function section(label,result){
+  const group=element('section',null,out,'wg-peer-ip-section');
+  element('h4',label,group);
+  if(!result || !result.ok){
+   element('p',result&&result.detail||opts.wgIpUnavailable,group,'help-block');return;
+  }
+  const table=element('table',null,group,'table table-striped');
+  const tbody=element('tbody',null,table);
+  for(const field of result.fields||[]){
+   const tr=element('tr',null,tbody);
+   element('th',field.label||'',tr);
+   element('td',field.value||'',tr,'wg-ui-mono');
+  }
+  if(result.source)element('small',result.source,group,'help-block');
+  if(result.raw){
+   const detail=element('details',null,group),summary=element('summary',opts.wgIpRaw,detail);
+   element('pre',result.raw,detail);
+  }
+ }
+ function close(){
+  if(request){request.abort();request=null;}
+  dialog.hidden=true;
+  if(oldFocus&&oldFocus.isConnected)oldFocus.focus();
+ }
+ async function open(button){
+  oldFocus=button;
+  dialog.hidden=false;
+  out.replaceChildren();
+  element('p',opts.wgIpBusy,out,'help-block');
+  dialog.querySelector('[data-wg-ip-close]').focus();
+  if(request)request.abort();
+  request=new AbortController();
+  const controller=request;
+  try{
+   const payload=new URLSearchParams({
+     name:opts.wgIpName,peer:button.dataset.wgIpInspect,
+     _wg_csrf:opts.wgIpToken
+   });
+   const data=await window.WireGuardTransport.requestJson(opts.wgIpUrl,{
+     method:'POST',signal:controller.signal,
+     headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+     body:payload.toString()
+   },{requireOk:true});
+   if(controller.signal.aborted||!root.isConnected)return;
+   out.replaceChildren();
+   if(!data.available){
+    element('p',data.detail||opts.wgIpUnavailable,out,'alert alert-info');return;
+   }
+   element('h4',data.ip||'',out,'wg-ui-mono');
+   section(opts.wgIpWhois,data.whois);
+   section(opts.wgIpGeoip,data.geoip);
+  }catch(err){
+   if(!controller.signal.aborted&&root.isConnected){
+    out.replaceChildren();element('p',err.message||String(err),out,'alert alert-warning');
+   }
+  }finally{if(request===controller)request=null;}
+ }
+ function onClick(e){
+  const trigger=e.target.closest('[data-wg-ip-inspect]');
+  if(trigger&&root.contains(trigger)){e.preventDefault();open(trigger);return;}
+  if(e.target.closest('[data-wg-ip-close]')||e.target===dialog)close();
+ }
+ function onKey(e){if(e.key==='Escape'&&!dialog.hidden){e.preventDefault();close();}}
+ root.addEventListener('click',onClick);
+ document.addEventListener('keydown',onKey);
+ const observer=new MutationObserver(function(){
+  if(root.isConnected)return;
+  close();observer.disconnect();document.removeEventListener('keydown',onKey);
+  root.removeEventListener('click',onClick);
+ });
+ observer.observe(document.documentElement,{subtree:true,childList:true});
+})();
+</script>
+INSPECTOR_SCRIPT
+}
+1;
