@@ -33,6 +33,13 @@ die "WHOIS inline dialog missing explicit click, CSRF or scoped root\n"
            $inspector=~/wgIpToken/ &&
            $inspector=~/WireGuardTransport\.requestJson/ &&
            $inspector=~/data-wg-interface-page/;
+die "IP inspector must reject stale or closed request results\n"
+    unless $inspector =~ /request!==controller/ &&
+           $inspector =~ /dialog\.hidden/ &&
+           $inspector =~ /request\.abort\(\)/ &&
+           $inspector =~ /controller\.signal\.aborted/;
+die "IP inspector must check required DOM nodes before reading dataset\n"
+    unless $inspector =~ /if\(!dialog\|\|!out\|\|!options\)return/;
 my $manifest=do {
     open(my $fh,'<',"$FindBin::Bin/../MANIFEST.wbm") or die $!;
     local $/; <$fh>
