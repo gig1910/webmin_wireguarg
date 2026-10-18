@@ -238,12 +238,15 @@ sub direct_link_button
 
 sub mini_action_form
 {
-    my ($name,$operation,$label,$kind,$confirm)=@_;
+    my ($name,$operation,$label,$kind,$confirm,$icon)=@_;
     my $class=$kind eq 'danger'?'btn-danger':$kind eq 'warning'?'btn-warning':$kind eq 'success'?'btn-success':'';
     my $ask=length($confirm||'')?' onsubmit="return confirm(\''.js_escape($confirm).'\')"':'';
-    return '<form method="post" action="action_interface.cgi" style="display:inline-block;margin:2px"'.$ask.'>'.
+    my $body=$icon ? wg_ui_icon($icon) : html_escape($label);
+    my $button_class=$icon ? 'wg-ui-icon-btn'.($kind eq 'danger'?' wg-ui-icon-danger':'') : 'btn '.$class;
+    my $description=$icon ? ' aria-label="'.html_escape($label).'" title="'.html_escape($label).'"':'';
+    return '<form method="post" action="action_interface.cgi" style="display:inline-flex;margin:0"'.$ask.'>'.
       csrf_hidden().'<input type="hidden" name="name" value="'.html_escape($name).'">'.
-      '<button type="submit" class="btn '.$class.'" name="'.html_escape($operation).'" value="1">'.html_escape($label).'</button></form>';
+      '<button type="submit" class="'.$button_class.'"'.$description.' name="'.html_escape($operation).'" value="1">'.$body.'</button></form>';
 }
 
 
