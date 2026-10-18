@@ -15,7 +15,7 @@ opendir(my $dh,$root) or die "$root: $!\n";
 my @tests=sort grep { /-test\.(?:pl|py|sh)$/ && -f "$root/$_" } readdir($dh);
 closedir($dh);
 my %seen;
-while ($runner =~ /(?:perl|python3|\.\/)\s+(?:\.\/)?tests\/([\w-]+-test\.(?:pl|py|sh))\b/g) {
+while ($runner =~ /(?:\b(?:perl|python3)\s+|\.\/)(?:\.\/)?tests\/([\w-]+-test\.(?:pl|py|sh))\b/g) {
     ++$seen{$1};
 }
 for my $test (@tests) {
