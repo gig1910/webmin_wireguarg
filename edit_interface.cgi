@@ -34,7 +34,7 @@ if (!length($client_allowed_display)) {
 
 print ui_table_start($text{'interface_settings'}, 'width=100%', 4, ['width=25%', 'width=25%', 'width=25%', 'width=25%']);
 print ui_table_row($text{'interface_file'}, '<tt>'.html_escape($path).'</tt>');
-print ui_table_row($text{'interface_state'}, '<span id="wg-interface-state">'.html_escape($text{'runtime_loading'}).'</span>');
+print ui_table_row($text{'interface_state'}, '<span class="wg-ui-status" id="wg-interface-state">'.html_escape($text{'runtime_loading'}).'</span>');
 print ui_table_row($text{'interface_addresses'}, html_escape(join(', ', get_section_values($ifc, 'Address')) || '-'));
 print ui_table_row($text{'interface_listen_port'}, '<span id="wg-interface-port">'.html_escape(get_section_value($ifc, 'ListenPort') || '-').'</span>');
 print ui_table_row($text{'interface_public_key'},
@@ -104,7 +104,9 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
             href=>'analytics.cgi?peer_id='.urlize(sha256_hex($public_key)))
         : '—';
     my $handshake = $disabled ? $text{'peer_disabled'} : $text{'runtime_loading'};
-    my $state_class = $disabled ? 'label-default wg-peer-state-disabled' : 'label-success wg-peer-state-enabled';
+    my $state_class = $disabled
+        ? 'label-default wg-ui-status wg-ui-status--muted wg-peer-state-disabled'
+        : 'label-success wg-ui-status wg-ui-status--success wg-peer-state-enabled';
     my $state_html = '<span class="label '.$state_class.'" data-wg-peer-state="'.$id.'" data-disabled="'.($disabled ? '1' : '0').'">'.
         html_escape($disabled ? $text{'peer_disabled'} : $text{'peer_enabled'}).'</span>';
 
