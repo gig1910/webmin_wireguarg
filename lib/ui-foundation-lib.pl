@@ -281,7 +281,14 @@ sub wg_ui_foundation {
     const code=/^[A-Z]{2}$/.test(raw)?raw:'';
     country.textContent=code?this.flag(code)+' '+code:'';
     country.hidden=!code;
-    country.title=code?((network.country_source==='geoip'?'GeoIP':'WHOIS')+': '+code):'';
+    const city=network&&typeof network.city==='string'?network.city.trim():'';
+    const abbr=network&&typeof network.city_code==='string'?network.city_code.trim().toUpperCase():'';
+    if(abbr&&/^[A-Z0-9]{1,8}$/.test(abbr)){
+     country.textContent+=(code?' · ':'')+abbr;
+     country.hidden=false;
+    }
+    country.title=[code?((network.country_source==='geoip'?'GeoIP':'WHOIS')+': '+code):'',
+      city?(city+' ('+(network.city_source||'GeoIP')+')'):''].filter(Boolean).join(' · ');
    }
   }
  };
