@@ -69,7 +69,7 @@ $interface_toolbar_right=wg_ui_icon_action(
     icon=>'refresh',label=>$text{'journal_refresh'},
     attrs=>{'data-wg-runtime-refresh'=>'1'}).
     '<span data-wg-runtime-refresh-status></span> '.
-    direct_link_button('analytics.cgi',$text{'analytics_interface_link'},{interface=>$name}).
+    direct_link_button('analytics.cgi',$text{'analytics_interface_link'},{ interface => $name }).
     ($access{'logs'}?' '.ui_link_button('journal.cgi?name='.urlize($name),$text{'interface_logs'}):'').
     ($access{'manage'}?' '.direct_link_button('network_icons.cgi',$text{'network_icons_title'},{}):'');
 print wg_ui_action_bar($interface_toolbar_left,$interface_toolbar_right);
