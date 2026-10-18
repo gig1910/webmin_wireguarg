@@ -93,9 +93,9 @@ if ($peer) {
     else {
         $geo_message .= ' — '.$text{'geoip_update_disabled'};
     }
-    print '<section id="'.html_escape($ip_dom_id).'" class="panel panel-default">'.
-        '<div class="panel-heading"><strong>'.html_escape($text{'peer_ip_title'}).'</strong></div>'.
-        '<div class="panel-body"><p class="help-block">'.html_escape($text{'peer_ip_help'}).'</p>'.
+    print wg_ui_panel_start($text{'peer_ip_title'}).
+        '<div id="'.html_escape($ip_dom_id).'">'.
+        '<p class="help-block">'.html_escape($text{'peer_ip_help'}).'</p>'.
         '<p class="'.($geo_status->{'stale'} ? 'alert alert-warning':'help-block').'">'.
         '<strong>'.html_escape($text{'geoip_update_title'}).':</strong> '.
         html_escape($geo_message).'</p>'.
@@ -124,7 +124,7 @@ if ($peer) {
             label=>$text{'geoip_update_enable'});
         print ui_form_end();
     }
-    print '</div></section>';
+    print '</div>'.wg_ui_panel_end();
     print <<IP_LOOKUP_SCRIPT;
 <script>
 (function(){
