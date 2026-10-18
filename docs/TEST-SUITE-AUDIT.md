@@ -69,3 +69,14 @@ SPA listener/timer disposal fixtures and assertions. If Node.js is absent,
 these two tests retain their previous conditional skip behavior; the shared
 UI behavior test independently requires Node.js. The combined full suite
 was last confirmed PASSED by the user on `9f681aa`, before this change.
+
+### Network rendering fixture consolidation
+
+`tests/network-icons-ui-test.pl` now reuses `tests/node-harness.pl`
+for generated network editor and peer-tab script syntax checks, plus
+execution of the rendered endpoint parser fixture. The latter retains
+IPv4, bracketed/bare IPv6 and hostname-rejection assertions after Perl
+heredoc interpolation. The helper provides both syntax-only and executable
+modes; tests retain their existing conditional Node skip behavior.
+
+These changes have not yet been confirmed by a full release build.
