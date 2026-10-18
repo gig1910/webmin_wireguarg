@@ -54,5 +54,5 @@ if($node){
 my $iface=do {open(my $fh,'<',"$FindBin::Bin/../edit_interface.cgi")or die $!;local $/;<$fh>};
 die "Peer table is not using the shared on-demand WHOIS/GeoIP inspector\n"
     unless $iface=~/wg_ui_peer_inspector/ && $iface=~/data-wg-ip-inspect/ &&
-           $iface=~/\\$history_action/;
+           index($iface, q{$history_action})>=0;
 print "shared UI icons, danger controls and WHOIS dialog tests passed\n";
