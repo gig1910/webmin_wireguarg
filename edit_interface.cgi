@@ -32,23 +32,24 @@ if (!length($client_allowed_display)) {
         : $text{'interface_client_allowed_none'};
 }
 
-print ui_table_start($text{'interface_settings'}, 'width=100%', 4, ['width=25%', 'width=25%', 'width=25%', 'width=25%']);
-print ui_table_row($text{'interface_file'}, '<tt>'.html_escape($path).'</tt>');
-print ui_table_row($text{'interface_state'}, '<span class="wg-ui-status" id="wg-interface-state">'.html_escape($text{'runtime_loading'}).'</span>');
-print ui_table_row($text{'interface_addresses'}, wg_ui_ip_value(join(', ', get_section_values($ifc, 'Address')) || '-',kind=>'cidr'));
-print ui_table_row($text{'interface_listen_port'}, '<span id="wg-interface-port">'.html_escape(get_section_value($ifc, 'ListenPort') || '-').'</span>');
-print ui_table_row($text{'interface_public_key'},
+print '<section class="wg-ui-info-section"><h3>'.html_escape($text{'interface_settings'}).'</h3><div class="wg-ui-summary">';
+print wg_ui_summary_card($text{'interface_file'}, '<tt>'.html_escape($path).'</tt>');
+print wg_ui_summary_card($text{'interface_state'}, '<span class="wg-ui-status" id="wg-interface-state">'.html_escape($text{'runtime_loading'}).'</span>');
+print wg_ui_summary_card($text{'interface_addresses'}, wg_ui_ip_value(join(', ', get_section_values($ifc, 'Address')) || '-',kind=>'cidr'));
+print wg_ui_summary_card($text{'interface_listen_port'}, '<span id="wg-interface-port">'.html_escape(get_section_value($ifc, 'ListenPort') || '-').'</span>');
+print wg_ui_summary_card($text{'interface_public_key'},
     '<span class="wg-ui-copy"><tt id="wg-interface-public-key">'.$public_display.'</tt>'.
     wg_ui_icon_action(icon=>'copy',label=>$text{'ui_copy_public'},
         attrs=>{'data-wg-copy-target'=>'wg-interface-public-key'}).'</span>');
-print ui_table_row($text{'interface_private_key'}, html_escape($private_state));
-print ui_table_row($text{'interface_client_endpoint'},
+print wg_ui_summary_card($text{'interface_private_key'}, html_escape($private_state));
+print wg_ui_summary_card($text{'interface_client_endpoint'},
     '<span class="wg-ui-copy"><span class="wg-ui-mono" id="wg-interface-client-endpoint">'.
     html_escape(get_meta_value($ifc,'clientendpoint')||'-').'</span>'.
     wg_ui_icon_action(icon=>'copy',label=>$text{'ui_copy_endpoint'},
        attrs=>{'data-wg-copy-target'=>'wg-interface-client-endpoint'}).'</span>');
-print ui_table_row($text{'interface_client_allowed'}, wg_ui_ip_value($client_allowed_display,kind=>'cidr'));
-print ui_table_end();
+print wg_ui_summary_card($text{'interface_client_allowed'}, wg_ui_ip_value($client_allowed_display,kind=>'cidr'));
+print '</div></section>';
+
 
 my $interface_toolbar_left= '';
 my $interface_toolbar_right= '';
