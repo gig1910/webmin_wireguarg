@@ -16,6 +16,11 @@ print wg_ui_foundation();
 print '<div class="wg-ui" data-wg-network-page="'.html_escape($network_page_id).'">';
 print '<div class="alert alert-success">'.html_escape($notice).'</div>' if $notice;
 print '<p>'.html_escape($text{'network_icons_help'}).'</p>';
+print '<p class="help-block">'.html_escape(
+    text('unlocode_status',0+($report->{'unlocode_count'}||0))).' '.
+    '<a href="https://unlocode.unece.org/publications/" target="_blank" rel="noopener noreferrer">'.
+    html_escape($text{'unlocode_official'}).'</a></p>';
+
 # Shared network/GeoIP controls live here, independently of any peer.
 my $geo=wg_geoip_update_status();
 my $deps=optional_dependency_quick_status('geoip');
