@@ -53,6 +53,18 @@ class RefreshTest(unittest.TestCase):
         self.assertTrue((self.state/"unlocode-last-error.txt").exists())
         self.assertIn("partial", (self.state/"unlocode-last-error.txt").read_text())
 
+    def test_zip_magic_is_binary_and_official_candidate(self):
+        self.assertEqual(list(worker.candidates()), [worker.RELEASE_URL])
+        payload=archive([("MOW","Moskva")])
+        self.assertTrue(payload.startswith(bytes((80,75,3,4))))
+        class Response:
+            def __enter__(self): return self
+            def __exit__(self,*args): pass
+            def read(self,n): return payload
+        with patch("urllib.request.OpenerDirector.open",return_value=Response()):
+            self.assertEqual(worker.fetch(worker.RELEASE_URL),payload)
+        self.assertEqual(worker.MAX_DOWNLOAD,64*1024*1024)
+
     def test_rejects_non_official_sources(self):
         for url in ("http://service.unece.org/test.zip",
                     "https://untrusted.example/locode.zip",
