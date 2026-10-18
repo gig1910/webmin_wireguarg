@@ -9,15 +9,8 @@ sub slurp {
     return <$fh>;
 }
 
-# Exercise the actual CGI mutation dispatch, not a reimplementation of it.
-my $source=slurp("$FindBin::Bin/../network_icons.cgi");
-my $begin=index($source, q{my $notice='';});
-my $end=index($source,q{my ($report,$err)=analytics_backend},$begin);
-my $dispatch=$begin>=0 && $end>$begin
-    ? substr($source,$begin,$end-$begin) : undef;
-die "Cannot isolate network directory mutation dispatch\n" unless defined $dispatch;
-die "Missing mandatory CSRF gate\n" unless $dispatch =~ /assert_post_and_csrf\(\)/;
-die "Missing explicit mutation-action guard\n" unless $dispatch =~ /if \(length\(\$action\)\)/;
+# Invoke the production handler directly; no source slicing or eval.
+require "$FindBin::Bin/../lib/network-icons-action-lib.pl";
 
 our (%in,%text);
 $text{'network_icons_invalid'}='Invalid operation';
@@ -38,16 +31,13 @@ sub analytics_backend {
 }
 sub error { die "Request rejected: ".($_[0]||'error')."\n" }
 
-my $dispatch_fn=eval "sub { $dispatch return 1; }";
-die "Could not compile CGI dispatch: $@\n" if !$dispatch_fn;
-
 sub run_case {
     my ($method,$params,$allow)=@_;
     local $ENV{'REQUEST_METHOD'}=$method;
     local %in=%$params;
     $csrf_valid=$allow;
     my ($prior_checks,$prior_writes,$prior_rate)=($csrf_checks,$write_calls,$rate_calls);
-    my $ok=eval { $dispatch_fn->(); 1 };
+    my $ok=eval { wg_network_icons_dispatch(); 1 };
     return {
         ok=>$ok,
         error=>$@,
