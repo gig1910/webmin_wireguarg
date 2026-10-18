@@ -546,3 +546,9 @@ interface_advanced_hooks=Дополнительные команды интер�
 
 unlocode_status=Локальный справочник UN/LOCODE: %s записей. Коды показываются только при однозначном совпадении страны и города.
 unlocode_official=Официальные выпуски UNECE
+
+unlocode_update_title=Обновление справочника UN/LOCODE
+unlocode_update_button=Обновить UN/LOCODE сейчас
+unlocode_update_queued=Обновление UN/LOCODE поставлено в очередь systemd. Статус появится после завершения.
+unlocode_update_failed=Не удалось поставить обновление UN/LOCODE в очередь.
+unlocode_last_updated=Последнее успешное обновление UN/LOCODE: %s
