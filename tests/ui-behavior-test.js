@@ -23,6 +23,23 @@ assert.equal(ui.flag('RU'), '🇷🇺');
 assert.equal(ui.flag('rs'), '🇷🇸');
 assert.equal(ui.flag('invalid'), '');
 
+const badge={dataset:{},hidden:false,textContent:'',title:''};
+const country={hidden:true,textContent:'',title:''};
+ui.renderNetwork(badge,country,null,'');
+assert.equal(badge.hidden,true,'no endpoint must not have a network badge');
+assert.equal(country.hidden,true,'no endpoint must not have a country');
+ui.renderNetwork(badge,country,{icon:'T2',cidr:'92.36.0.0/18',label:'Tele2',
+  country:'RU',country_source:'whois'},'92.36.0.19');
+assert.equal(badge.hidden,false);
+assert.equal(badge.textContent,'T2');
+assert.equal(country.textContent,'🇷🇺 RU');
+assert.equal(country.hidden,false);
+ui.renderNetwork(badge,country,{},'92.36.0.19');
+assert.equal(badge.textContent,'?');
+assert.equal(country.textContent,'');
+assert.equal(country.hidden,true);
+
+
 function validate(kind, value) {
   const field = {
     value,
