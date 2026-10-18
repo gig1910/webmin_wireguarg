@@ -59,3 +59,13 @@ PASSED). Subsequent P1/P2 changes require a new full local run.
 ## Audit limitations
 
 This review inspected the source of all test-language files, the runner, repository tree and the CI workflow; it is not a claim of new test execution or complete behavioral coverage. Static pattern counts are triage signals, not a count of defects. The user-provided successful `0.2.0` build is distinct from a verified `0.3.0` build.
+
+### Shared Node harness consolidation
+
+Dashboard and collector lifecycle tests now run their generated JavaScript
+through `tests/node-harness.pl`. This centralizes temporary-file cleanup,
+Node syntax validation, and behavior execution, while retaining the distinct
+SPA listener/timer disposal fixtures and assertions. If Node.js is absent,
+these two tests retain their previous conditional skip behavior; the shared
+UI behavior test independently requires Node.js. The combined full suite
+was last confirmed PASSED by the user on `9f681aa`, before this change.
