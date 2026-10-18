@@ -410,9 +410,10 @@ if ($access{'manage'}) {
         my $delete_url='delete_peer.cgi?name='.urlize($name).'&peer='.
             urlize($in{'peer'}).'&public_key='.urlize($public_key);
         print wg_ui_danger_zone(
-            '<a href="'.html_escape($delete_url).'" class="btn btn-danger"'.
-            ' data-wg-confirm="'.html_escape($text{'peer_delete'}.' — '.peer_display_name($peer,$in{'peer'})).'">'.
-            html_escape($text{'peer_delete'}).'</a>');
+            wg_ui_button(href=>$delete_url,icon=>'trash',tone=>'danger',
+                label=>$text{'peer_delete'},
+                attrs=>{'data-wg-confirm'=>$text{'peer_delete'}.' — '.
+                    peer_display_name($peer,$in{'peer'})}));
 
         my $toggle_name_js = json_encode_utf8($name);
         my $toggle_busy_js = json_encode_utf8($text{'peer_toggle_busy'});
