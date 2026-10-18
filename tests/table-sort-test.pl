@@ -73,6 +73,53 @@ for(const kind of ['time','handshake','bytes','ip','endpoint','name']){
   if(sort.compare(null,null,kind)!==0)
       throw new Error('Identical NULL values should be stable: '+kind);
 }
+// Exercise actual header clicks: absent endpoints stay last both directions.
+{
+  const makeCell=text=>({textContent:text,querySelector:()=>null});
+  const parent={rows:[],appendChild(row){
+    const n=this.rows.indexOf(row);if(n>=0)this.rows.splice(n,1);
+    this.rows.push(row);
+  }};
+  const heading={
+    cells:[],
+    querySelector:()=>null
+  };
+  const headerCell={
+    textContent:'Endpoint',button:null,
+    append(button){this.button=button},
+    setAttribute(){},
+    querySelector(selector){return selector==='.wg-sort-arrow'?this.button?.arrow:null}
+  };
+  heading.cells=[headerCell];
+  const items=['(none)','10.0.0.12','10.0.0.2'].map(v=>({
+    cells:[makeCell(v)],parentNode:parent
+  }));
+  parent.rows=[heading,...items];
+  const table={
+    get rows(){return parent.rows},
+    querySelector(selector){return selector==='thead tr'?heading:null}
+  };
+  global.document={
+    createElement(tag){
+      return {tagName:tag.toUpperCase(),textContent:'',
+        setAttribute(){},
+        append(node){if(node.tagName==='SPAN')this.arrow=node},
+        addEventListener(type,fn){if(type==='click')this.click=fn}
+      };
+    },
+    createTextNode(text){return {textContent:text}}
+  };
+  const controller=sort.attach({querySelector:()=>table},['endpoint']);
+  if(!controller||!headerCell.button?.click)
+    throw new Error('Endpoint column sorter not attached');
+  const values=()=>parent.rows.slice(1).map(r=>r.cells[0].textContent);
+  headerCell.button.click();
+  if(!eq(values(),['10.0.0.2','10.0.0.12','(none)']))
+    throw new Error('ASC must sort endpoints numerically and put NULL last');
+  headerCell.button.click();
+  if(!eq(values(),['10.0.0.12','10.0.0.2','(none)']))
+    throw new Error('DESC must put NULL last as well');
+}
 // Table rows are built as text nodes, never parsed as HTML.
 global.document={
   createElement(tag){
