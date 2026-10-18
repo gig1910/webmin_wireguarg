@@ -67,22 +67,9 @@ sub wg_interface_page_script
         root.querySelectorAll('[data-wg-net-icon]').forEach(function(icon){
             const endpoint=root.querySelector('[data-wg-endpoint="'+CSS.escape(icon.dataset.wgNetIcon)+'"]');
             const address=endpoint?endpointIp(endpoint.textContent):'';
-            // A missing endpoint has no network to classify.
-            icon.hidden=!address;
             const info=address&&knownNetworkIcons[address];
-            icon.textContent=info&&info.icon?info.icon:'?';
-            icon.dataset.custom=info&&info.icon&&info.icon!=='?'?'1':'0';
-            icon.title=address
-                ? (info ? [info.cidr,info.label,info.country].filter(Boolean).join(' — ') : '')
-                : '';
             const country=root.querySelector('[data-wg-geoip-country="'+CSS.escape(icon.dataset.wgNetIcon)+'"]');
-            if(country){
-                const code=info&&typeof info.country==='string'&&/^[A-Za-z]{2}\$/.test(info.country.trim())
-                    ?info.country.trim().toUpperCase():'';
-                country.textContent=code ? window.WireGuardUI.flag(code)+' '+code : '';
-                country.hidden=!code;
-                country.title=code ? ((info.country_source==='geoip'?'GeoIP':'WHOIS')+': '+code) : '';
-            }
+            window.WireGuardUI.renderNetwork(icon,country,info,address);
         });
     }
     async function updateNetworkIcons() {
