@@ -5,7 +5,7 @@ written at package build time. Development checkouts have an 'unpackaged' marker
 
 =cut
 
-our $WIREGUARD_WEBMIN_VERSION = '0.2.0';
+our $WIREGUARD_WEBMIN_VERSION = '0.3.0';
 our $WG_VERSION_ORIGINAL_RUNTIME_POLL_HTML;
 
 sub wg_build_metadata
