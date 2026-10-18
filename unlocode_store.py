@@ -58,8 +58,13 @@ def import_release(conn, file_path):
         sources = [(p.name, p.read_bytes()) for p in sorted(path.glob("*.csv"))]
     elif path.suffix.lower() == ".zip":
         with zipfile.ZipFile(path) as archive:
-            sources = [(name, archive.read(name)) for name in archive.namelist()
-                       if name.lower().endswith(".csv") and not name.startswith("__MACOSX")]
+            members = [info for info in archive.infolist()
+                       if info.filename.lower().endswith(".csv")
+                       and not info.filename.startswith("__MACOSX")
+                       and "codelistpart" in info.filename.lower().replace(" ", "")]
+            if len(members) > 16 or sum(i.file_size for i in members) > 80 * 1024 * 1024:
+                raise ValueError("UN/LOCODE archive exceeds safe CSV limits")
+            sources = [(info.filename, archive.read(info)) for info in members]
     elif path.suffix.lower() == ".csv":
         sources = [(path.name, path.read_bytes())]
     else:
