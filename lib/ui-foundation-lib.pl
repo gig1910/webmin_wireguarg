@@ -26,6 +26,7 @@ sub wg_ui_icon {
       database=>'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 4 18 4 18 0V5M3 12c0 4 18 4 18 0"/>',
       wrench=>'<path d="M14.5 6.3a5 5 0 0 0-6.1 6.1L3 17.8a2.1 2.1 0 0 0 3.2 3l5.3-5.4a5 5 0 0 0 6.2-6.1l-3.2 3.1-3.1-3.1z"/>',
       shield=>'<path d="M12 2 4 5v6c0 5.2 3.1 8.8 8 11 4.9-2.2 8-5.8 8-11V5z"/><path d="m8 12 3 3 5-5"/>',
+      warning=>'<path d="M10.4 3.9 2.2 18.2A1.9 1.9 0 0 0 3.8 21h16.4a1.9 1.9 0 0 0 1.6-2.8L13.6 3.9a1.9 1.9 0 0 0-3.2 0z"/><path d="M12 9v5M12 17h.01"/>',
 
     );
     return '' unless exists $paths{$name};
@@ -99,7 +100,7 @@ sub wg_ui_panel_start {
     return '<details class="wg-ui-panel '.($danger?'wg-ui-danger':'wg-ui-tools').'"'.
         ($danger?' data-wg-danger-zone':' data-wg-tool-panel').'>'.
         '<summary>'.wg_ui_icon('chevron').
-        ($danger ? wg_ui_icon('shield') : wg_ui_icon('wrench')).
+        ($danger ? wg_ui_icon('warning') : wg_ui_icon('wrench')).
         ' '.html_escape($title||'').'</summary>'.
         '<div class="'.($danger?'wg-ui-danger-body':'wg-ui-tools-body').'">';
 }
