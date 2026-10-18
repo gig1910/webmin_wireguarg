@@ -95,8 +95,12 @@ print '<div class="wg-ui">';
 print '<div class="alert alert-danger">'.html_escape($error_message).'</div>' if $error_message;
 print '<div class="alert alert-success">'.html_escape($notice).'</div>' if $notice;
 print '<p>'.html_escape($text{'geoip_city_explain'}).'</p>';
+my @city_dbs=grep { /GeoLite2-City\.mmdb$/ } wg_geoip_database_paths();
+my $city_installed=@city_dbs ? 1 : 0;
 print '<p>'.html_escape($text{'geoip_city_status'}).': '.
-    html_escape($status->{'configured'}?$text{'geoip_city_ready'}:$text{'geoip_city_unconfigured'}).'</p>';
+    html_escape($city_installed ? $text{'geoip_city_installed'} :
+        ($status->{'configured'}?$text{'geoip_city_ready'}:$text{'geoip_city_unconfigured'})).'</p>';
+print '<p class="help-block">'.html_escape($city_dbs[0]).'</p>' if $city_installed;
 if (!$status->{'command_available'}) {
     print wg_ui_button(href=>'install_dependency.cgi?dependency=geoip',
         icon=>'download',action=>'navigate',label=>$text{'geoip_install_button'});
@@ -111,9 +115,9 @@ else {
         '<label>'.html_escape($text{'geoip_city_license'}).
         ' <input type="password" name="license_key" autocomplete="new-password" maxlength="128"></label>'.
         '</div>';
-    print '<p class="help-block">'.html_escape($text{'geoip_city_existing'}).'</p>';
+    print '<p class="help-block">'.html_escape($text{'geoip_city_existing'}).'</p>' if !$city_installed;
     print wg_ui_button(type=>'submit',icon=>'download',action=>'install',
-        label=>$text{'geoip_city_submit'});
+        label=>$city_installed ? $text{'geoip_city_refresh'} : $text{'geoip_city_submit'});
     print ui_form_end();
 }
 print wg_ui_button(href=>'network_icons.cgi',icon=>'external',
