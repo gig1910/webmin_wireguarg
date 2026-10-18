@@ -8,6 +8,8 @@ request_rate_limit('geoip_timer',3,600);
 my ($ok,$message)=wg_geoip_enable_vendor_timer();
 ui_print_header(undef,$text{'geoip_update_title'},'',undef,1,1);
 print wg_build_banner();
+print wg_ui_foundation();
+print '<div class="wg-ui">';
 print '<div class="'.($ok?'alert alert-success':'alert alert-warning').'">'.
     html_escape($ok ? $text{'geoip_update_enabled'} : $message).'</div>';
 my $name=$in{'name'} || '';
@@ -17,4 +19,5 @@ if (valid_interface_name($name) && $index =~ /^\d{1,6}$/) {
         {name=>$name,peer=>$index}).'</p>';
 }
 print '<p>'.direct_link_button('index.cgi',$text{'back'},{}).'</p>';
+print '</div>';
 ui_print_footer();
