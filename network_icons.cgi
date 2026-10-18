@@ -50,6 +50,12 @@ my $geo_message=$geo->{'database_mtime'}
         0+($geo->{'database_age_days'}||0))
     : ($geo->{'legacy_database_available'} ? $text{'geoip_legacy_ready'} : $text{'geoip_update_missing_db'});
 $geo_message .= ' — '.$text{'geoip_update_stale'} if $geo->{'stale'};
+my @databases=wg_geoip_database_paths();
+if (@databases) {
+    my $type=$databases[0] =~ /GeoLite2-City\.mmdb$/ ?
+        $text{'ui_dependency_city'} : $text{'ui_dependency_country_only'};
+    $geo_message.=' — '.$type;
+}
 print '<section class="panel panel-default"><div class="panel-heading"><b>'.
     html_escape($text{'geoip_update_title'}).'</b></div><div class="panel-body"><p>'.
     html_escape($geo_message).'</p>';
@@ -86,11 +92,12 @@ print '<div id="wg-network-editor">';
 print ui_form_start(module_script_url('network_icons.cgi'),'post');
 print csrf_hidden();
 print ui_hidden('action','set_icon');
-print '<div class="wg-network-form">'.
+print '<div class="wg-ui-form-row">'.
     '<label>'.html_escape($text{'network_icons_prefix'}).' <input name="cidr" required placeholder="203.0.113.0/24" maxlength="64"></label> '.
     '<label>'.html_escape($text{'network_icons_symbol'}).' <input name="icon" value="?" maxlength="8" size="5"></label> '.
     '<label>'.html_escape($text{'network_icons_label'}).' <input name="label" maxlength="100" size="30"></label> '.
-    '<button type="submit" class="btn btn-primary">'.html_escape($text{'network_icons_save'}).'</button></div>';
+    wg_ui_button(type=>'submit',icon=>'save',tone=>'success',
+        label=>$text{'network_icons_save'}).'</div>';
 print ui_form_end();
 print '</div>';
 print '<table class="table table-striped table-hover"><thead><tr><th>'.
@@ -108,31 +115,34 @@ for my $cidr (sort keys %ranges) {
     my $country=$item->{'country'} || '';
     my $owner=$item->{'owner'} || '';
     my $geoip_codes=join(',', @{$item->{'geoip_countries'}||[]});
-    print '<tr><td><button type="button" class="wg-network-edit-link" data-wg-edit-range="1"'.
-        ' data-cidr="'.html_escape($cidr).'"'.
-        ' data-icon="'.html_escape($icon).'"'.
-        ' data-label="'.html_escape($label).'">'.html_escape($cidr).'</button></td>'.
+    print '<tr><td><span class="wg-ui-mono">'.html_escape($cidr).'</span></td>'.
         '<td>'.html_escape($icon).'</td><td>'.html_escape($label).'</td>'.
         '<td>'.html_escape($owner).'</td>'.
         '<td><span data-wg-country="'.html_escape($country).'">'.html_escape($country).'</span></td>'.
-        '<td><span data-wg-geoip-codes="'.html_escape($geoip_codes).'" title="'.html_escape($text{'network_icons_geoip_help'}).'">'.html_escape($geoip_codes).'</span></td><td>';
+        '<td><span data-wg-geoip-codes="'.html_escape($geoip_codes).'" title="'.html_escape($text{'network_icons_geoip_help'}).'">'.html_escape($geoip_codes).'</span></td>'.
+        '<td><span class="wg-ui-table-actions">'.
+        wg_ui_icon_action(icon=>'edit',tone=>'info',
+            label=>$text{'ui_network_edit'},
+            attrs=>{
+                'data-wg-edit-range'=>'1',
+                'data-cidr'=>$cidr,'data-icon'=>$icon,
+                'data-label'=>$label,
+            });
     if ($manual) {
         print ui_form_start(module_script_url('network_icons.cgi'),'post');
         print csrf_hidden();
         print ui_hidden('action','delete_icon');
         print ui_hidden('cidr',$cidr);
-        print '<button type="submit" class="wg-ui-icon-btn wg-ui-icon-danger"'.
-            ' data-wg-confirm="'.html_escape($text{'network_icons_delete'}).' — '.html_escape($cidr).'"'.
-            ' title="'.html_escape($text{'network_icons_delete'}).'"'.
-            ' aria-label="'.html_escape($text{'network_icons_delete'}).'">'.
-            wg_ui_icon('trash').'</button>';
+        print wg_ui_icon_action(icon=>'trash',tone=>'danger',type=>'submit',
+            label=>$text{'network_icons_delete'},
+            attrs=>{'data-wg-confirm'=>$text{'network_icons_delete'}.' — '.$cidr});
         print ui_form_end();
     }
-    print '</td></tr>';
+    print '</span></td></tr>';
 }
 print '</tbody></table>';
 print '<details class="wg-ui-danger" data-wg-danger-zone>'.
-    '<summary>'.wg_ui_icon('chevron').' '.html_escape($text{'danger_zone'}).'</summary>'.
+    '<summary>'.wg_ui_icon('chevron').' '.html_escape($text{'ui_network_maintenance'}).'</summary>'.
     '<div class="wg-ui-danger-body">'.
     '<p class="help-block">'.html_escape($text{'network_icons_cache_help'}).'</p>';
 print ui_form_start(module_script_url('network_icons.cgi'),'post');
