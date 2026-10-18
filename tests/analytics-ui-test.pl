@@ -58,7 +58,8 @@ die "two exclusive sub-tabs missing"
 die "event sorting missing"
     unless $ui =~ /data-wg-event-sort-table/ && $ui =~ /eventSort\.apply\(\)/;
 die "peer name in selector and event list missing\n"
-    if $ui !~ /peerLabel\(p\)/ || $ui !~ /peerLabel\(peerData\)/;
+    if $ui !~ /peerLabel\(p\)/ || $ui !~ /peerData&&peerData\.name/ ||
+       $ui !~ /abbreviated/ || $ui !~ /analytics_event_time/;
 die "last handshake and confirmed IP missing from analytics\n"
     if $ui !~ /data-last-handshake/ || $ui !~ /data-handshake-ip/;
 die "new compact IP event translations missing\n"
@@ -75,7 +76,7 @@ die "analytics interface selector or backend filter missing\n"
 die "theme panel sections and history table missing\n"
     unless $ui =~ /panel panel-default wg-analytics-section/ &&
            $ui =~ /table table-striped table-hover/ &&
-           $ui =~ /wg-analytics-danger/;
+           $ui =~ /wg-ui-danger/ && $ui =~ /data-wg-confirm-word/;
 die "live peer sorting or updated counter keys missing"
     unless $interface =~ /data-wg-peer-sort-table/ &&
            $interface =~ /WireGuardTableSort\.attach/ &&
