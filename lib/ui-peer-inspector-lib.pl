@@ -93,6 +93,11 @@ sub wg_ui_peer_inspector_script {
      name:opts.wgIpName,peer:button.dataset.wgIpInspect,
      _wg_csrf:opts.wgIpToken
    });
+   // Optional historical endpoint, validated against retained events server-side.
+   if(button.dataset.wgIpValue&&button.dataset.wgIpAt){
+    payload.set('ip',button.dataset.wgIpValue);
+    payload.set('at',button.dataset.wgIpAt);
+   }
    const data=await window.WireGuardTransport.requestJson(opts.wgIpUrl,{
      method:'POST',signal:controller.signal,
      headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
