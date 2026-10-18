@@ -238,15 +238,23 @@ sub direct_link_button
 
 sub mini_action_form
 {
-    my ($name,$operation,$label,$kind,$confirm,$icon)=@_;
-    my $class=$kind eq 'danger'?'btn-danger':$kind eq 'warning'?'btn-warning':$kind eq 'success'?'btn-success':'';
-    my $ask=length($confirm||'')?' onsubmit="return confirm(\''.js_escape($confirm).'\')"':'';
-    my $body=$icon ? wg_ui_icon($icon) : html_escape($label);
-    my $button_class=$icon ? 'wg-ui-icon-btn'.($kind eq 'danger'?' wg-ui-icon-danger':'') : 'btn '.$class;
-    my $description=$icon ? ' aria-label="'.html_escape($label).'" title="'.html_escape($label).'"':'';
-    return '<form method="post" action="action_interface.cgi" style="display:inline-flex;margin:0"'.$ask.'>'.
-      csrf_hidden().'<input type="hidden" name="name" value="'.html_escape($name).'">'.
-      '<button type="submit" class="'.$button_class.'"'.$description.' name="'.html_escape($operation).'" value="1">'.$body.'</button></form>';
+    my ($name,$operation,$label,$kind,$confirm,$icon,$compact)=@_;
+    $kind||='neutral';
+    $kind='neutral' unless $kind =~ /^(?:neutral|success|warning|danger|info)$/;
+    $compact=defined($compact)?$compact:!!$icon;
+    # Native confirm is a progressive-enhancement fallback; when the common
+    # modal handler is present it prevents the first submit in capture phase.
+    my $ask=length($confirm||'') ?
+        ' data-wg-confirm="'.html_escape($confirm).'"'.
+        ' onsubmit="return window.WireGuardUI ? true : confirm(\''.js_escape($confirm).'\')"' : '';
+    my %opts=(label=>$label,tone=>$kind,type=>'submit',
+        attrs=>{name=>$operation,value=>1});
+    $opts{'icon'}=$icon if $icon;
+    my $button=$compact ? wg_ui_icon_action(%opts) : wg_ui_button(%opts);
+    return '<form method="post" action="action_interface.cgi" class="wg-ui-action-form"'.
+        ' style="display:inline-flex;margin:0"'.$ask.'>'.
+        csrf_hidden().'<input type="hidden" name="name" value="'.html_escape($name).'">'.
+        $button.'</form>';
 }
 
 
