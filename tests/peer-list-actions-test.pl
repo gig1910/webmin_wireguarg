@@ -36,7 +36,8 @@ die "peer toggle has no duplicate-request lock\n" if $interface !~ /dataset\.act
 die "page controller does not remove runtime listeners\n" if $interface !~ /removeEventListener\('wg-runtime', onRuntime\)/;
 
 my $peer_page = slurp("$FindBin::Bin/../edit_peer.cgi");
-die "peer detail toggle is not a non-submitting button\n" if $peer_page !~ /id=\"wg-peer-toggle-detail\"/;
+die "peer detail toggle is not a non-submitting button\n" if $peer_page !~ /id=>'wg-peer-toggle-detail'/ ||
+        $peer_page !~ /wg_ui_button\(type=>'button'/;
 die "peer detail toggle does not send POST\n" if $peer_page !~ /method:\s*'POST'/;
 die "peer detail still contains legacy toggle form\n" if $peer_page =~ /ui_form_start\('toggle_peer\.cgi'/;
 
