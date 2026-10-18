@@ -21,6 +21,8 @@ my $title = $new ? $text{'peer_add_title'} : text('peer_title', peer_display_nam
 ui_print_header(undef, $title, '', undef, 1, 1);
 print wg_build_banner();
 print wg_ui_transport_script();
+print wg_ui_foundation();
+print '<div class="wg-ui">';
 my $peer_tabs_id='wg-peer-tabs-'.substr(sha256_hex(join('|',time(),rand())),0,12);
 if ($peer) {
     print '<div id="'.html_escape($peer_tabs_id).'" class="wg-peer-detail-tabs">';
@@ -43,8 +45,8 @@ if ($peer) {
         ' &nbsp; <b>'.$text{'peer_endpoint'}.':</b> <span data-peer-endpoint>'.
         html_escape(get_section_value($peer, 'Endpoint') || '-').'</span>'.
         ' &nbsp; <b>'.$text{'runtime_updated'}.':</b> <span data-wg-runtime-time>'.$text{'runtime_loading'}.'</span></div>';
-    print '<p>'.direct_link_button('network_icons.cgi',$text{'network_icons_title'},{}).'</p>'
-        if $access{'manage'};
+    # Global network assignments are edited from the network directory,
+    # while this peer retains its own on-demand WHOIS/GeoIP investigation.
     # On-demand IP investigation; no automatic WHOIS/network side effects.
     my $ip_dom_id='wg-peer-ip-'.time().'-'.int(rand(1000000000));
     my $ip_dom_json=json_encode_utf8($ip_dom_id);
@@ -379,11 +381,13 @@ if ($access{'manage'}) {
             ' data-peer-disabled="'.($peer->{'disabled'} ? '1' : '0').'"'.
             ' data-config-digest="'.html_escape($cfg->{'digest'}).'"'.
             ' data-public-key="'.html_escape($public_key).'">'.html_escape($toggle_label).'</button>'.
-            '</div><hr><div class="wg-danger-zone"><b>'.$text{'danger_zone'}.'</b><br>'.
-            ui_link_button(
-                'delete_peer.cgi?name='.urlize($name).'&peer='.urlize($in{'peer'}).'&public_key='.urlize($public_key),
-                $text{'peer_delete'}
-            ).'</div>';
+            '</div>';
+        my $delete_url='delete_peer.cgi?name='.urlize($name).'&peer='.
+            urlize($in{'peer'}).'&public_key='.urlize($public_key);
+        print wg_ui_danger_zone(
+            '<a href="'.html_escape($delete_url).'" class="btn btn-danger"'.
+            ' data-wg-confirm="'.html_escape($text{'peer_delete'}.' — '.peer_display_name($peer,$in{'peer'})).'">'.
+            html_escape($text{'peer_delete'}).'</a>');
 
         my $toggle_name_js = json_encode_utf8($name);
         my $toggle_busy_js = json_encode_utf8($text{'peer_toggle_busy'});
@@ -485,9 +489,11 @@ if ($peer && $access{'diagnostics'}) {
     my $js_status_url = json_encode_utf8(module_script_url('diagnostic_status.cgi'));
     my $js_stop_url = json_encode_utf8(module_script_url('diagnostic_stop.cgi'));
 
-    print '<div id="'.html_escape($diag_dom_id).'" class="panel panel-default wg-diagnostic-root">'.
-        '<div class="panel-heading"><b>'.$text{'diagnostics_title'}.'</b></div>'.
-        '<div class="panel-body"><div class="wg-diag-grid">'.
+    print '<details class="wg-ui-tools" data-wg-tool-panel>'.
+        '<summary>'.wg_ui_icon('chevron').' '.html_escape($text{'diagnostics_title'}).'</summary>'.
+        '<div id="'.html_escape($diag_dom_id).'" class="wg-diagnostic-root wg-ui-tools-body">'.
+
+        '<div class="wg-diag-grid">'.
         '<label>'.$text{'diagnostics_target'}.'<input data-role="target" value="'.html_escape($target).'" class="form-control"></label>'.
         '<label>'.$text{'diagnostics_ping_count'}.'<input data-role="count" type="number" min="1" max="1000" value="3" class="form-control"></label>'.
         '<label>'.$text{'diagnostics_port'}.'<input data-role="port" type="number" min="1" max="65535" class="form-control"></label>'.
@@ -498,7 +504,7 @@ if ($peer && $access{'diagnostics'}) {
         '<button type="button" class="btn" data-diag="port_test">'.$text{'diagnostics_port_test'}.'</button> '.
         '<button type="button" class="btn btn-danger" data-role="stop" style="display:none">'.$text{'diagnostics_stop'}.'</button>'.
         '</p><pre data-role="output" style="display:none;min-height:130px;max-height:420px;overflow:auto;white-space:pre-wrap"></pre>'.
-        '</div></div>';
+        '</div></details>';
 
     print wg_peer_diagnostic_script(
         $js_diag_dom_id, $js_name, $js_peer, $js_starting,
@@ -606,6 +612,7 @@ print '<style>'.
     '@media(max-width:700px){.wg-diag-grid{grid-template-columns:1fr}}'.
     '</style>';
 
+print '</div>'; # Shared UI root
 ui_print_footer(
     'edit_interface.cgi?name='.urlize($name),
     text('interface_title', $name)
