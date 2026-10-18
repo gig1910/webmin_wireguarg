@@ -16,7 +16,8 @@ my $ifc = $cfg->{'interface'} || { 'values' => {}, 'meta' => {} };
 ui_print_header(undef, text('interface_title', $name), '', undef, 1, 1);
 print wg_build_banner();
 my $page_instance = substr(sha256_hex(join('|', $$, time(), rand(), $name)), 0, 16);
-print '<div data-wg-interface-page="'.html_escape($page_instance).'">';
+print wg_ui_foundation();
+print '<div class="wg-ui" data-wg-interface-page="'.html_escape($page_instance).'">';
 print '<div id="wg-interface-runtime-error" class="alert alert-warning" style="display:none"></div>';
 print '<div id="wg-peer-action-result" class="alert" style="display:none"></div>';
 
