@@ -198,7 +198,7 @@ if ($access{'manage'}) {
         print wg_ui_button(type=>'submit',
             icon=>$action eq 'vacuum' ? 'database' : 'trash',
             tone=>$action eq 'vacuum' ? 'neutral' : 'danger',
-            label=>$text{$key},attrs=>\\%attr);
+            label=>$text{$key},attrs=>\%attr);
         print '</form>';
     }
     print '</div>'.wg_ui_panel_end();
