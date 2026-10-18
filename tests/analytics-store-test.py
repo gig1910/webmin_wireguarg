@@ -520,6 +520,37 @@ class AnalyticsTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             store.network_lookup(self.conn,{"ips":["1.1.1.1"]*129})
 
+    def test_city_observation_manual_override_and_cache_lifecycle(self):
+        store.network_record(self.conn, {
+            "ip": "8.8.8.8", "geoip_country_code": "RU",
+            "geoip_city": "Moscow", "geoip_city_code": "MSK",
+            "whois_fields": [{"label": "CIDR", "value": "8.8.8.0/24"}]})
+        values = store.network_lookup(
+            self.conn, {"ips": ["8.8.8.8", "8.8.8.9"]})["results"]
+        self.assertEqual(values["8.8.8.8"]["city"], "Moscow")
+        self.assertEqual(values["8.8.8.8"]["city_code"], "MSK")
+        self.assertEqual(values["8.8.8.9"]["city"], "")
+        store.network_manage(self.conn, {
+            "action": "set_icon", "cidr": "8.8.8.0/24",
+            "city": "Belgrade", "city_code": "BEG"})
+        values = store.network_lookup(
+            self.conn, {"ips": ["8.8.8.8", "8.8.8.9"]})["results"]
+        self.assertEqual(values["8.8.8.8"]["city_code"], "BEG")
+        self.assertEqual(values["8.8.8.8"]["city_source"], "manual")
+        self.assertEqual(values["8.8.8.9"]["city_code"], "BEG")
+        directory = store.network_manage(self.conn, {"action": "list"})
+        self.assertEqual(directory["icons"][0]["city"], "Belgrade")
+        self.assertEqual(directory["cache"][0]["geoip_cities"], ["MSK"])
+        store.network_manage(self.conn, {"action": "clear_cache", "confirm": "CLEAR"})
+        after = store.network_lookup(
+            self.conn, {"ips": ["8.8.8.8"]})["results"]["8.8.8.8"]
+        self.assertEqual(after["city_code"], "BEG")
+        for bad in ["<script>", "TOOLONGCODE", "МОСКВА"]:
+            with self.assertRaises(ValueError):
+                store.network_manage(self.conn, {
+                    "action": "set_icon", "cidr": "8.8.8.0/24",
+                    "city_code": bad})
+
     def test_geoip_country_is_exact_ip_not_whois_prefix(self):
         store.network_record(self.conn,{
             "ip":"8.8.8.8","geoip_country_code":"DE",
