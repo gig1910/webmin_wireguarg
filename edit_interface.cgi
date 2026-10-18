@@ -35,7 +35,7 @@ if (!length($client_allowed_display)) {
 print ui_table_start($text{'interface_settings'}, 'width=100%', 4, ['width=25%', 'width=25%', 'width=25%', 'width=25%']);
 print ui_table_row($text{'interface_file'}, '<tt>'.html_escape($path).'</tt>');
 print ui_table_row($text{'interface_state'}, '<span class="wg-ui-status" id="wg-interface-state">'.html_escape($text{'runtime_loading'}).'</span>');
-print ui_table_row($text{'interface_addresses'}, html_escape(join(', ', get_section_values($ifc, 'Address')) || '-'));
+print ui_table_row($text{'interface_addresses'}, wg_ui_ip_value(join(', ', get_section_values($ifc, 'Address')) || '-',kind=>'cidr'));
 print ui_table_row($text{'interface_listen_port'}, '<span id="wg-interface-port">'.html_escape(get_section_value($ifc, 'ListenPort') || '-').'</span>');
 print ui_table_row($text{'interface_public_key'},
     '<span class="wg-ui-copy"><tt id="wg-interface-public-key">'.$public_display.'</tt>'.
