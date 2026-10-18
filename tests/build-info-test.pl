@@ -30,7 +30,7 @@ print {$fh} "git_commit=".'0123456789abcdef' x 2 . '01234567'."\n";
 print {$fh} "built_at_utc=2026-10-15T16:30:00Z\n";
 print {$fh} "source_dirty=1\n";
 close($fh);
-my $expected='$version+20261015163000123456789.g0123456789ab';
+my $expected="$version+20261015163000123456789.g0123456789ab";
 die "build identity not read" if wg_build_version() ne $expected;
 my $html=wg_build_banner();
 die "build identity not rendered" unless $html =~ /\Q$expected\E/;
