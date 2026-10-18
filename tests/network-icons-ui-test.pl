@@ -9,6 +9,9 @@ sub read_file {
 }
 my $peer=read_file("$FindBin::Bin/../edit_peer.cgi");
 my $peer_ui=read_file("$FindBin::Bin/../lib/peer-activity-ui-lib.pl");
+die "Peer WHOIS prototype must be looked up in template.content\n"
+    unless $peer_ui =~ /ipMarkup\.content\.querySelector\('button'\)/;
+
 die "peer activity script helper not wired" unless $peer =~ m{require './lib/peer-activity-ui-lib.pl'} &&
     $peer =~ /wg_peer_activity_tabs_script\(/;
 $peer .= "\n".$peer_ui;
