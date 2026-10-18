@@ -121,19 +121,29 @@ for my $cidr (sort keys %ranges) {
         print csrf_hidden();
         print ui_hidden('action','delete_icon');
         print ui_hidden('cidr',$cidr);
-        print '<button type="submit" class="btn btn-default">'.
-            html_escape($text{'network_icons_delete'}).'</button>';
+        print '<button type="submit" class="wg-ui-icon-btn wg-ui-icon-danger"'.
+            ' data-wg-confirm="'.html_escape($text{'network_icons_delete'}).' — '.html_escape($cidr).'"'.
+            ' title="'.html_escape($text{'network_icons_delete'}).'"'.
+            ' aria-label="'.html_escape($text{'network_icons_delete'}).'">'.
+            wg_ui_icon('trash').'</button>';
         print ui_form_end();
     }
     print '</td></tr>';
 }
 print '</tbody></table>';
+print '<details class="wg-ui-danger" data-wg-danger-zone>'.
+    '<summary>'.wg_ui_icon('chevron').' '.html_escape($text{'danger_zone'}).'</summary>'.
+    '<div class="wg-ui-danger-body">'.
+    '<p class="help-block">'.html_escape($text{'network_icons_cache_help'}).'</p>';
 print ui_form_start(module_script_url('network_icons.cgi'),'post');
 print csrf_hidden();
 print ui_hidden('action','clear_cache');
-print '<label>'.html_escape($text{'network_icons_confirm'}).' <input name="confirm" maxlength="5" autocomplete="off"></label> ';
-print '<button type="submit" class="btn btn-danger">'.html_escape($text{'network_icons_clear'}).'</button>';
+print '<input type="hidden" name="confirm" value="">';
+print '<button type="submit" class="btn btn-danger"'.
+    ' data-wg-confirm="'.html_escape($text{'network_icons_clear'}).'"'.
+    ' data-wg-confirm-word="CLEAR">'.html_escape($text{'network_icons_clear'}).'</button>';
 print ui_form_end();
+print '</div></details>';
 print wg_network_icons_page_script(json_encode_utf8($network_page_id));
 print '</div>';
 ui_print_footer('index.cgi',$text{'index_title'});
