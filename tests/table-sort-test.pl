@@ -101,6 +101,10 @@ if(sort.value(row(cell('Никогда')) ,0,'time')!==null)
     throw new Error('Russian Never is not NULL');
 if(sort.value(row(cell('never')),0,'time')!==null)
     throw new Error('English never is not NULL');
+if(sort.value(row(cell('(none)')),0,'endpoint')!==null)
+    throw new Error('Missing endpoint must sort as NULL');
+if(sort.value(row(cell('(none)')),0,'name')!==null)
+    throw new Error('Explicit none placeholder must sort as NULL even for text');
 if(sort.value(row(cell('not a date')),0,'time')!==null)
     throw new Error('Invalid time must be NULL, not NaN');
 if(sort.value(row(cell('Никогда',{dataset:{sortEpoch:'0'}})),0,'handshake')!==null)
