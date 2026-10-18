@@ -7,7 +7,7 @@ const assert = require('assert').strict;
 
 const listeners = new Map();
 global.window = global;
-global.navigator = {};
+// Node 22 exposes a read-only navigator; clipboard is not used in these tests.
 global.document = {
   addEventListener(type, fn) {
     if (!listeners.has(type)) listeners.set(type, []);
