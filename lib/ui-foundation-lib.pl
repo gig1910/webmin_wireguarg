@@ -72,6 +72,16 @@ sub wg_ui_foundation {
 .wg-ui .wg-ui-danger-body{padding:12px;border-top:1px solid rgba(195,55,55,.25)}
 .wg-ui .wg-ui-danger-body form{display:inline-flex;flex-wrap:wrap;align-items:end;gap:8px;margin:6px 8px 6px 0}
 .wg-ui .wg-ui-danger-body label{display:flex;flex-direction:column;gap:4px}
+.wg-ui .wg-ui-tools{margin:14px 0;border:1px solid rgba(127,127,127,.25);border-radius:5px}
+.wg-ui .wg-ui-tools>summary{display:flex;gap:7px;align-items:center;padding:10px 12px;font-weight:600;cursor:pointer;list-style:none}
+.wg-ui .wg-ui-tools>summary::-webkit-details-marker{display:none}
+.wg-ui .wg-ui-tools[open]>summary svg{transform:rotate(180deg)}
+.wg-ui .wg-ui-tools-body{padding:12px;border-top:1px solid rgba(127,127,127,.22)}
+.wg-ui .wg-ui-icon-btn:disabled{opacity:.5;cursor:wait}
+.wg-ui .wg-ui-icon-btn [hidden]{display:none!important}
+.wg-ui .wg-ui-danger-body .btn-danger{margin:4px 0}
+.wg-ui .wg-analytics-table td,.wg-ui .wg-analytics-table th{font-variant-numeric:tabular-nums}
+
 .wg-ui .wg-ui-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:10px}
 .wg-ui .wg-ui-summary-card{border:1px solid rgba(127,127,127,.24);border-radius:5px;padding:12px;min-width:0}
 .wg-ui .wg-ui-summary-card>span{display:block;font-size:12px;opacity:.7;margin-bottom:6px}
