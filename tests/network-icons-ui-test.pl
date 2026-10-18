@@ -80,7 +80,8 @@ die "network icon script queries external WHOIS automatically\n"
 die "icons poller not cleaned up on page destroy\n"
     unless $iface=~/if\(networkRequest\)networkRequest\.abort\(\)/;
 die "sorter must ignore the icon glyph\n"
-    unless $sort=~/cell\.querySelector\('\[data-wg-endpoint\]'\)/;
+    unless $sort=~/cell\.querySelector\('\[data-wg-address-kind\],\[data-wg-endpoint\]'\)/ &&
+           $sort=~/return ip\(address\?address\.textContent\.trim\(\):t\)/;
 die "peer tabs not restricted to existing peers\n"
     unless $peer =~ /if \(\$peer\) \{\s+print '<div id=.*wg-peer-detail-tabs/s;
 for my $pane (qw(settings usage activity)) {
