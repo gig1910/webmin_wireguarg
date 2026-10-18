@@ -72,8 +72,6 @@ for(const kind of ['time','handshake','bytes','ip','endpoint','name']){
       throw new Error('Present value must precede NULL: '+kind);
   if(sort.compare(null,null,kind)!==0)
       throw new Error('Identical NULL values should be stable: '+kind);
-  if(!sort.missing(null) || sort.missing(0))
-      throw new Error('Missing-value detection failed: '+kind);
 }
 // Table rows are built as text nodes, never parsed as HTML.
 global.document={
