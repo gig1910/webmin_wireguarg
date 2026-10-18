@@ -119,7 +119,7 @@ sub wg_ui_danger_zone {
     return wg_ui_panel($title,$body,tone=>'danger');
 }
 sub wg_ui_foundation {
-    return <<'WG_UI_FOUNDATION';
+    my $markup= <<'WG_UI_FOUNDATION';
 <style>
 /* Shared sizing and color semantics. Theme fonts and surfaces are inherited. */
 .wg-ui{--wg-success:var(--success-color,#55c899);--wg-info:var(--primary-color,#5d9de2);--wg-warning:var(--warning-color,#e5ac55);--wg-danger:var(--danger-color,#d26d65);--wg-border:rgba(127,127,127,.28)}
@@ -186,6 +186,7 @@ sub wg_ui_foundation {
 <script>
 (function(){
  'use strict';
+ const messages=__WG_UI_MESSAGES__;
  if(window.WireGuardUI && window.WireGuardUI.version===1)return;
  const ui={
   version:1,
@@ -213,9 +214,9 @@ sub wg_ui_foundation {
    ui.copy(('value' in target?target.value:target.textContent).trim()).then(()=>{
      button.dataset.wgCopied='1';
      const original=button.title;
-     button.title=button.dataset.wgCopiedLabel||'Скопировано';
+     button.title=button.dataset.wgCopiedLabel||messages.copied;
      setTimeout(()=>{if(button.isConnected)button.title=original;},1800);
-   }).catch(()=>{button.title=button.dataset.wgCopyError||'Копирование недоступно';});
+   }).catch(()=>{button.title=button.dataset.wgCopyError||messages.clipboardError;});
  },true);
  function confirmModal(message,word){
   return new Promise(resolve=>{
@@ -225,14 +226,14 @@ sub wg_ui_foundation {
    const panel=document.createElement('div');
    panel.className='wg-ui-modal-panel';
    panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');
-   panel.setAttribute('aria-label','Подтверждение операции');
-   const heading=document.createElement('h3');heading.textContent='Подтверждение операции';
-   const body=document.createElement('p');body.textContent=message||'Подтвердить действие?';
+   panel.setAttribute('aria-label',messages.confirmTitle);
+   const heading=document.createElement('h3');heading.textContent=messages.confirmTitle;
+   const body=document.createElement('p');body.textContent=message||messages.confirmPrompt;
    panel.append(heading,body);
    let field=null;
    if(word){
     const label=document.createElement('label');
-    label.textContent='Для подтверждения введите '+word;
+    label.textContent=messages.confirmType+' '+word;
     field=document.createElement('input');
     field.className='form-control';field.autocomplete='off';
     field.setAttribute('aria-label',word);
@@ -241,9 +242,9 @@ sub wg_ui_foundation {
    const buttons=document.createElement('div');
    buttons.className='wg-ui-action-bar';
    const cancel=document.createElement('button');cancel.type='button';
-   cancel.className='btn btn-default';cancel.textContent='Отмена';
+   cancel.className='btn btn-default';cancel.textContent=messages.cancel;
    const accept=document.createElement('button');accept.type='button';
-   accept.className='btn btn-danger';accept.textContent='Подтвердить';
+   accept.className='btn btn-danger';accept.textContent=messages.accept;
    if(word)accept.disabled=true;
    buttons.append(cancel,accept);panel.append(buttons);overlay.append(panel);
    const active=document.activeElement;
@@ -349,5 +350,16 @@ sub wg_ui_foundation {
 })();
 </script>
 WG_UI_FOUNDATION
+    my $strings=json_encode_utf8({
+        confirmTitle=>$text{'ui_confirm_title'},
+        confirmPrompt=>$text{'ui_confirm_prompt'},
+        confirmType=>$text{'ui_confirm_type'},
+        cancel=>$text{'ui_confirm_cancel'},
+        accept=>$text{'ui_confirm_accept'},
+        copied=>$text{'ui_copied'},
+        clipboardError=>$text{'ui_copy_unavailable'},
+    });
+    $markup =~ s/__WG_UI_MESSAGES__/$strings/g;
+    return $markup;
 }
 1;
