@@ -182,10 +182,10 @@ sub wg_ui_foundation {
 .wg-ui .wg-ui-action-bar .wg-ui-btn,.wg-ui .wg-ui-button-row .wg-ui-btn,.wg-ui .wg-ui-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:31px;padding:5px 10px;margin:0;white-space:nowrap}
 /* Authentic Theme owns all button backgrounds, borders, foregrounds and states. */
 .wg-ui .wg-ui-btn{text-decoration:none}
-.wg-ui .wg-ui-icon-btn.wg-ui-tone-success{color:var(--success-color,#55c899)}
-.wg-ui .wg-ui-icon-btn.wg-ui-tone-warning{color:var(--warning-color,#e5ac55)}
-.wg-ui .wg-ui-icon-btn.wg-ui-tone-danger{color:var(--danger-color,#d26d65)}
-.wg-ui .wg-ui-icon-btn.wg-ui-tone-info{color:var(--primary-color,#5d9de2)}
+.wg-ui .wg-ui-icon-btn.wg-ui-tone-success{color:var(--success-color,#55c899)!important}
+.wg-ui .wg-ui-icon-btn.wg-ui-tone-warning{color:var(--warning-color,#e5ac55)!important}
+.wg-ui .wg-ui-icon-btn.wg-ui-tone-danger{color:var(--danger-color,#d26d65)!important}
+.wg-ui .wg-ui-icon-btn.wg-ui-tone-info{color:var(--primary-color,#5d9de2)!important}
 .wg-ui .wg-ui-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;min-width:30px;border:1px solid transparent;border-radius:4px;background:transparent;cursor:pointer;text-decoration:none;padding:0;vertical-align:middle}
 .wg-ui .wg-ui-icon-btn svg{display:block;width:17px;height:17px;flex:none;stroke:currentColor;stroke-width:1.9}
 .wg-ui .wg-ui-icon-btn:hover,.wg-ui .wg-ui-icon-btn:focus-visible{border-color:currentColor;background:rgba(127,127,127,.15);text-decoration:none;outline-offset:2px}
