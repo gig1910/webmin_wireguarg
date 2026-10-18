@@ -29,3 +29,13 @@ jobs:
         run: ./scripts/build-release.sh
       - name: Smoke-test packaged Webmin module
         run: sh ./scripts/smoke-release.sh
+      # Publishing only after the smoke gate prevents deploying untested WBM archives.
+      # This is a CI artifact, not a production installation or GitHub release.
+      - name: Upload verified WBM and checksums
+        if: success() && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: webmin-wireguard-verified-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
