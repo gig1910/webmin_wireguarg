@@ -48,6 +48,9 @@ sub wg_interface_page_script
     let destroyed = false;
     let knownNetworkIcons = {}, networkSignature = '', networkRequest = null;
     let networkLastCheck = 0;
+    root.addEventListener('wg-network-cache-updated',function(){
+        networkSignature='';networkLastCheck=0;updateNetworkIcons();
+    });
     function endpointIp(value) {
         value=String(value||'').trim();
         if(value.startsWith('[')) {
