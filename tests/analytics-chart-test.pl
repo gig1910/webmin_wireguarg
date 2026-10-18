@@ -40,6 +40,7 @@ our %text;
 while ($template =~ /\$text\{'([A-Za-z0-9_]+)'\}/g) {
     $text{$1}=$1;
 }
+my $apply_button='<button type="button" data-apply="1">Apply</button>';
 my $url='/wireguard/analytics_data.cgi';
 my $strings='{}';
 my $selected_json='""';
