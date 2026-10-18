@@ -42,7 +42,7 @@ foreach my $item (@$items) {
     push @rows, [
         '<a data-wg-interface-name="'.html_escape($name).'" href="edit_interface.cgi?name='.urlize($name).'"><b>'.html_escape($name).'</b></a>',
         $status,
-        html_escape($summary->{'addresses'} || '-'),
+        wg_ui_ip_value($summary->{'addresses'} || '-',kind=>'cidr'),
         '<span data-wg-port="'.html_escape($name).'">'.html_escape($summary->{'listen_port'} || '-').'</span>',
         $peers,
         $actions,
