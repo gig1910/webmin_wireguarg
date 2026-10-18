@@ -67,7 +67,7 @@ print '</div>';
 
 my $index_left=$access{'manage'}
     ? wg_ui_button(href=>'interface_form.cgi',icon=>'plus',
-        label=>$text{'index_add'},tone=>'success') : '';
+        label=>$text{'index_add'},action=>'add') : '';
 my $index_right=($access{'logs'} ? wg_ui_button(
     href=>'journal.cgi',icon=>'log',label=>$text{'index_logs'}) : '').
     ($access{'manage'} ? wg_ui_button(
