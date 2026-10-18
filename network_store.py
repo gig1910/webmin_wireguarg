@@ -178,7 +178,8 @@ def network_manage(conn, req):
                 for ip, code, city, city_code in observations
                 if ip in prefix and city
             })
-        return {"ok": True, "cache": cache, "icons": icons}
+        count=conn.execute("SELECT COUNT(*) FROM unlocode_places").fetchone()[0]
+        return {"ok": True, "cache": cache, "icons": icons, "unlocode_count": count}
     if action == "clear_cache":
         if req.get("confirm") != "CLEAR":
             raise ValueError("explicit cache reset confirmation required")
