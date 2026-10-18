@@ -70,8 +70,8 @@ print '<div class="wg-ui-form-row">'.
     '<label>'.html_escape($text{'network_icons_prefix'}).' <input name="cidr" required placeholder="203.0.113.0/24" maxlength="64"></label> '.
     '<label>'.html_escape($text{'network_icons_symbol'}).' <input name="icon" value="?" maxlength="8" size="5"></label> '.
     '<label>'.html_escape($text{'network_icons_label'}).' <input name="label" maxlength="100" size="30"></label> '.
-    '<label>Город <input name="city" maxlength="100" size="22"></label> '.
-    '<label>Код города <input name="city_code" maxlength="8" size="8" placeholder="MSK"></label> '.
+    '<label>'.html_escape($text{'network_icons_city'}).' <input name="city" maxlength="100" size="22"></label> '.
+    '<label>'.html_escape($text{'network_icons_city_code'}).' <input name="city_code" maxlength="8" size="8" placeholder="MSK" title="'.html_escape($text{'network_icons_city_help'}).'"></label> '.
     wg_ui_button(type=>'submit',icon=>'save',tone=>'success',
         label=>$text{'network_icons_save'}).'</div>';
 print ui_form_end();
@@ -80,7 +80,7 @@ print '<table class="table table-striped table-hover"><thead><tr><th>'.
     html_escape($text{'network_icons_prefix'}).'</th><th>'.html_escape($text{'network_icons_symbol'}).
     '</th><th>'.html_escape($text{'network_icons_label'}).'</th><th>'.
     html_escape($text{'network_icons_owner'}).'</th><th>'.
-    html_escape($text{'network_icons_country'}).'</th><th>Город</th><th>'.
+    html_escape($text{'network_icons_country'}).'</th><th>'.html_escape($text{'network_icons_city_code'}).'</th><th>'.
     html_escape($text{'network_icons_geoip_samples'}).'</th><th>'.
     html_escape($text{'interface_peer_actions'}).'</th></tr></thead><tbody>';
 for my $cidr (sort keys %ranges) {
