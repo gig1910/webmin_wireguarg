@@ -39,13 +39,13 @@ print ui_table_row($text{'interface_addresses'}, html_escape(join(', ', get_sect
 print ui_table_row($text{'interface_listen_port'}, '<span id="wg-interface-port">'.html_escape(get_section_value($ifc, 'ListenPort') || '-').'</span>');
 print ui_table_row($text{'interface_public_key'},
     '<span class="wg-ui-copy"><tt id="wg-interface-public-key">'.$public_display.'</tt>'.
-    wg_ui_icon_action(icon=>'copy',label=>'Копировать публичный ключ',
+    wg_ui_icon_action(icon=>'copy',label=>$text{'ui_copy_public'},
         attrs=>{'data-wg-copy-target'=>'wg-interface-public-key'}).'</span>');
 print ui_table_row($text{'interface_private_key'}, html_escape($private_state));
 print ui_table_row($text{'interface_client_endpoint'},
     '<span class="wg-ui-copy"><span class="wg-ui-mono" id="wg-interface-client-endpoint">'.
     html_escape(get_meta_value($ifc,'clientendpoint')||'-').'</span>'.
-    wg_ui_icon_action(icon=>'copy',label=>'Копировать Endpoint',
+    wg_ui_icon_action(icon=>'copy',label=>$text{'ui_copy_endpoint'},
        attrs=>{'data-wg-copy-target'=>'wg-interface-client-endpoint'}).'</span>');
 print ui_table_row($text{'interface_client_allowed'}, html_escape($client_allowed_display));
 print ui_table_end();
@@ -53,25 +53,33 @@ print ui_table_end();
 my $interface_toolbar_left= '';
 my $interface_toolbar_right= '';
 if ($access{'manage'}) {
-    $interface_toolbar_left=ui_link_button('interface_form.cgi?name='.urlize($name), $text{'interface_edit'}).' '.
-        ui_link_button('edit_peer.cgi?name='.urlize($name), $text{'interface_add_peer'});
+    $interface_toolbar_left=wg_ui_button(
+        href=>'interface_form.cgi?name='.urlize($name),
+        icon=>'edit',label=>$text{'interface_edit'}).
+        wg_ui_button(href=>'edit_peer.cgi?name='.urlize($name),
+        icon=>'plus',label=>$text{'interface_add_peer'},tone=>'success');
     $interface_toolbar_left.='<span class="wg-actions">'.
         '<span id="wg-actions-loading">'.html_escape($text{'runtime_loading'}).'</span>'.
         '<span id="wg-actions-active" style="display:none">'.
-            mini_action_form($name,'restart',$text{'interface_restart'},'warning',$text{'confirm_restart'}).
-            mini_action_form($name,'stop',$text{'interface_stop'},'danger',$text{'confirm_stop'}).
+            mini_action_form($name,'restart',$text{'interface_restart'},'warning',$text{'confirm_restart'},'refresh',0).
+            mini_action_form($name,'stop',$text{'interface_stop'},'warning',$text{'confirm_stop'},'stop',0).
         '</span>'.
         '<span id="wg-actions-inactive" style="display:none">'.
-            mini_action_form($name,'start',$text{'interface_start'},'success','').
+            mini_action_form($name,'start',$text{'interface_start'},'success','','play',0).
         '</span></span>';
 }
 $interface_toolbar_right=wg_ui_icon_action(
-    icon=>'refresh',label=>$text{'journal_refresh'},
+    icon=>'refresh',label=>$text{'ui_refresh_runtime'},tone=>'info',
     attrs=>{'data-wg-runtime-refresh'=>'1'}).
     '<span data-wg-runtime-refresh-status></span> '.
-    direct_link_button('analytics.cgi',$text{'analytics_interface_link'},{ interface => $name }).
-    ($access{'logs'}?' '.ui_link_button('journal.cgi?name='.urlize($name),$text{'interface_logs'}):'').
-    ($access{'manage'}?' '.direct_link_button('network_icons.cgi',$text{'network_icons_title'},{}):'');
+    wg_ui_button(href=>'analytics.cgi?interface='.urlize($name),
+    icon=>'chart',label=>$text{'analytics_interface_link'}).
+    ($access{'logs'}?wg_ui_button(
+        href=>'journal.cgi?name='.urlize($name),
+        icon=>'log',label=>$text{'interface_logs'}):'').
+    ($access{'manage'}?wg_ui_icon_action(
+        href=>'network_icons.cgi',icon=>'globe',
+        label=>$text{'network_icons_title'},tone=>'info'):'');
 print wg_ui_action_bar($interface_toolbar_left,$interface_toolbar_right);
 print graph_html($name, '', text('graph_interface_title', $name));
 
@@ -92,6 +100,7 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
     my $history_action=length($public_key)
         ? wg_ui_icon_action(icon=>'history',
             label=>$text{'analytics_peer_link'}||$text{'analytics_peer_short'}||'История',
+            tone=>'info',
             href=>'analytics.cgi?peer_id='.urlize(sha256_hex($public_key)))
         : '—';
     my $handshake = $disabled ? $text{'peer_disabled'} : $text{'runtime_loading'};
@@ -100,14 +109,14 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
         html_escape($disabled ? $text{'peer_disabled'} : $text{'peer_enabled'}).'</span>';
 
     my $ip_action=wg_ui_icon_action(
-        icon=>'globe',label=>$text{'peer_ip_lookup'}||'WHOIS / GeoIP',
+        icon=>'globe',label=>$text{'peer_ip_lookup'}||'WHOIS / GeoIP',tone=>'info',
         attrs=>{'data-wg-ip-inspect'=>"$i"});
     my $edit_action=wg_ui_icon_action(
-        icon=>'edit',label=>$text{'peer_edit_title'}||'Редактировать',
+        icon=>'edit',label=>$text{'peer_edit_title'}||'Редактировать',tone=>'info',
         href=>$peer_url);
     my $actions='<span class="wg-ui-table-actions">'.$ip_action.$edit_action;
     if ($access{'manage'}) {
-        my $button_class = $disabled ? 'btn-success' : 'btn-warning';
+        my $button_class = $disabled ? 'wg-ui-tone-success' : 'wg-ui-tone-warning';
         my $button_text = $disabled ? $text{'peer_enable'} : $text{'peer_disable'};
         $actions .= '<div class="wg-peer-toggle"'.
             ' data-peer-id="'.$id.'"'.
@@ -116,7 +125,7 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
             ' data-config-digest="'.html_escape($cfg->{'digest'}).'"'.
             ' data-public-key="'.html_escape($public_key).'"'.
             ' data-action-url="'.html_escape($toggle_peer_url).'">'.
-            '<button type="button" class="wg-ui-icon-btn" data-peer-toggle-button'.
+            '<button type="button" class="wg-ui-icon-btn '.$button_class.'" data-peer-toggle-button'.
             ' title="'.html_escape($button_text).'" aria-label="'.html_escape($button_text).'">'.
             '<span data-wg-toggle-play'.($disabled?'':' hidden').'>'.wg_ui_icon('play').'</span>'.
             '<span data-wg-toggle-stop'.($disabled?' hidden':'').'>'.wg_ui_icon('stop').'</span>'.
@@ -128,7 +137,8 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
         $name_link,
         $state_html,
         '<span title="'.html_escape($allowed).'">'.html_escape($short_allowed).'</span>',
-        '<span class="wg-endpoint-with-icon"><span class="wg-network-icon" data-wg-net-icon="'.$id.'" title="'.html_escape($text{'network_icons_unknown'}).'">?</span> <span class="wg-geoip-country" data-wg-geoip-country="'.$id.'" hidden></span> '.
+        '<span class="wg-endpoint-with-icon"><span class="wg-network-icon" data-wg-net-icon="'.$id.'"'.
+         ($endpoint eq '-'?' hidden':'').' title="'.html_escape($text{'network_icons_unknown'}).'">?</span> <span class="wg-geoip-country" data-wg-geoip-country="'.$id.'" hidden></span> '.
         '<span data-wg-endpoint="'.$id.'">'.html_escape($endpoint).'</span></span>',
         '<span data-wg-handshake="'.$id.'">'.html_escape($handshake).'</span>',
         '<span data-wg-rx="'.$id.'">—</span>',
