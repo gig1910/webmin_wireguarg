@@ -543,3 +543,6 @@ ui_copy_unavailable=Clipboard unavailable
 ui_api_non_json=Server returned a non-JSON response
 ui_api_bad_json=Invalid JSON response
 interface_advanced_hooks=Advanced interface lifecycle hooks (PreUp, PostUp, PreDown, PostDown)
+
+unlocode_status=Local UN/LOCODE catalog: %s entries. Codes appear only for unambiguous country/city matches.
+unlocode_official=Official UNECE releases
