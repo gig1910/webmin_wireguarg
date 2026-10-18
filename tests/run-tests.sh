@@ -31,6 +31,7 @@ perl tests/install-dependency-csrf-test.pl
 perl tests/runtime-async-test.pl
 perl tests/peer-usage-test.pl
 python3 tests/analytics-store-test.py
+python3 tests/unlocode-update-test.py
 perl tests/install-check-test.pl
 perl tests/version-consistency-test.pl
 perl tests/build-info-test.pl
