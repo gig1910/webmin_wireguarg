@@ -77,14 +77,14 @@ sub wg_ui_foundation {
 .wg-ui .wg-ui-summary-card>span{display:block;font-size:12px;opacity:.7;margin-bottom:6px}
 .wg-ui .wg-ui-summary-card>strong{display:block;font-size:16px;font-weight:600;overflow-wrap:anywhere}
 .wg-ui .wg-ui-copy{display:inline-flex;align-items:center;gap:5px}
-.wg-ui .wg-ui-modal[hidden]{display:none!important}
-.wg-ui .wg-ui-modal{position:fixed;inset:0;z-index:100001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);padding:20px}
-.wg-ui .wg-ui-modal-panel{background:var(--bg-color,#252629);color:inherit;border:1px solid rgba(127,127,127,.4);box-shadow:0 12px 40px rgba(0,0,0,.35);border-radius:7px;max-width:760px;max-height:88vh;overflow:auto;width:100%;padding:16px}
-.wg-ui .wg-ui-modal-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.wg-ui .wg-ui-modal-body{padding-top:12px}
-.wg-ui .wg-ui-modal-body th{width:30%;overflow-wrap:anywhere}
-.wg-ui .wg-ui-modal-body td{overflow-wrap:anywhere}
-@media(max-width:700px){.wg-ui .wg-ui-action-right{margin-left:0}.wg-ui .wg-ui-modal{padding:8px}}
+.wg-ui-modal[hidden]{display:none!important}
+.wg-ui-modal{position:fixed;inset:0;z-index:100001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);padding:20px}
+.wg-ui-modal-panel{background:var(--bg-color,#252629);color:inherit;border:1px solid rgba(127,127,127,.4);box-shadow:0 12px 40px rgba(0,0,0,.35);border-radius:7px;max-width:760px;max-height:88vh;overflow:auto;width:100%;padding:16px}
+.wg-ui-modal-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.wg-ui-modal-body{padding-top:12px}
+.wg-ui-modal-body th{width:30%;overflow-wrap:anywhere}
+.wg-ui-modal-body td{overflow-wrap:anywhere}
+@media(max-width:700px){.wg-ui .wg-ui-action-right{margin-left:0}.wg-ui-modal{padding:8px}}
 </style>
 <script>
 (function(){
