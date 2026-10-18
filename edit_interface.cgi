@@ -55,7 +55,7 @@ my $interface_toolbar_right= '';
 if ($access{'manage'}) {
     $interface_toolbar_left=wg_ui_button(
         href=>'interface_form.cgi?name='.urlize($name),
-        icon=>'edit',label=>$text{'interface_edit'}).
+        icon=>'edit',label=>$text{'interface_edit'},tone=>'info').
         wg_ui_button(href=>'edit_peer.cgi?name='.urlize($name),
         icon=>'plus',label=>$text{'interface_add_peer'},tone=>'success');
     $interface_toolbar_left.='<span class="wg-actions">'.
@@ -69,7 +69,7 @@ if ($access{'manage'}) {
         '</span></span>';
 }
 $interface_toolbar_right=wg_ui_icon_action(
-    icon=>'refresh',label=>$text{'ui_refresh_runtime'},tone=>'info',
+    icon=>'refresh',label=>$text{'ui_refresh_runtime'},tone=>'neutral',
     attrs=>{'data-wg-runtime-refresh'=>'1'}).
     '<span data-wg-runtime-refresh-status></span> '.
     wg_ui_button(href=>'analytics.cgi?interface='.urlize($name),
