@@ -233,15 +233,15 @@ sub direct_link_button
 sub mini_action_form
 {
     my ($name,$operation,$label,$kind,$confirm,$icon,$compact)=@_;
-    $kind||='neutral';
-    $kind='neutral' unless $kind =~ /^(?:neutral|success|warning|danger|info)$/;
+    # Action semantics take precedence over caller-provided legacy colors.
+    $kind=wg_ui_action_tone($operation);
     $compact=defined($compact)?$compact:!!$icon;
     # Native confirm is a progressive-enhancement fallback; when the common
     # modal handler is present it prevents the first submit in capture phase.
     my $ask=length($confirm||'') ?
         ' data-wg-confirm="'.html_escape($confirm).'"'.
         ' onsubmit="return window.WireGuardUI ? true : confirm(\''.js_escape($confirm).'\')"' : '';
-    my %opts=(label=>$label,tone=>$kind,type=>'submit',
+    my %opts=(label=>$label,action=>$operation,type=>'submit',
         attrs=>{name=>$operation,value=>1});
     $opts{'icon'}=$icon if $icon;
     my $button=$compact ? wg_ui_icon_action(%opts) : wg_ui_button(%opts);
