@@ -27,6 +27,32 @@ CREATE TABLE IF NOT EXISTS geoip_cache (
 
 # WHOIS prefix facts and administrator-assigned icons have independent lifecycles.
 # A cache reset never removes icon mappings. Everything here is local SQLite.
+def short_city_code(city):
+    """A display abbreviation, not an ISO city identifier."""
+    aliases = {
+        "moscow": "MSK", "москва": "MSK",
+        "saint petersburg": "LED", "st petersburg": "LED",
+        "санкт-петербург": "LED",
+        "belgrade": "BEG", "белград": "BEG",
+        "new york": "NYC", "london": "LON", "paris": "PAR",
+    }
+    if not city:
+        return ""
+    normalized = city.strip().lower()
+    if normalized in aliases:
+        return aliases[normalized]
+    translit = str.maketrans({
+        "а":"a","б":"b","в":"v","г":"g","д":"d","е":"e",
+        "ё":"e","ж":"zh","з":"z","и":"i","й":"y","к":"k",
+        "л":"l","м":"m","н":"n","о":"o","п":"p","р":"r",
+        "с":"s","т":"t","у":"u","ф":"f","х":"h","ц":"ts",
+        "ч":"ch","ш":"sh","щ":"sch","ы":"y","э":"e","ю":"yu",
+        "я":"ya"
+    })
+    letters = re.sub(r"[^A-Z0-9]", "", normalized.translate(translit).upper())
+    return letters[:3]
+
+
 def valid_network(value):
     if not isinstance(value, str) or len(value) > 64:
         raise ValueError("invalid network prefix")
@@ -196,6 +222,8 @@ def network_manage(conn, req):
     if not isinstance(label, str) or len(label) > 100 or any(ord(c) < 32 for c in label):
         raise ValueError("invalid label")
     city,city_code=req.get("city") or "",req.get("city_code") or ""
+    if isinstance(city,str) and not city_code:
+        city_code=short_city_code(city)
     if not isinstance(city,str) or len(city)>100 or any(ord(c)<32 for c in city):
         raise ValueError("invalid manual city")
     if not isinstance(city_code,str) or not re.fullmatch(r"[A-Z0-9]{0,8}",city_code):
