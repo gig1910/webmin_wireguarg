@@ -30,6 +30,24 @@ my $analytics=read_text("$FindBin::Bin/../analytics.cgi");
 die "Storage maintenance should have neutral panel and destructive buttons\n"
     unless $analytics =~ /wg_ui_panel_start\(\$text\{'ui_storage_maintenance'\}\)/ &&
       $analytics =~ /tone=>\$action eq 'vacuum' \? 'neutral' : 'danger'/;
+# Navigation is always a labelled native theme button outside tables.
+die "Network directory still uses an icon-only or misleading WHOIS action\n"
+    unless $index =~ /wg_ui_button\(\s*href=>'network_icons\.cgi',icon=>'network'/s &&
+           $iface =~ /wg_ui_button\(\s*href=>'network_icons\.cgi',icon=>'network'/s;
+my $modal=read_text("$FindBin::Bin/../lib/ui-peer-inspector-lib.pl");
+die "Peer inspector dialogs should inherit the native Webmin panel surface\n"
+    unless index($foundation,"panel.className='wg-ui-modal-panel panel panel-default'") >= 0 &&
+           index($modal,'wg-ui-modal-panel panel panel-default') >= 0;
+die "Client config download needs the theme default button style\n"
+    unless read_text("$FindBin::Bin/../lib/api-ui-lib.pl") =~ /btn btn-default wg-ui-btn wg-ui-tone-neutral wg-direct-link/;
+my $peer_page=read_text("$FindBin::Bin/../edit_peer.cgi");
+die "Peer key attention action bypassed shared edit button\n"
+    unless $peer_page =~ /wg_ui_button\(type=>'button',icon=>'edit',tone=>'info'/;
+for my $lang ('en','ru') {
+    my $labels=read_text("$FindBin::Bin/../lang/$lang");
+    die "Missing localized modal close text for $lang\n"
+        unless $labels =~ /^ui_close=\S.+/m;
+}
 my (%sections,%fields);
 for my $lang ('','ru') {
     my $path="$FindBin::Bin/../config.info".($lang ? ".$lang" : '');
