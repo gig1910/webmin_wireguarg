@@ -67,9 +67,9 @@ die "new compact IP event translations missing\n"
        $ui !~ /analytics_event_endpoint_ip_changed/;
 
 die "analytics entry point missing on interface\n"
-    unless $interface =~ /direct_link_button\('analytics\.cgi'/;
+    unless $interface =~ /wg_ui_button\(href=>'analytics\.cgi\?interface='/;
 die "interface analytics link does not select current interface\n"
-    unless $interface =~ /interface => \$name/;
+    unless $interface =~ /urlize\(\$name\)/ && $interface =~ /analytics_interface_link/;
 die "analytics interface selector or backend filter missing\n"
     unless $ui =~ /data-interface/ && $ui =~ /searchParams\.set\('interface'/ &&
            $ui =~ /initialInterface/;
