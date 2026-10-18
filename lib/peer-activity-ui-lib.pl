@@ -29,7 +29,7 @@ sub wg_peer_activity_tabs_script
  const networkUrl=$js_network_cache_url;
  const sort=window.WireGuardTableSort&&window.WireGuardTableSort.attach(
      root.querySelector('[data-wg-peer-activity-sort]'),
-     ['time','text','actions','actions','ip','ip','actions']);
+     ['time','text','actions','actions','text','ip','ip','actions']);
  const status=root.querySelector('[data-wg-peer-activity-status]');
  const body=root.querySelector('[data-wg-peer-activity-rows]');
  const ipMarkup=root.querySelector('[data-wg-ip-template]');
@@ -67,7 +67,8 @@ sub wg_peer_activity_tabs_script
        const info=data.results&&data.results[node.dataset.wgHistoryIp];
        const badge=node.querySelector('.wg-network-icon');
        const country=node.querySelector('.wg-geoip-country');
-       window.WireGuardUI.renderNetwork(badge,country,info,node.dataset.wgHistoryIp);
+       const city=node.querySelector('.wg-geoip-city');
+       window.WireGuardUI.renderNetwork(badge,country,info,node.dataset.wgHistoryIp,city);
      }
    }catch(_){/* Cache lookup is optional and never sends WHOIS traffic. */}
  }
@@ -106,7 +107,7 @@ sub wg_peer_activity_tabs_script
        const row=window.WireGuardTableSort.appendTextRow(body,[
          new Date(event.at*1000).toLocaleString(),
          labels.events[event.type]||event.type,
-         '', '', event.endpoint||'—',event.previous||'—',''
+         '', '', '', event.endpoint||'—',event.previous||'—',''
        ]);
        if(isNumericIp(event.endpoint)){
          const marker=document.createElement('span');
@@ -122,11 +123,17 @@ sub wg_peer_activity_tabs_script
          countryText.className='wg-geoip-country';
          country.append(countryText);
          row.cells[3].append(country);
+         const cityNode=document.createElement('span');
+         cityNode.dataset.wgHistoryIp=event.endpoint;
+         const cityText=document.createElement('span');
+         cityText.className='wg-geoip-city';
+         cityNode.append(cityText);
+         row.cells[4].append(cityNode);
          const button=lookupButton(event.endpoint,event.at);
-         if(button)row.cells[6].append(button);
+         if(button)row.cells[7].append(button);
        }
        const oldButton=lookupButton(event.previous,event.at);
-       if(oldButton)row.cells[5].append(oldButton);
+       if(oldButton)row.cells[6].append(oldButton);
      }
      if(sort)sort.apply();
      fillKnownNetworks(serial);
