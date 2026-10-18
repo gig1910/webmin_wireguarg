@@ -78,6 +78,15 @@ def connect(path):
         conn.execute("ALTER TABLE peers ADD COLUMN handshake_ip TEXT NOT NULL DEFAULT ''")
     if "name" not in columns:
         conn.execute("ALTER TABLE peers ADD COLUMN name TEXT NOT NULL DEFAULT ''")
+    # In-place additive migration for existing analytics databases.
+    for table, fields in {
+        "network_icons": ("city", "city_code"),
+        "geoip_cache": ("city", "city_code"),
+    }.items():
+        existing = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+        for field in fields:
+            if field not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {field} TEXT NOT NULL DEFAULT ''")
     conn.commit()
     if p.exists():
         os.chmod(p, 0o600)
