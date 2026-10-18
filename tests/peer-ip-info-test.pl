@@ -10,11 +10,8 @@ our ($ip_dom_json,$ip_name_json,$ip_index_json,$ip_csrf_json,$ip_labels_json,$ip
 require "$FindBin::Bin/../lib/geoip-update-lib.pl";
 require "$FindBin::Bin/../lib/peer-ip-info-lib.pl";
 
-die "City abbreviations lost Moscow and fallback behavior\n"
-    unless wg_city_abbreviation('Moscow') eq 'MSK' &&
-           wg_city_abbreviation('Belgrade') eq 'BEG' &&
-           wg_city_abbreviation('Berlin') eq 'BER' &&
-           wg_city_abbreviation('Randomplace') eq 'RAN';
+die "GeoIP must leave city codes to the verified UN/LOCODE backend\n"
+    if defined(&wg_city_abbreviation);
 my $whois_raw="NetRange: 8.8.8.0 - 8.8.8.255\nNetName: DNS-NET\n".
               "OrgName: Example ISP\norigin: AS12345\ncountry: US\n".
               "OrgAbuseEmail: abuse\@example.net\n";
