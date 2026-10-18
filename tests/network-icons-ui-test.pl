@@ -59,7 +59,7 @@ die "server API must validate IP literals, never resolve hostnames\n"
            $read =~ /Too many IPs/ && $read =~ /analytics_backend\('network_lookup'/;
 die "management operation must have manage ACL, CSRF and rate-limit\n"
     unless $icons =~ /assert_manage_access\(\)/ &&
-           $icons =~ /assert_post_and_csrf\(\)/ &&
+           read_file("$FindBin::Bin/../lib/network-icons-action-lib.pl") =~ /assert_post_and_csrf\(\)/ &&
            read_file("$FindBin::Bin/../lib/network-icons-action-lib.pl") =~ /request_rate_limit\('network_icons'/;
 die "explicit CLEAR confirmation missing\n"
     unless $network=~/get\("confirm"\) != "CLEAR"/;
