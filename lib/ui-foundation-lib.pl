@@ -32,6 +32,26 @@ sub wg_ui_icon {
     return '' unless exists $paths{$name};
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'.$paths{$name}.'</svg>';
 }
+# Stable semantic actions; renderers resolve these to Authentic Theme classes.
+# Explicit action wins over legacy tone. Unknown actions remain neutral.
+sub wg_ui_action_tone {
+    my ($action)=@_;
+    my %tones=(
+        start=>'success', add=>'success', save=>'success',
+        apply=>'success', enable=>'success', install=>'success',
+        stop=>'warning', restart=>'warning', disable=>'warning',
+        edit=>'info', modify=>'info',
+        delete=>'danger', clear=>'danger', reset=>'danger',
+        view=>'neutral', navigate=>'neutral', refresh=>'neutral',
+    );
+    return $tones{$action||''} || 'neutral';
+}
+sub wg_ui_resolve_tone {
+    my (%a)=@_;
+    return wg_ui_action_tone($a{'action'}) if defined($a{'action'});
+    my $tone=$a{'tone'}||($a{'danger'}?'danger':'neutral');
+    return $tone =~ /^(?:neutral|success|warning|danger|info)$/ ? $tone : 'neutral';
+}
 # Single whitelist and tone contract for links, buttons and table controls.
 sub wg_ui_attrs {
     my ($attrs)=@_;
@@ -46,8 +66,7 @@ sub wg_ui_attrs {
 sub wg_ui_icon_action {
     my (%a)=@_;
     my $label=html_escape($a{'label'}||'');
-    my $tone=$a{'tone'}||($a{'danger'}?'danger':'neutral');
-    $tone='neutral' unless $tone =~ /^(?:neutral|success|warning|danger|info)$/;
+    my $tone=wg_ui_resolve_tone(%a);
     my %theme=(neutral=>'text-muted',success=>'text-success',
         warning=>'text-warning',danger=>'text-danger',info=>'text-primary');
     my $attr=' class="btn btn-link wg-ui-icon-btn wg-ui-tone-'.$tone.' '.$theme{$tone}.'" title="'.$label.
@@ -61,8 +80,7 @@ sub wg_ui_icon_action {
 }
 sub wg_ui_button {
     my (%a)=@_;
-    my $tone=$a{'tone'}||'neutral';
-    $tone='neutral' unless $tone =~ /^(?:neutral|success|warning|danger|info)$/;
+    my $tone=wg_ui_resolve_tone(%a);
     my $label=html_escape($a{'label'}||'');
     my $body=($a{'icon'}?wg_ui_icon($a{'icon'}).' ':'').'<span>'.$label.'</span>';
     my $extra=($a{'class'}||'');
