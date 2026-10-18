@@ -3,12 +3,6 @@ use strict;
 use warnings;
 use FindBin;
 
-sub slurp {
-    open(my $fh,'<',$_[0]) or die "$_[0]: $!";
-    local $/;
-    return <$fh>;
-}
-
 # Invoke the production handler directly; no source slicing or eval.
 require "$FindBin::Bin/../lib/network-icons-action-lib.pl";
 
