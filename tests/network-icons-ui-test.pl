@@ -100,11 +100,12 @@ die "peer tab switch does not set hidden pane state\n"
     unless $peer=~/p\.hidden=p\.dataset\.wgPeerPane!==tab/;
 my ($template)=$peer=~/(?:print|return) <<PEER_TABS_SCRIPT;\n(.*?)\nPEER_TABS_SCRIPT\n/s;
 die "peer tab JS heredoc missing\n" unless defined $template;
-our ($js_tabs_id,$js_analytics_url,$js_peer_id,$js_activity_labels);
+our ($js_tabs_id,$js_analytics_url,$js_peer_id,$js_activity_labels,$js_network_cache_url);
 $js_tabs_id='"peer-tabs-fixture"';
 $js_analytics_url='"/wireguard/analytics_data.cgi"';
 $js_peer_id='"'.('a'x64).'"';
 $js_activity_labels='{"loading":"Loading","empty":"Empty","events":{}}';
+$js_network_cache_url='"/wireguard/network_icon_data.cgi"';
 my $generator=eval "sub {return <<PEER_TABS_SCRIPT;\n$template\nPEER_TABS_SCRIPT\n}";
 die "peer tab JS template cannot compile: $@" if !$generator || $@;
 my $html=$generator->();
