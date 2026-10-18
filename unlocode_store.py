@@ -62,14 +62,18 @@ def import_release(conn, file_path):
         def csv_members(payload, depth=0):
             with zipfile.ZipFile(io.BytesIO(payload)) as bundle:
                 members = bundle.infolist()
-                if len(members) > 128 or sum(x.file_size for x in members) > 100*1024*1024:
-                    raise ValueError("UN/LOCODE archive exceeds safe extraction limit")
+                if len(members) > 2048:
+                    raise ValueError("UN/LOCODE archive has too many members")
                 result = []
+                selected_size = 0
                 for info in members:
                     name = info.filename.lower().replace(" ", "")
                     if "codelistpart" in name and name.endswith(".csv"):
                         if info.file_size > 32*1024*1024:
                             raise ValueError("Oversized UN/LOCODE CSV")
+                        selected_size += info.file_size
+                        if selected_size > 96*1024*1024:
+                            raise ValueError("UN/LOCODE CSV data exceeds safe extraction limit")
                         result.append((info.filename,bundle.read(info)))
                     elif depth == 0 and name.endswith(".zip") and info.file_size < 64*1024*1024:
                         result.extend(csv_members(bundle.read(info),depth+1))
