@@ -77,9 +77,9 @@ $interface_toolbar_right=wg_ui_icon_action(
     ($access{'logs'}?wg_ui_button(
         href=>'journal.cgi?name='.urlize($name),
         icon=>'log',label=>$text{'interface_logs'}):'').
-    ($access{'manage'}?wg_ui_icon_action(
-        href=>'network_icons.cgi',icon=>'globe',
-        label=>$text{'network_icons_title'},tone=>'info'):'');
+    ($access{'manage'}?wg_ui_button(
+        href=>'network_icons.cgi',icon=>'network',
+        label=>$text{'network_icons_title'}):'');
 print wg_ui_action_bar($interface_toolbar_left,$interface_toolbar_right);
 print graph_html($name, '', text('graph_interface_title', $name));
 
