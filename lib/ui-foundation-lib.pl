@@ -88,39 +88,54 @@ sub wg_ui_danger_zone {
 sub wg_ui_foundation {
     return <<'WG_UI_FOUNDATION';
 <style>
-.wg-ui .wg-ui-action-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0 14px}
-.wg-ui .wg-ui-action-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* Shared sizing and color semantics. Theme fonts and surfaces are inherited. */
+.wg-ui{--wg-success:var(--success-color,#55c899);--wg-info:var(--primary-color,#5d9de2);--wg-warning:var(--warning-color,#e5ac55);--wg-danger:var(--danger-color,#d26d65);--wg-border:rgba(127,127,127,.28)}
+.wg-ui .wg-ui-action-bar,.wg-ui .wg-ui-button-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0 14px}
+.wg-ui .wg-ui-action-group{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
 .wg-ui .wg-ui-action-right{margin-left:auto}
-.wg-ui .wg-ui-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:29px;height:29px;border:1px solid transparent;border-radius:5px;background:transparent;color:inherit;cursor:pointer;text-decoration:none;vertical-align:middle}
-.wg-ui .wg-ui-icon-btn:hover,.wg-ui .wg-ui-icon-btn:focus-visible{border-color:var(--primary-color,#4786ca);background:rgba(125,125,125,.15);text-decoration:none;outline-offset:2px}
-.wg-ui .wg-ui-icon-danger{color:var(--danger-color,#c4524c)}
-.wg-ui .wg-ui-icon-danger:hover{background:rgba(195,55,55,.1);border-color:var(--danger-color,#c4524c)}
-.wg-ui .wg-ui-table-actions{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
-.wg-ui .wg-ui-table-actions form{margin:0;display:inline}
-.wg-ui .wg-ui-compact-table td:last-child,.wg-ui .wg-ui-compact-table th:last-child{white-space:nowrap}
-.wg-ui .wg-ui-mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-variant-numeric:tabular-nums}
-.wg-ui .wg-ui-danger{margin:15px 0;border:1px solid rgba(195,55,55,.35);border-radius:5px}
-.wg-ui .wg-ui-danger>summary{display:flex;align-items:center;gap:7px;padding:10px 12px;font-weight:600;cursor:pointer;list-style:none;color:var(--danger-color,#d27470)}
-.wg-ui .wg-ui-danger>summary::-webkit-details-marker{display:none}
-.wg-ui .wg-ui-danger[open]>summary svg{transform:rotate(180deg)}
-.wg-ui .wg-ui-danger-body{padding:12px;border-top:1px solid rgba(195,55,55,.25)}
-.wg-ui .wg-ui-danger-body form{display:inline-flex;flex-wrap:wrap;align-items:end;gap:8px;margin:6px 8px 6px 0}
-.wg-ui .wg-ui-danger-body label{display:flex;flex-direction:column;gap:4px}
-.wg-ui .wg-ui-tools{margin:14px 0;border:1px solid rgba(127,127,127,.25);border-radius:5px}
-.wg-ui .wg-ui-tools>summary{display:flex;gap:7px;align-items:center;padding:10px 12px;font-weight:600;cursor:pointer;list-style:none}
-.wg-ui .wg-ui-tools>summary::-webkit-details-marker{display:none}
-.wg-ui .wg-ui-tools[open]>summary svg{transform:rotate(180deg)}
-.wg-ui .wg-ui-tools-body{padding:12px;border-top:1px solid rgba(127,127,127,.22)}
+.wg-ui .wg-ui-action-bar .btn,.wg-ui .wg-ui-button-row .btn,.wg-ui .wg-ui-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font:inherit;font-size:12px;line-height:1.35;min-height:31px;padding:5px 10px;margin:0;border-radius:4px;white-space:nowrap}
+.wg-ui .wg-ui-btn{border:1px solid var(--wg-border);background:transparent;color:inherit;text-decoration:none}
+.wg-ui .wg-ui-btn:hover,.wg-ui .wg-ui-btn:focus-visible{background:rgba(127,127,127,.14);text-decoration:none}
+.wg-ui .wg-ui-tone-success{color:var(--wg-success)!important}
+.wg-ui .wg-ui-tone-warning{color:var(--wg-warning)!important}
+.wg-ui .wg-ui-tone-danger{color:var(--wg-danger)!important}
+.wg-ui .wg-ui-tone-info{color:var(--wg-info)!important}
+.wg-ui .wg-ui-btn.wg-ui-tone-success{border-color:var(--wg-success)}
+.wg-ui .wg-ui-btn.wg-ui-tone-warning{border-color:var(--wg-warning)}
+.wg-ui .wg-ui-btn.wg-ui-tone-danger{border-color:var(--wg-danger)}
+.wg-ui .wg-ui-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;min-width:30px;border:1px solid transparent;border-radius:4px;background:transparent;color:inherit;cursor:pointer;text-decoration:none;padding:0;vertical-align:middle;font:inherit}
+.wg-ui .wg-ui-icon-btn svg{display:block;width:17px;height:17px;flex:none;stroke:currentColor;stroke-width:1.9}
+.wg-ui .wg-ui-icon-btn:hover,.wg-ui .wg-ui-icon-btn:focus-visible{border-color:currentColor;background:rgba(127,127,127,.15);text-decoration:none;outline-offset:2px}
 .wg-ui .wg-ui-icon-btn:disabled{opacity:.5;cursor:wait}
 .wg-ui .wg-ui-icon-btn [hidden]{display:none!important}
-.wg-ui .wg-ui-danger-body .btn-danger{margin:4px 0}
-.wg-ui .wg-analytics-table td,.wg-ui .wg-analytics-table th{font-variant-numeric:tabular-nums}
-
+.wg-ui .wg-ui-table-actions{display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:nowrap;white-space:nowrap}
+.wg-ui .wg-ui-table-actions form,.wg-ui .wg-ui-action-group form{margin:0;display:inline-flex;align-items:center}
+.wg-ui .wg-ui-compact-table td:last-child,.wg-ui .wg-ui-compact-table th:last-child{text-align:center;white-space:nowrap}
+.wg-ui .wg-ui-compact-table td:nth-last-child(2),.wg-ui .wg-ui-compact-table th:nth-last-child(2){text-align:center}
+.wg-ui .wg-ui-mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-variant-numeric:tabular-nums}
+.wg-ui .wg-ui-copy{display:inline-flex;align-items:center;gap:5px}
+.wg-ui .wg-ui-panel,.wg-ui .wg-ui-danger,.wg-ui .wg-ui-tools{margin:12px 0;border:1px solid var(--wg-border);border-radius:5px}
+.wg-ui .wg-ui-danger{border-color:rgba(190,75,75,.4)}
+.wg-ui .wg-ui-panel>summary,.wg-ui .wg-ui-danger>summary,.wg-ui .wg-ui-tools>summary{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:600;cursor:pointer;list-style:none}
+.wg-ui .wg-ui-danger>summary{color:var(--wg-danger)}
+.wg-ui .wg-ui-panel>summary::-webkit-details-marker,.wg-ui .wg-ui-danger>summary::-webkit-details-marker,.wg-ui .wg-ui-tools>summary::-webkit-details-marker{display:none}
+.wg-ui .wg-ui-panel[open]>summary svg,.wg-ui .wg-ui-danger[open]>summary svg,.wg-ui .wg-ui-tools[open]>summary svg{transform:rotate(180deg)}
+.wg-ui .wg-ui-danger-body,.wg-ui .wg-ui-tools-body{padding:12px;border-top:1px solid var(--wg-border)}
+.wg-ui .wg-ui-danger-body form{display:inline-flex;flex-wrap:wrap;align-items:end;gap:8px;margin:6px 8px 6px 0}
+.wg-ui .wg-ui-danger-body label{display:flex;flex-direction:column;gap:4px}
 .wg-ui .wg-ui-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:10px}
-.wg-ui .wg-ui-summary-card{border:1px solid rgba(127,127,127,.24);border-radius:5px;padding:12px;min-width:0}
+.wg-ui .wg-ui-summary-card{border:1px solid var(--wg-border);border-radius:5px;padding:12px;min-width:0}
 .wg-ui .wg-ui-summary-card>span{display:block;font-size:12px;opacity:.7;margin-bottom:6px}
 .wg-ui .wg-ui-summary-card>strong{display:block;font-size:16px;font-weight:600;overflow-wrap:anywhere}
-.wg-ui .wg-ui-copy{display:inline-flex;align-items:center;gap:5px}
+.wg-ui .wg-ui-status{display:inline-block;border:1px solid var(--wg-border);border-radius:4px;padding:2px 6px;font-weight:600}
+.wg-ui .wg-ui-status--success{color:var(--wg-success);border-color:var(--wg-success)}
+.wg-ui .wg-ui-status--muted{opacity:.65}
+.wg-ui [data-wg-net-icon][hidden],.wg-ui [data-wg-geoip-country][hidden]{display:none!important}
+.wg-ui .wg-endpoint-with-icon{display:inline-flex;align-items:center;gap:5px}
+.wg-ui .wg-ui-form-row{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
+.wg-ui .wg-ui-form-row label{display:flex;flex-direction:column;gap:4px}
+.wg-ui .wg-ui-form-row input,.wg-ui .wg-ui-form-row select{font:inherit}
+.wg-ui .wg-analytics-table td,.wg-ui .wg-analytics-table th{font-variant-numeric:tabular-nums}
 .wg-ui-modal[hidden]{display:none!important}
 .wg-ui-modal{position:fixed;inset:0;z-index:100001;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);padding:20px}
 .wg-ui-modal-panel{background:var(--bg-color,#252629);color:inherit;border:1px solid rgba(127,127,127,.4);box-shadow:0 12px 40px rgba(0,0,0,.35);border-radius:7px;max-width:760px;max-height:88vh;overflow:auto;width:100%;padding:16px}
@@ -128,7 +143,7 @@ sub wg_ui_foundation {
 .wg-ui-modal-body{padding-top:12px}
 .wg-ui-modal-body th{width:30%;overflow-wrap:anywhere}
 .wg-ui-modal-body td{overflow-wrap:anywhere}
-@media(max-width:700px){.wg-ui .wg-ui-action-right{margin-left:0}.wg-ui-modal{padding:8px}}
+@media(max-width:700px){.wg-ui .wg-ui-action-right{margin-left:0}.wg-ui-modal{padding:8px}.wg-ui .wg-ui-compact-table{overflow-x:auto}}
 </style>
 <script>
 (function(){
