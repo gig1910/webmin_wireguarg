@@ -504,3 +504,26 @@ network_icons_clear=Сбросить кеш диапазонов
 peer_tab_settings=Настройки
 peer_tab_usage=История потребления
 peer_tab_activity=Активности
+
+# Shared user-interface components
+ui_close=Закрыть
+ui_refresh_runtime=Обновить данные интерфейса
+ui_copy_public=Копировать публичный ключ
+ui_copy_endpoint=Копировать Endpoint
+ui_copy_config=Копировать клиентскую конфигурацию
+ui_storage_maintenance=Обслуживание хранилища
+ui_dependency_qr=Генерация QR
+ui_dependency_whois=WHOIS
+ui_dependency_geoip=Локальный GeoIP
+ui_dependency_geoip_update=Обновление базы GeoIP
+ui_dependency_available=Доступно
+ui_dependency_unavailable=Недоступно
+ui_dependency_country_only=База Country: город недоступен
+ui_dependency_city=База City: доступны геоданные, если IP найден
+ui_dependency_missing_db=База GeoIP не найдена
+ui_collector_controls=Управление сборщиком метрик
+ui_ip_city_note=Город показывается только при наличии GeoIP City и записи для этого IP; данные приблизительны.
+ui_form_invalid=Проверьте значение поля.
+ui_form_endpoint=Адрес или имя хоста с необязательным портом 1–65535
+ui_save_changes=Сохранить изменения
+ui_unknown_network=Неизвестная сеть
