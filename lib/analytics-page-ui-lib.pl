@@ -209,6 +209,10 @@ sub wg_analytics_controller_script
       ];
       const row=window.WireGuardTableSort.appendTextRow(body,columns);
       row.cells[3].classList.add('wg-ui-mono');
+      for(const index of [5,6]){
+        row.cells[index].classList.add('wg-ui-mono','wg-ui-address');
+        row.cells[index].dataset.wgAddressKind='endpoint';
+      }
       if(peerData && peerData.peer_url){
         const url=new URL(peerData.peer_url,window.location.href);
         if(url.origin===window.location.origin && url.pathname.endsWith('/wireguard/edit_peer.cgi')){
