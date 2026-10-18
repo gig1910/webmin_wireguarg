@@ -543,3 +543,6 @@ ui_copy_unavailable=Копирование недоступно
 ui_api_non_json=Сервер вернул не JSON
 ui_api_bad_json=Некорректный JSON-ответ
 interface_advanced_hooks=Дополнительные команды интерфейса (PreUp, PostUp, PreDown, PostDown)
+
+unlocode_status=Локальный справочник UN/LOCODE: %s записей. Коды показываются только при однозначном совпадении страны и города.
+unlocode_official=Официальные выпуски UNECE
