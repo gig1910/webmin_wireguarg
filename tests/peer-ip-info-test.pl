@@ -74,9 +74,13 @@ die "IP must come exclusively from handshake-confirmed SQLite identity\n"
            $cgi =~ /\$record->\{'public'\}/ &&
            $backend =~ /def peer_handshake_ip\(conn, request\)/ &&
            $backend =~ /SELECT handshake,handshake_ip FROM peers WHERE id=\?/;
-die "Do not use a user-supplied IP or static endpoint for WHOIS\n"
-    if $cgi =~ /\$in\{'(?:ip|endpoint|address|target)'\}/ ||
-       $cgi =~ /get_section_value\(\$peer,\s*'Endpoint'\)/;
+die "Historical IP query must be bound to a recorded event of the same peer\n"
+    unless $cgi =~ /event_at/ && $cgi =~ /event_ip/ &&
+           $backend =~ /historical endpoint not recorded for this peer/ &&
+           $backend =~ /SELECT 1 FROM events WHERE peer_id=\? AND at=\?/ &&
+           $backend =~ /ipaddress\.ip_address\(requested\)/;
+die "Never use unverified static endpoint for on-demand WHOIS\n"
+    if $cgi =~ /get_section_value\(\$peer,\s*'Endpoint'\)/;
 die "Lookup dependencies not shipped\n"
     unless $manifest =~ /^peer_ip_info\.cgi$/m &&
            $manifest =~ /^lib\/peer-ip-info-lib\.pl$/m;
