@@ -275,8 +275,8 @@ if ($access{'manage'}) {
             $export_html .= '<li>'.html_escape($_).'</li>' for @$issues;
             $export_html .= '</ul>';
             if (!length($peer->{'private_key'} || '')) {
-                $export_html .= '<button type="button" class="btn" id="wg-focus-private">'.
-                    html_escape($text{'peer_set_private'}).'</button>';
+                $export_html .= wg_ui_button(type=>'button',icon=>'edit',tone=>'info',
+                    label=>$text{'peer_set_private'},attrs=>{id=>'wg-focus-private'});
             }
             $export_html .= '</div>';
         }
