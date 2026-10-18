@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use FindBin;
 use JSON::PP qw(encode_json);
+require "$FindBin::Bin/node-harness.pl";
 
 sub slurp {
     my ($path) = @_;
@@ -46,12 +47,7 @@ my $html=$rendered->();
 my ($script) = $html =~ m{<script>\s*(.*?)\s*</script>}s;
 die "rendered interface JavaScript content missing\n" if !defined $script;
 
-my $node = `command -v node 2>/dev/null`;
-chomp($node);
-if ($node) {
-    my $path = "$FindBin::Bin/interface-controller-root-$$.js";
-    open(my $fh, '>', $path) or die $!;
-    print {$fh} <<'JS_HEAD';
+my $fixture = <<'JS_HEAD';
 const vm = require('vm');
 const pageScript = __PAGE_SCRIPT__;
 let refreshCount = 0;
@@ -141,15 +137,7 @@ for (const type of ['wg-runtime', 'wg-runtime-error', 'wg-runtime-warning']) {
     process.exit(1);
 });
 JS_HEAD
-    close($fh);
-
-    my $runtime_source = slurp($path);
-    $runtime_source =~ s/__PAGE_SCRIPT__/encode_json($script)/e;
-    open(my $wfh, '>', $path) or die $!;
-    print {$wfh} $runtime_source;
-    close($wfh);
-    system($node, $path) == 0 or die "interface controller root test failed\n";
-    unlink($path);
-}
+$fixture =~ s/__PAGE_SCRIPT__/encode_json($script)/e;
+wg_test_node_script($fixture, 'interface controller root and manual refresh');
 
 print "interface controller root and manual refresh checks passed\n";
