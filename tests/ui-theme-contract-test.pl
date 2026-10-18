@@ -18,8 +18,8 @@ for my $action (sort keys %actions) {
     die "Semantic $action renders wrong native theme class\n"
         unless $html =~ /class="[^"]*\b\Q$actions{$action}\E\b/;
 }
-my $stop=wg_ui_icon_action(icon=>'stop',label=>'Stop',tone=>'warning');
-die "Unreadable stop icon\n" unless $stop =~ /text-warning/ &&
+my $stop=wg_ui_icon_action(icon=>'stop',label=>'Stop',action=>'stop');
+die "Unreadable stop icon\n" unless $stop =~ /text-danger/ &&
     $stop =~ /fill="currentColor"/ && $stop =~ /aria-label="Stop"/;
 my $foundation=read_text("$FindBin::Bin/../lib/ui-foundation-lib.pl");
 die "Custom CSS overriding native button background\n" if $foundation =~ /wg-ui-btn\{[^}]*background:/;
