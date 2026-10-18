@@ -134,12 +134,11 @@ sub preshared_key_form_rows_for_state
         my $label=preshared_key_text('configured');
         my $notice='<span class="label label-success">'.
             html_escape($label).'</span>';
-        my $remove='<button type="submit" class="wg-ui-icon-btn wg-ui-tone-warning"'.
-            ' name="remove_preshared_key" value="1"'.
-            ' title="'.html_escape(preshared_key_text('remove')).'"'.
-            ' aria-label="'.html_escape(preshared_key_text('remove')).'"'.
-            ' data-wg-confirm="'.html_escape(preshared_key_text('remove_confirm')).'">'.
-            wg_ui_icon('trash').'</button>';
+        my $remove=wg_ui_icon_action(
+            icon=>'trash',tone=>'warning',type=>'submit',
+            label=>preshared_key_text('remove'),
+            attrs=>{name=>'remove_preshared_key',value=>1,
+                'data-wg-confirm'=>preshared_key_text('remove_confirm')});
         return ui_table_row('PresharedKey',
             '<span class="wg-ui-copy">'.$notice.$remove.'</span>');
     }
