@@ -28,5 +28,11 @@ The full code (e.g. `RUMOW`) is stored and its three-character location
 portion (`MOW`) is displayed in the peer tables. No guessed abbreviations
 are presented as UN/LOCODE. Ambiguous/unmatched locations have no official
 code. Manual network mappings can select a known full five-character code.
-Import a UNECE release explicitly using `scripts/import-unlocode.py` and
-an existing analytics database; see `docs/UNLOCODE.ru.md`.
+UN/LOCODE initialization and periodic checks are now handled by a
+module-managed, optional systemd timer. The first download is queued without
+blocking Webmin installation; failures retain existing catalog contents.
+A manual refresh and last-update/error details are available in the
+network directory. Offline imports remain supported via
+`scripts/import-unlocode.py` when required; see `docs/UNLOCODE.ru.md`.
+The download URL uses official UNECE HTTPS release archives; availability
+must still be confirmed on a server with Internet connectivity.
