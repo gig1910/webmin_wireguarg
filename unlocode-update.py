@@ -79,7 +79,6 @@ def refresh(database, state, *, urls=None):
                     with sqlite3.connect(database, timeout=30) as live:
                         live.executescript(SCHEMA)
                         # All-or-nothing replacement of the existing catalog.
-                        live.execute("ATTACH DATABASE ':memory:' AS scratch")
                         # Use bulk rows from the validated staging database.
                         rows = staged.execute(
                             "SELECT country,code,name,ascii_name,subdivision,name_key,ascii_key "
