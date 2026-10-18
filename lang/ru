@@ -552,3 +552,5 @@ unlocode_update_button=Обновить UN/LOCODE сейчас
 unlocode_update_queued=Обновление UN/LOCODE поставлено в очередь systemd. Статус появится после завершения.
 unlocode_update_failed=Не удалось поставить обновление UN/LOCODE в очередь.
 unlocode_last_updated=Последнее успешное обновление UN/LOCODE: %s
+
+unlocode_update_warning=Последняя попытка обновления UN/LOCODE завершилась ошибкой:
