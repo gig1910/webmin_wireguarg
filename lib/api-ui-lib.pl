@@ -60,7 +60,7 @@ sub json_response
     print "Cache-Control: no-store, no-cache, must-revalidate\r\n";
     print "Pragma: no-cache\r\n";
     print "X-Content-Type-Options: nosniff\r\n";
-    print "X-WireGuard-Webmin-API: 0.2.0\r\n";
+    print "X-WireGuard-Webmin-API: 0.3.0\r\n";
     print "X-WireGuard-Webmin-Build: ".wg_build_version()."\r\n"
         if defined(&wg_build_version);
     print "Content-Length: ".length($encoded)."\r\n\r\n";
@@ -193,7 +193,7 @@ sub module_script_url
     # Version every API URL. Authentic Theme keeps module DOM fragments alive
     # across navigation, so an unversioned endpoint can leave old pollers active.
     if (!exists($params{'_wg_api'})) {
-        $params{'_wg_api'} = '0.2.0';
+        $params{'_wg_api'} = '0.3.0';
         $params{'_wg_api'} = wg_build_version() if defined(&wg_build_version);
     }
 
