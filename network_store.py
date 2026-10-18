@@ -15,12 +15,13 @@ CREATE TABLE IF NOT EXISTS network_cache (
 );
 CREATE TABLE IF NOT EXISTS network_icons (
     cidr TEXT PRIMARY KEY, icon TEXT NOT NULL DEFAULT '?',
-    label TEXT NOT NULL DEFAULT ''
+    label TEXT NOT NULL DEFAULT '', city TEXT NOT NULL DEFAULT '',
+    city_code TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS geoip_cache (
     ip TEXT PRIMARY KEY,
-    country_code TEXT NOT NULL,
-    observed_at INTEGER NOT NULL DEFAULT 0
+    country_code TEXT NOT NULL, city TEXT NOT NULL DEFAULT '',
+    city_code TEXT NOT NULL DEFAULT '', observed_at INTEGER NOT NULL DEFAULT 0
 );
 """
 
@@ -48,6 +49,12 @@ def network_record(conn, req):
     if not isinstance(geoip_country, str) or (geoip_country and
             not re.fullmatch(r"[A-Z]{2}", geoip_country)):
         raise ValueError("invalid GeoIP country code")
+    geoip_city = req.get("geoip_city") or ""
+    geoip_city_code = req.get("geoip_city_code") or ""
+    if not isinstance(geoip_city, str) or len(geoip_city) > 100 or any(ord(c)<32 for c in geoip_city):
+        raise ValueError("invalid GeoIP city")
+    if not isinstance(geoip_city_code, str) or not re.fullmatch(r"[A-Z0-9]{0,8}",geoip_city_code):
+        raise ValueError("invalid GeoIP city abbreviation")
     fields = req.get("whois_fields") or []
     if not isinstance(fields, list) or len(fields) > 30:
         raise ValueError("invalid WHOIS fields")
@@ -92,10 +99,10 @@ def network_record(conn, req):
         if geoip_country:
             # A GeoIP observation describes one IP, not its WHOIS parent CIDR.
             conn.execute(
-                "INSERT INTO geoip_cache(ip,country_code,observed_at) VALUES(?,?,?) "
-                "ON CONFLICT(ip) DO UPDATE SET country_code=excluded.country_code,"
+                "INSERT INTO geoip_cache(ip,country_code,city,city_code,observed_at) VALUES(?,?,?,?,?) "
+                "ON CONFLICT(ip) DO UPDATE SET country_code=excluded.country_code,\n                "city=excluded.city,city_code=excluded.city_code,"
                 "observed_at=excluded.observed_at",
-                (str(ip), geoip_country, int(time.time())))
+                (str(ip), geoip_country, geoip_city,geoip_city_code,int(time.time())))
     return {"ok": True, "cidr": cidr}
 
 
@@ -105,10 +112,10 @@ def network_lookup(conn, req):
         raise ValueError("invalid IP list")
     cached = [(ipaddress.ip_network(net), owner, country) for net, owner, country
               in conn.execute("SELECT cidr,owner,country FROM network_cache")]
-    icons = [(ipaddress.ip_network(net), icon, label) for net, icon, label
-             in conn.execute("SELECT cidr,icon,label FROM network_icons")]
-    geoip = {ip: code for ip, code in conn.execute(
-        "SELECT ip,country_code FROM geoip_cache WHERE observed_at>=?",
+    icons = [(ipaddress.ip_network(net), icon, label, city, city_code) for net, icon, label, city, city_code
+             in conn.execute("SELECT cidr,icon,label,city,city_code FROM network_icons")]
+    geoip = {ip: (code,city,city_code) for ip, code, city, city_code in conn.execute(
+        "SELECT ip,country_code,city,city_code FROM geoip_cache WHERE observed_at>=?",
         (int(time.time())-30*86400,))}
     result = {}
     for raw in ips:
@@ -122,7 +129,7 @@ def network_lookup(conn, req):
                   key=lambda entry: entry[0].prefixlen, default=None)
         manual = max((entry for entry in icons if ip in entry[0]),
                      key=lambda entry: entry[0].prefixlen, default=None)
-        country_code = geoip.get(str(ip), "")
+        country_code,city,city_code = geoip.get(str(ip), ("","",""))
         registered_country = hit[2] if hit else ""
         # Preserve the exact request literal as the map key. Browser runtime
         # endpoints can use a non-canonical IPv6 spelling (e.g. leading zeros).
@@ -133,7 +140,7 @@ def network_lookup(conn, req):
             "country": country_code or registered_country,
             "country_source": "geoip" if country_code else ("whois" if registered_country else ""),
             "whois_country": registered_country,
-            "geoip_country": country_code,
+            "geoip_country": country_code,\n            "city": (manual[3] if manual and manual[3] else city),\n            "city_code": (manual[4] if manual and manual[4] else city_code),\n            "city_source": "manual" if manual and (manual[3] or manual[4]) else ("geoip" if city else ""),
             "cached": bool(hit or country_code),
         }
     return {"ok": True, "results": result}
@@ -145,11 +152,11 @@ def network_manage(conn, req):
         cache = [dict(zip(("cidr", "owner", "country", "observed_at"), row)) for row
                  in conn.execute("SELECT cidr,owner,country,observed_at FROM network_cache "
                                  "ORDER BY observed_at DESC LIMIT 1000")]
-        icons = [dict(zip(("cidr", "icon", "label"), row)) for row in
+        icons = [dict(zip(("cidr", "icon", "label", "city", "city_code"), row)) for row in
                  conn.execute("SELECT cidr,icon,label FROM network_icons ORDER BY cidr LIMIT 1000")]
         observations = [
             (ipaddress.ip_address(ip), code)
-            for ip, code in conn.execute(
+            for ip, code, city, city_code in conn.execute(
                 "SELECT ip,country_code FROM geoip_cache WHERE observed_at>=? "
                 "ORDER BY observed_at DESC LIMIT 1000", (int(time.time())-30*86400,))]
         for item in cache:
@@ -180,9 +187,14 @@ def network_manage(conn, req):
         raise ValueError("invalid icon")
     if not isinstance(label, str) or len(label) > 100 or any(ord(c) < 32 for c in label):
         raise ValueError("invalid label")
+    city,city_code=req.get("city") or "",req.get("city_code") or ""
+    if not isinstance(city,str) or len(city)>100 or any(ord(c)<32 for c in city):
+        raise ValueError("invalid manual city")
+    if not isinstance(city_code,str) or not re.fullmatch(r"[A-Z0-9]{0,8}",city_code):
+        raise ValueError("invalid manual city code")
     with conn:
-        conn.execute("INSERT INTO network_icons(cidr,icon,label) VALUES(?,?,?) "
-                     "ON CONFLICT(cidr) DO UPDATE SET icon=excluded.icon,label=excluded.label",
-                     (cidr, icon, label))
+        conn.execute("INSERT INTO network_icons(cidr,icon,label,city,city_code) VALUES(?,?,?,?,?) "
+                     "ON CONFLICT(cidr) DO UPDATE SET icon=excluded.icon,label=excluded.label,"\n                     "city=excluded.city,city_code=excluded.city_code",
+                     (cidr, icon, label, city,city_code))
     return {"ok": True}
 
