@@ -15,11 +15,13 @@ if (length($action)) {
         cidr=>$in{'cidr'} || '',
         icon=>$in{'icon'} || '?',
         label=>$in{'label'} || '',
+        city=>$in{'city'} || '',
+        city_code=>uc($in{'city_code'} || ''),
         confirm=>$in{'confirm'} || '',
     };
     # Webmin ReadParse can yield UTF-8 octets. Convert only byte values, once,
     # before JSON::PP encodes the request for the Python SQLite backend.
-    for my $field (qw(icon label)) {
+    for my $field (qw(icon label city city_code)) {
         my $value = $payload->{$field};
         next if !defined($value) || utf8::is_utf8($value) || $value !~ /[\x80-\xFF]/;
         $payload->{$field} = eval { Encode::decode('UTF-8', $value, Encode::FB_CROAK()) };
