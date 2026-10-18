@@ -36,7 +36,7 @@ die "WHOIS action must be hidden without runtime endpoint IP\n"
 die "Expected independent network/country/endpoint cells\n"
     unless $iface =~ /data-wg-net-icon/ && $iface =~ /data-wg-geoip-country/ &&
       $iface =~ /data-wg-geoip-city/ &&
-      $iface =~ /data-wg-endpoint/ && $iface =~ /interface_peer_allowed'\}, '', '', \$text\{'interface_peer_endpoint/;
+      $iface =~ /data-wg-endpoint/ && $iface =~ /interface_peer_allowed'\}, '', '', \$text\{'network_icons_city_code'\}, \$text\{'interface_peer_endpoint/;
 die "Icon columns must not be sortable\n"
     unless $iface_js =~ /\['name','state','ip','actions','actions','text','endpoint'/;
 my $index=read_text("$FindBin::Bin/../index.cgi");
