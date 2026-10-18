@@ -153,19 +153,12 @@ CHECK
     system($node,'--check',$path)==0 or die "rendered network icon IP parser syntax invalid\n";
     system($node,$path)==0 or die "rendered network icon IP parser behavior invalid\n";
 }
-# Test country-code regular expression after the same interpolating heredoc
-# expansion used by the CGI. Checking raw Perl source with Node misses '$/'.
-my ($country_body)=$iface=~/(    function showNetworkIcons\(\) \{.*?\n    \})/s;
-die "GeoIP badge renderer missing\n" unless defined $country_body;
-my $country_render=eval "sub { return <<COUNTRY_UI;\n$country_body\nCOUNTRY_UI\n}";
-die "GeoIP badge interpolation failed: $@\n" if !$country_render || $@;
-my $country_js=$country_render->();
-die "GeoIP country regex lost its anchor after Perl interpolation\n"
-    unless $country_js =~ m{\^\[A-Za-z\]\{2\}\$/};
-if($node){
-    my ($fh,$path)=tempfile(SUFFIX=>'.js',UNLINK=>1);
-    print {$fh} $country_js."\n";
-    close($fh);
-    system($node,'--check',$path)==0 or die "rendered GeoIP badge JavaScript invalid\n";
-}
+# ISO validation lives in the shared, NON-interpolating UI foundation.
+# The browser behavior test runs the rendered code in Node and verifies flags.
+# Both live rows and activity/history must use the same renderer.
+die "Shared GeoIP country guard missing\n"
+    unless index($ui_foundation,q{/^[A-Z]{2}$/})>=0 &&
+           index($ui_foundation,'renderNetwork(badge,country,info,address)')>=0;
+die "Peer history must reuse the common network renderer\n"
+    unless $peer_ui=~/WireGuardUI\.renderNetwork\(badge,country,info/;
 print "network badge/cache and peer three-tab UI tests passed\n";
