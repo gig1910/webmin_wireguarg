@@ -171,7 +171,7 @@ HTML
 print wg_analytics_controller_script($strings, $selected_json, $initial_interface_json);
 
 if ($access{'manage'}) {
-    print wg_ui_panel_start($text{'ui_storage_maintenance'},tone=>'danger');
+    print wg_ui_panel_start($text{'ui_storage_maintenance'});
     print '<p class="help-block">'.html_escape($text{'analytics_maintenance_help'}).
           '</p><div class="wg-analytics-steps">';
     for my $item (
