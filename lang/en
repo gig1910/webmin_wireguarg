@@ -554,3 +554,21 @@ unlocode_update_failed=Cannot schedule UN/LOCODE update.
 unlocode_last_updated=UN/LOCODE last successful update: %s
 
 unlocode_update_warning=The latest UN/LOCODE update failed:
+
+geoip_city_title=Install GeoLite2 City in Webmin
+geoip_city_explain=GeoLite2 City requires a free MaxMind account and license key. Credentials are saved only in protected GeoIP.conf.
+geoip_city_status=GeoIP credentials
+geoip_city_ready=configured
+geoip_city_unconfigured=not configured
+geoip_city_account=MaxMind Account ID
+geoip_city_license=MaxMind License Key
+geoip_city_existing=Leave both fields empty to reuse existing GeoIP.conf credentials; the wizard adds GeoLite2-City and downloads the database.
+geoip_city_submit=Install / refresh GeoLite2 City
+geoip_city_pair=Enter both credentials or leave both blank.
+geoip_city_invalid=Invalid Account ID or License Key.
+geoip_city_install_first=Install geoipupdate package first.
+geoip_city_unsafe_conf=Unsafe or inaccessible GeoIP.conf path.
+geoip_city_credentials_required=Supply MaxMind Account ID and License Key.
+geoip_city_write_failed=Cannot safely update GeoIP.conf.
+geoip_city_download_failed=Configuration saved but City download failed. Check credentials and server network.
+geoip_city_success=GeoLite2 City updated; vendor update timer enabled.
