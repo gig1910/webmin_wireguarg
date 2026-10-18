@@ -111,7 +111,7 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
 
     my $ip_action=wg_ui_icon_action(
         icon=>'globe',label=>$text{'peer_ip_lookup'}||'WHOIS / GeoIP',tone=>'info',
-        attrs=>{'data-wg-ip-inspect'=>"$i"});
+        attrs=>{'data-wg-ip-inspect'=>"$i",'data-wg-ip-action'=>$id});
     my $edit_action=wg_ui_icon_action(
         icon=>'edit',label=>$text{'peer_edit_title'}||'Edit',action=>'edit',
         href=>$peer_url);
