@@ -6,9 +6,11 @@ sub wg_ui_peer_inspector {
     my $label=html_escape($text{'peer_ip_lookup'}||'WHOIS / GeoIP');
     my $close=html_escape($text{'ui_close'}||'Close');
     my $markup='<div class="wg-ui-modal" data-wg-ip-dialog hidden role="dialog" aria-modal="true" aria-label="'.$title.'">'.
-        '<div class="wg-ui-modal-panel">'.
+        '<div class="wg-ui-modal-panel panel panel-default">'.
         '<div class="wg-ui-modal-header"><h3>'.$title.'</h3>'.
-        '<button type="button" class="btn btn-default" data-wg-ip-close>'.$close.'</button></div>'.
+        wg_ui_button(type=>'button',icon=>'close',
+            label=>$text{'ui_close'}||'Close',
+            attrs=>{'data-wg-ip-close'=>1}).'</div>'.
         '<div class="wg-ui-modal-body" data-wg-ip-output role="status" aria-live="polite"></div>'.
         '</div></div>';
     $markup.='<div hidden data-wg-ip-options'.
