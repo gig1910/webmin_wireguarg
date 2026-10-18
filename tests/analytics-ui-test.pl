@@ -25,7 +25,14 @@ die "interface CGI must delegate to isolated page controller\n"
 $interface .= "\n".slurp("$FindBin::Bin/../lib/interface-page-ui-lib.pl");
 my $peer_page=slurp("$FindBin::Bin/../edit_peer.cgi");
 my $manifest=slurp("$FindBin::Bin/../MANIFEST.wbm");
-die "analytics tab missing\n" if $ui !~ /nav nav-tabs/ || $index !~ /analytics\.cgi/;
+my $foundation=slurp("$FindBin::Bin/../lib/ui-foundation-lib.pl");
+die "shared analytics navigation missing\n"
+    unless $ui =~ /wg_ui_main_tabs\('analytics'\)/ &&
+           $index =~ /wg_ui_main_tabs\('interfaces'\)/ &&
+           $foundation =~ /sub wg_ui_main_tabs\s*\{/ &&
+           $foundation =~ /nav nav-tabs/ &&
+           $foundation =~ /analytics\.cgi/ &&
+           $foundation =~ /index\.cgi/;
 die "date and peer filters missing\n" if $ui !~ /data-peer/ || $ui !~ /data-from/ || $ui !~ /data-to/;
 die "historical range presets incomplete or shorter than 6 hours\n"
     unless $ui =~ /value="21600"/ && $ui =~ /value="86400"/ &&
