@@ -201,6 +201,25 @@ sub wg_ui_foundation {
    const value=String(code||'').trim().toUpperCase();
    return /^[A-Z]{2}$/.test(value)
     ? String.fromCodePoint(...Array.from(value,c=>127397+c.charCodeAt(0))) : '';
+  },
+  renderNetwork(badge,country,info,address){
+   // Same badge/country contract in the live peer table and history views.
+   // This method is presentation-only: it does not trigger WHOIS or GeoIP IO.
+   const hasIp=!!String(address||'').trim();
+   const network=hasIp&&info&&typeof info==='object'?info:null;
+   if(badge){
+    badge.hidden=!hasIp;
+    badge.textContent=network&&network.icon?String(network.icon):'?';
+    badge.dataset.custom=network&&network.icon&&network.icon!=='?'?'1':'0';
+    badge.title=network?[network.cidr,network.label,network.country].filter(Boolean).join(' — '):'';
+   }
+   if(country){
+    const raw=network&&typeof network.country==='string'?network.country.trim().toUpperCase():'';
+    const code=/^[A-Z]{2}$/.test(raw)?raw:'';
+    country.textContent=code?this.flag(code)+' '+code:'';
+    country.hidden=!code;
+    country.title=code?((network.country_source==='geoip'?'GeoIP':'WHOIS')+': '+code):'';
+   }
   }
  };
  window.WireGuardUI=Object.freeze(ui);
