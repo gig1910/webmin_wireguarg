@@ -25,14 +25,25 @@ die "interface CGI must delegate to isolated page controller\n"
 $interface .= "\n".slurp("$FindBin::Bin/../lib/interface-page-ui-lib.pl");
 my $peer_page=slurp("$FindBin::Bin/../edit_peer.cgi");
 my $manifest=slurp("$FindBin::Bin/../MANIFEST.wbm");
-my $foundation=slurp("$FindBin::Bin/../lib/ui-foundation-lib.pl");
-die "shared analytics navigation missing\n"
+# Validate the shared component output; CGI checks only assert its use.
+use lib "$FindBin::Bin/stub";
+require "$FindBin::Bin/../wireguard-lib.pl";
+my $tabs_analytics=wg_ui_main_tabs('analytics');
+my $tabs_interfaces=wg_ui_main_tabs('interfaces');
+die "shared primary navigation not wired\n"
     unless $ui =~ /wg_ui_main_tabs\('analytics'\)/ &&
-           $index =~ /wg_ui_main_tabs\('interfaces'\)/ &&
-           $foundation =~ /sub wg_ui_main_tabs\s*\{/ &&
-           $foundation =~ /nav nav-tabs/ &&
-           $foundation =~ /analytics\.cgi/ &&
-           $foundation =~ /index\.cgi/;
+           $index =~ /wg_ui_main_tabs\('interfaces'\)/;
+for my $tabs ($tabs_analytics,$tabs_interfaces) {
+    die "shared navigation lacks both destinations\n"
+        unless $tabs =~ /href="index\.cgi"/ && $tabs =~ /href="analytics\.cgi"/ &&
+               $tabs =~ /data-wg-module-navigation="1"/;
+    die "shared navigation must select one tab\n"
+        unless scalar(() = $tabs =~ /aria-current="page"/g) == 1;
+}
+die "selected analytics tab is incorrect\n"
+    unless $tabs_analytics =~ /class="active"><a href="analytics\.cgi" aria-current="page"/;
+die "selected interfaces tab is incorrect\n"
+    unless $tabs_interfaces =~ /class="active"><a href="index\.cgi" aria-current="page"/;
 die "date and peer filters missing\n" if $ui !~ /data-peer/ || $ui !~ /data-from/ || $ui !~ /data-to/;
 die "historical range presets incomplete or shorter than 6 hours\n"
     unless $ui =~ /value="21600"/ && $ui =~ /value="86400"/ &&
