@@ -278,27 +278,30 @@ sub wg_ui_foundation {
  }
  function validEndpoint(value){
   if(!value)return true;
-  let host=value,port='';
+  let host=value,port='',hasPort=false;
   if(value.startsWith('[')){
    const end=value.indexOf(']');
    if(end<2)return false;
    host=value.slice(1,end);
    const rest=value.slice(end+1);
    if(rest&&rest.charAt(0)!==':')return false;
-   if(rest)port=rest.slice(1);
+   if(rest){hasPort=true;port=rest.slice(1);}
    try{new URL('http://['+host+']/');}catch(_){return false;}
   }else if(value.indexOf(':')===value.lastIndexOf(':')&&value.includes(':')){
    const idx=value.lastIndexOf(':');
    host=value.slice(0,idx);port=value.slice(idx+1);
+   hasPort=true;
    if(!/^[a-zA-Z0-9_.-]+$/.test(host))return false;
   }else if(!/^[a-zA-Z0-9_.-]+$/.test(value))return false;
-  return !port||(/^\d{1,5}$/.test(port)&&Number(port)>=1&&Number(port)<=65535);
+  return !hasPort||(/^\d{1,5}$/.test(port)&&Number(port)>=1&&Number(port)<=65535);
  }
  function validateField(field){
   const value=field.value.trim(),kind=field.dataset.wgValidate;
   let ok=true;
-  if(value&&kind==='cidr-list')
-   ok=value.split(/[,\n]+/).every(x=>validCIDR(x.trim()));
+  if(value&&kind==='cidr-list'){
+   const cidrs=value.split(/[,\n]+/).map(x=>x.trim()).filter(Boolean);
+   ok=cidrs.length>0 && cidrs.every(validCIDR);
+  }
   if(value&&kind==='endpoint')ok=validEndpoint(value);
   field.setCustomValidity(ok?'':field.dataset.wgInvalidMessage||'Invalid value');
   return ok;
