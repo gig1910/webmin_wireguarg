@@ -22,17 +22,15 @@ for my $check (@checks) {
     die "$path does not contain release version marker $needle\n"
         if index(slurp($path), $needle) < 0;
 }
-# Test assertions should follow the project version; fixed IP addresses and
-# timestamps are fixtures, not version pins. Reject standalone semver literals
-# in test source so the next minor bump cannot silently break assertions.
+# Reject release version literals only in module-version contract contexts.
+# Other semver literals (package-manager fixtures, dependencies) are valid.
 opendir(my $dh, 'tests') or die "tests: $!\n";
 for my $entry (sort readdir($dh)) {
     next unless $entry =~ /\.(?:pl|py|js|sh)$/;
     my $path = "tests/$entry";
     my $source = slurp($path);
-    while ($source =~ /(?<![\d.])(\d+\.\d+\.\d+)(?![\d.])/g) {
-        my $literal = $1;
-        die "$path pins release-looking version $literal; derive it from VERSION instead\n";
+    while ($source =~ /(?:_wg_api=|X-WireGuard-Webmin-API:\s*|build_version=)\s*['"]?(\d+\.\d+\.\d+)/g) {
+        die "$path pins module release version $1; derive it from VERSION instead\n";
     }
 }
 closedir($dh);
