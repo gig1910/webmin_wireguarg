@@ -25,7 +25,16 @@ my %mutators = (
 );
 for my $file (sort keys %mutators) {
     my $src = slurp("$root/$file");
-    die "$file has no POST+CSRF enforcement\n" if $src !~ /assert_post_and_csrf\s*\(/;
+    if ($file eq 'network_icons.cgi') {
+        my $handler = slurp("$root/lib/network-icons-action-lib.pl");
+        die "$file does not invoke the authenticated mutation handler\n"
+            unless $src =~ /require '\.\/lib\/network-icons-action-lib\.pl'/ &&
+                   $src =~ /wg_network_icons_dispatch\s*\(/;
+        die "$file handler has no POST+CSRF enforcement\n"
+            unless $handler =~ /assert_post_and_csrf\s*\(/;
+    } else {
+        die "$file has no POST+CSRF enforcement\n" if $src !~ /assert_post_and_csrf\s*\(/;
+    }
     my $acl = $mutators{$file};
     if ($acl eq 'manage') {
         die "$file has no manage ACL check\n" if $src !~ /assert_manage_access\s*\(/ && $src !~ /\$access\{'manage'\}/;
