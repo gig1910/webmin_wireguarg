@@ -72,7 +72,8 @@ die "network icon display missing from current endpoint cell\n"
 my $ui_foundation=read_file("$FindBin::Bin/../lib/ui-foundation-lib.pl");
 die "network marker style must be shared and absent endpoints must hide it\n"
     unless $ui_foundation=~/\.wg-network-icon/ &&
-           $iface=~/icon\.hidden=!address/ &&
+           $ui_foundation=~/renderNetwork\(badge,country,info,address\)/ &&
+           $iface=~/WireGuardUI\.renderNetwork\(icon,country,info,address\)/ &&
            $iface=~/data-wg-net-icon/;
 die "network icon script queries external WHOIS automatically\n"
     if $iface =~ /fetch\([^)]*peer_ip_info/;
