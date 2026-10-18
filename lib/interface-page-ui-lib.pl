@@ -44,7 +44,7 @@ sub wg_interface_page_script
     const requestControllers = new Set();
     const tableSort = window.WireGuardTableSort && window.WireGuardTableSort.attach(
         root.querySelector('[data-wg-peer-sort-table]'),
-        ['name','state','ip','endpoint','handshake','bytes','bytes','actions','actions']);
+        ['name','state','ip','actions','actions','endpoint','handshake','bytes','bytes','actions','actions']);
     let destroyed = false;
     let knownNetworkIcons = {}, networkSignature = '', networkRequest = null;
     let networkLastCheck = 0;
