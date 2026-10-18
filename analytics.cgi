@@ -195,7 +195,7 @@ if ($access{'manage'}) {
         $attr{'data-wg-confirm-word'}='DELETE' if $action ne 'vacuum';
         print wg_ui_button(type=>'submit',
             icon=>$action eq 'vacuum' ? 'database' : 'trash',
-            action=>$action eq 'vacuum' ? 'clear' : 'delete',
+            action=>$action eq 'vacuum' ? 'restart' : 'delete',
             label=>$text{$key},attrs=>\%attr);
         print '</form>';
     }
