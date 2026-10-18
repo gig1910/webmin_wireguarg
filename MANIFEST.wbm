@@ -96,6 +96,7 @@ lib/peer-ip-info-lib.pl
 peer_ip_info.cgi
 lib/geoip-update-lib.pl
 geoip_timer.cgi
+geoip_city_setup.cgi
 network_icon_data.cgi
 network_icons.cgi
 unlocode_update.cgi
