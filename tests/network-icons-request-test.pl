@@ -11,6 +11,7 @@ $text{'network_icons_invalid'}='Invalid operation';
 $text{'network_icons_saved'}='Saved';
 our ($csrf_checks,$write_calls,$rate_calls)=(0,0,0);
 our $csrf_valid=0;
+our $last_payload;
 
 sub assert_post_and_csrf {
     ++$csrf_checks;
@@ -20,6 +21,7 @@ sub request_rate_limit { ++$rate_calls; }
 sub analytics_backend {
     my ($method,$payload)=@_;
     ++$write_calls;
+    $last_payload={%$payload};
     die "Incorrect backend operation" unless $method eq 'network_manage';
     return ({ok=>1},undef);
 }
@@ -58,8 +60,21 @@ my $accepted=run_case('POST',{
 die "Authorized POST cannot update network icon\n"
     unless $accepted->{ok} && $accepted->{checks}==1 &&
            $accepted->{writes}==1 && $accepted->{rate}==1;
+die "Network mutation payload lost CIDR or label\n"
+    unless $last_payload->{'action'} eq 'set_icon' &&
+           $last_payload->{'cidr'} eq '203.0.113.0/24' &&
+           $last_payload->{'label'} eq 'Sample';
+my $removed=run_case('POST',{action=>'delete_icon',cidr=>'198.51.100.0/24'},1);
+die "Authorized deletion is not dispatched\n"
+    unless $removed->{ok} && $removed->{checks}==1 &&
+           $removed->{writes}==1 && $last_payload->{'action'} eq 'delete_icon' &&
+           $last_payload->{'cidr'} eq '198.51.100.0/24';
+my $cleared=run_case('POST',{action=>'clear_cache',confirm=>'CLEAR'},1);
+die "Authorized cache clearing is not dispatched with confirmation\n"
+    unless $cleared->{ok} && $cleared->{checks}==1 &&
+           $cleared->{writes}==1 && $last_payload->{'confirm'} eq 'CLEAR';
 my $invalid=run_case('POST',{action=>'evil'},1);
 die "Unsupported network mutation reached backend\n"
-    if $invalid->{ok} || $invalid->{writes};
+    if $invalid->{ok} || $invalid->{writes} || $invalid->{checks}!=1 || $invalid->{rate}!=1;
 
 print "network directory navigation and mutation CSRF regression tests passed\n";
