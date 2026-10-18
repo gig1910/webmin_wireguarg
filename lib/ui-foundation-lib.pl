@@ -259,7 +259,7 @@ sub wg_ui_foundation {
  // Validation offers early feedback; server-side validation remains required.
  function validCIDR(value){
   const p=value.lastIndexOf('/');
-  if(p<1||!/^\\d+$/.test(value.slice(p+1)))return false;
+  if(p<1||!/^\d+$/.test(value.slice(p+1)))return false;
   const address=value.slice(0,p),mask=Number(value.slice(p+1));
   if(address.includes(':')){
    if(mask<0||mask>128)return false;
@@ -267,7 +267,7 @@ sub wg_ui_foundation {
   }
   if(mask<0||mask>32)return false;
   const octets=address.split('.');
-  return octets.length===4&&octets.every(x=>/^\\d{1,3}$/.test(x)&&Number(x)<=255);
+  return octets.length===4&&octets.every(x=>/^\d{1,3}$/.test(x)&&Number(x)<=255);
  }
  function validEndpoint(value){
   if(!value)return true;
@@ -285,13 +285,13 @@ sub wg_ui_foundation {
    host=value.slice(0,idx);port=value.slice(idx+1);
    if(!/^[a-zA-Z0-9_.-]+$/.test(host))return false;
   }else if(!/^[a-zA-Z0-9_.-]+$/.test(value))return false;
-  return !port||(/^\\d{1,5}$/.test(port)&&Number(port)>=1&&Number(port)<=65535);
+  return !port||(/^\d{1,5}$/.test(port)&&Number(port)>=1&&Number(port)<=65535);
  }
  function validateField(field){
   const value=field.value.trim(),kind=field.dataset.wgValidate;
   let ok=true;
   if(value&&kind==='cidr-list')
-   ok=value.split(/[,\\n]+/).every(x=>validCIDR(x.trim()));
+   ok=value.split(/[,\n]+/).every(x=>validCIDR(x.trim()));
   if(value&&kind==='endpoint')ok=validEndpoint(value);
   field.setCustomValidity(ok?'':field.dataset.wgInvalidMessage||'Invalid value');
   return ok;
