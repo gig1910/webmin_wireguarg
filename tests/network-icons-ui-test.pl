@@ -60,7 +60,7 @@ die "server API must validate IP literals, never resolve hostnames\n"
 die "management operation must have manage ACL, CSRF and rate-limit\n"
     unless $icons =~ /assert_manage_access\(\)/ &&
            $icons =~ /assert_post_and_csrf\(\)/ &&
-           $icons =~ /request_rate_limit\('network_icons'/;
+           read_file("$FindBin::Bin/../lib/network-icons-action-lib.pl") =~ /request_rate_limit\('network_icons'/;
 die "explicit CLEAR confirmation missing\n"
     unless $network=~/get\("confirm"\) != "CLEAR"/;
 die "network icon display missing from current endpoint cell\n"
