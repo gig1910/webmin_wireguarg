@@ -97,13 +97,17 @@ for my $cidr (sort keys %ranges) {
     my $owner=$item->{'owner'} || '';
     my $city=$manual && $manual->{'city'} ? $manual->{'city'} : '';
     my $city_code=$manual && $manual->{'city_code'} ? $manual->{'city_code'} : ''; 
-    my $cities=join(', ',@{$item->{'geoip_cities'}||[]});
+    my @city_observations=@{$item->{'geoip_cities'}||[]};
+    my $cities=join(', ',map {
+        /^[A-Z]{2}([A-Z0-9]{3})$/ ? $1 : $_
+    } @city_observations);
+    my $city_hint=join(', ',@city_observations);
     my $geoip_codes=join(',', @{$item->{'geoip_countries'}||[]});
     print '<tr><td><span class="wg-ui-mono">'.html_escape($cidr).'</span></td>'.
         '<td>'.html_escape($icon).'</td><td>'.html_escape($label).'</td>'.
         '<td>'.html_escape($owner).'</td>'.
         '<td><span data-wg-country="'.html_escape($country).'">'.html_escape($country).'</span></td>'.
-        '<td title="'.html_escape($city||$cities).'">'.html_escape(($city_code=~/^[A-Z]{2}([A-Z0-9]{3})$/ ? $1 : '')||$cities||'—').'</td>'.
+        '<td title="'.html_escape($city||$city_hint).'">'.html_escape(($city_code=~/^[A-Z]{2}([A-Z0-9]{3})$/ ? $1 : '')||$cities||'—').'</td>'.
         '<td><span data-wg-geoip-codes="'.html_escape($geoip_codes).'" title="'.html_escape($text{'network_icons_geoip_help'}).'">'.html_escape($geoip_codes).'</span></td>'.
         '<td><span class="wg-ui-table-actions">'.
         wg_ui_icon_action(icon=>'edit',tone=>'info',
