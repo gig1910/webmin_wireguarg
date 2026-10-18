@@ -22,8 +22,8 @@ ui_print_header(undef, $title, '', undef, 1, 1);
 print wg_build_banner();
 print wg_ui_transport_script();
 print wg_ui_foundation();
-print '<div class="wg-ui">';
 my $peer_tabs_id='wg-peer-tabs-'.substr(sha256_hex(join('|',time(),rand())),0,12);
+print '<div class="wg-ui"'.($peer ? ' data-wg-interface-page="'.html_escape($peer_tabs_id).'"' : '').'>';
 if ($peer) {
     print '<div id="'.html_escape($peer_tabs_id).'" class="wg-peer-detail-tabs">';
     print '<ul class="nav nav-tabs" role="tablist">'.
@@ -573,12 +573,17 @@ if ($peer) {
         '</div>';
     print '<p class="help-block">'.html_escape($text{'analytics_warning'}).'</p>';
     print '<div data-wg-peer-activity-status class="help-block" role="status"></div>';
+    print '<template data-wg-ip-template>'.
+        wg_ui_icon_action(icon=>'globe',tone=>'info',label=>$text{'peer_ip_lookup'},
+            attrs=>{'data-wg-ip-inspect'=>"$in{'peer'}"}).'</template>';
     print '<div class="table-responsive" data-wg-peer-activity-sort>'.
         '<table class="table table-striped table-hover"><thead><tr>'.
         '<th>'.html_escape($text{'analytics_event_time'}).'</th>'.
         '<th>'.html_escape($text{'analytics_event_type'}).'</th>'.
+        '<th aria-label="Network"></th><th aria-label="Country"></th>'.
         '<th>'.html_escape($text{'analytics_event_endpoint'}).'</th>'.
         '<th>'.html_escape($text{'analytics_event_previous'}).'</th>'.
+        '<th aria-label="WHOIS / GeoIP"></th>'.
         '</tr></thead><tbody data-wg-peer-activity-rows></tbody></table></div>';
     print '</div></div>'; # end activity and three-tab root
     my $js_tabs_id=json_encode_utf8($peer_tabs_id);
@@ -593,7 +598,9 @@ if ($peer) {
     });
     print wg_table_sort_script();
     print wg_peer_activity_tabs_script(
-        $js_tabs_id, $js_analytics_url, $js_peer_id, $js_activity_labels);
+        $js_tabs_id, $js_analytics_url, $js_peer_id, $js_activity_labels,
+        json_encode_utf8(module_script_url('network_icon_data.cgi')));
+    print wg_ui_peer_inspector($name,$csrf,$peer_tabs_id);
 }
 
 if ($peer) {
