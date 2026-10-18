@@ -27,7 +27,17 @@ fail_ip_info($text{'error_peer'}) if $public !~ /^[A-Za-z0-9+\/]{43}=$/;
 # Validate current configuration first, then look up only by public-key hash.
 my $hash=sha256_hex($public);
 fail_ip_info($text{'peer_ip_no_history'}) if !-f analytics_db_path();
-my ($record,$backend_error)=analytics_backend('peer_ip',{peer_id=>$hash});
+my %ip_request=(peer_id=>$hash);
+if (defined($in{'ip'}) || defined($in{'at'})) {
+    my $requested=$in{'ip'} || '';
+    my $when=$in{'at'} || '';
+    fail_ip_info($text{'peer_ip_no_history'})
+        unless $requested =~ /^[A-Fa-f0-9:.]{3,45}$/ &&
+               $when =~ /^[0-9]{1,12}$/ && $when > 0;
+    $ip_request{'event_ip'}=$requested;
+    $ip_request{'event_at'}=0+$when;
+}
+my ($record,$backend_error)=analytics_backend('peer_ip',\%ip_request);
 fail_ip_info($backend_error || $text{'peer_ip_no_history'}) if !$record;
 if (!$record->{'available'}) {
     json_response({ok=>JSON::PP::true(),available=>JSON::PP::false(),
