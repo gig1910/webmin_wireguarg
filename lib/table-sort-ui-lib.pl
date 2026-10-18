@@ -73,7 +73,7 @@ function value(row,i,kind){
   const t=cell.textContent.trim();
   // Webmin uses localized "Never" for missing handshakes, not a date.
   // Treat placeholders as missing values, not as alphabetic strings.
-  if(kind!=='name' && /^(?:null|never|никогда|—|-|\(none\))$/i.test(t))
+  if(/^(?:null|none|never|никогда|нет|—|-|\(none\))$/i.test(t))
     return null;
   if(kind==='name')return (cell.querySelector('a')||cell).textContent.trim();
   if(kind==='state'){
