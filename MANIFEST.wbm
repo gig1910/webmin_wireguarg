@@ -68,6 +68,7 @@ lib/ui-transport-lib.pl
 lib/ui-foundation-lib.pl
 lib/ui-peer-inspector-lib.pl
 lib/network-icons-ui-lib.pl
+lib/network-icons-action-lib.pl
 lib/index-page-ui-lib.pl
 lib/interface-page-ui-lib.pl
 lib/collector-config-lib.pl
