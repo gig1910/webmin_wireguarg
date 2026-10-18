@@ -10,6 +10,30 @@ Scope: full GitHub tree under `tests/` on `main` (57 Perl/Python/JavaScript/shel
 - The most significant ongoing maintenance cost is source-text/regex testing of exact JavaScript and HTML implementation, rather than rendered semantics and behavior.
 - Fixed IP addresses, numeric counters, timestamps, dummy public keys and attack payloads are *legitimate fixtures*. Do not mechanically eliminate them.
 
+## Implementation update — 2026-10-18 (after validated 0.3.0 build)
+
+The validated baseline is `b34730d` (full local suite and release build:
+PASSED). Subsequent P1/P2 changes require a new full local run.
+
+- **P0:** module-version checks derive runtime versions; the guard is
+  restricted to module-specific contract markers, not dependency versions.
+- **P1:** network directory mutations live in
+  `lib/network-icons-action-lib.pl` and are tested by calling the actual
+  handler. GET and navigation-only POST stay read-only; mutation POST
+  requires CSRF, rate-limiting, and an allowed action. The test additionally
+  verifies the backend action, CIDR, label and clear confirmation payloads.
+- **P1:** shared navigation is tested from rendered component output;
+  analytics tabs are checked for unique tab/pane pairs, visibility and
+  accessibility state, while filter options are scoped to their own controls.
+  Source-level guards remain for security, integration and code paths not yet
+  covered by a browser-driven fixture.
+- **P2:** `tests/runner-coverage-test.pl` detects unregistered, duplicate or
+  deleted test entry points in the intentionally ordered `run-tests.sh`.
+  The browser JS harness remains invoked by its Perl wrapper; the CSRF
+  fixture is not an independently executable test.
+- **Not claimed:** a full installed Webmin/Authentic Theme integration run;
+  local suite success does not prove live-theme behavior.
+
 ## Findings and priorities
 
 | Priority | Area | Evidence / action |
