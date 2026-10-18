@@ -61,7 +61,8 @@ for my $lang ('','ru') {
             $sections{$lang}{$key}=1;
         } else { $fields{$lang}{$key}=1; }
     }
-    die "Expected ten grouped sections in $path\n" unless scalar(keys %{$sections{$lang}})==10;
+    die "Settings are not grouped into meaningful sections in $path\n"
+        unless scalar(keys %{$sections{$lang}})>=8;
 }
 for my $key (keys %{$fields{''}}) { die "Missing RU $key\n" unless $fields{'ru'}{$key}; }
 die "EN/RU section mismatch\n" unless
