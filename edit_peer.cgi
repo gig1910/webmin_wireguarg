@@ -516,9 +516,8 @@ if ($peer && $access{'diagnostics'}) {
     my $js_status_url = json_encode_utf8(module_script_url('diagnostic_status.cgi'));
     my $js_stop_url = json_encode_utf8(module_script_url('diagnostic_stop.cgi'));
 
-    print '<details class="wg-ui-tools" data-wg-tool-panel>'.
-        '<summary>'.wg_ui_icon('chevron').' '.html_escape($text{'diagnostics_title'}).'</summary>'.
-        '<div id="'.html_escape($diag_dom_id).'" class="wg-diagnostic-root wg-ui-tools-body">'.
+    print wg_ui_panel_start($text{'diagnostics_title'}).
+        '<div id="'.html_escape($diag_dom_id).'" class="wg-diagnostic-root">'.
 
         '<div class="wg-diag-grid">'.
         '<label>'.$text{'diagnostics_target'}.'<input data-role="target" value="'.html_escape($target).'" class="form-control"></label>'.
@@ -537,7 +536,7 @@ if ($peer && $access{'diagnostics'}) {
             label=>$text{'diagnostics_stop'},attrs=>{'data-role'=>'stop'}).
         '</span>'.
         '</p><pre data-role="output" style="display:none;min-height:130px;max-height:420px;overflow:auto;white-space:pre-wrap"></pre>'.
-        '</div></details>';
+        '</div>'.wg_ui_panel_end();
 
     print wg_peer_diagnostic_script(
         $js_diag_dom_id, $js_name, $js_peer, $js_starting,
