@@ -25,6 +25,14 @@ my $foundation=read_text("$FindBin::Bin/../lib/ui-foundation-lib.pl");
 die "Custom CSS overriding native button background\n" if $foundation =~ /wg-ui-btn\{[^}]*background:/;
 my $iface=read_text("$FindBin::Bin/../edit_interface.cgi");
 my $iface_js=read_text("$FindBin::Bin/../lib/interface-page-ui-lib.pl");
+die "Interface properties must use responsive summary cards instead of ui_table_*\n"
+    unless $iface =~ /wg-ui-summary/ &&
+           $iface =~ /wg_ui_summary_card\(/ &&
+           $iface !~ /ui_table_start\(/;
+die "WHOIS action must be hidden without runtime endpoint IP\n"
+    unless $iface =~ /data-wg-ip-action/ &&
+           $iface_js =~ /button\.hidden=!endpoint\|\|!endpointIp/;
+
 die "Expected independent network/country/endpoint cells\n"
     unless $iface =~ /data-wg-net-icon/ && $iface =~ /data-wg-geoip-country/ &&
       $iface =~ /data-wg-endpoint/ && $iface =~ /interface_peer_allowed'\}, '', '', \$text\{'interface_peer_endpoint/;
