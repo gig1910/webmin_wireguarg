@@ -80,7 +80,7 @@ print '<table class="table table-striped table-hover"><thead><tr><th>'.
     html_escape($text{'network_icons_prefix'}).'</th><th>'.html_escape($text{'network_icons_symbol'}).
     '</th><th>'.html_escape($text{'network_icons_label'}).'</th><th>'.
     html_escape($text{'network_icons_owner'}).'</th><th>'.
-    html_escape($text{'network_icons_country'}).'</th><th>'.html_escape($text{'network_icons_city_code'}).'</th><th>'.
+    html_escape($text{'network_icons_country'}).'</th><th>'.html_escape($text{'network_icons_city'}).'</th><th>'.
     html_escape($text{'network_icons_geoip_samples'}).'</th><th>'.
     html_escape($text{'interface_peer_actions'}).'</th></tr></thead><tbody>';
 for my $cidr (sort keys %ranges) {
