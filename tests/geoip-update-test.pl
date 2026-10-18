@@ -107,4 +107,19 @@ die "Peer page missing GeoIP database age and activation button\n"
     unless $page =~ /wg_geoip_update_status\(\)/ &&
            $page =~ /geoip_update_age/ &&
            $page =~ /ui_form_start\('geoip_timer\.cgi','post'\)/;
+my $wizard=do {
+    open(my $f,'<',"$FindBin::Bin/../geoip_city_setup.cgi") or die $!;
+    local $/; <$f>
+};
+die "City setup wizard missing from distributable module\n"
+    unless $manifest =~ /^geoip_city_setup\.cgi$/m;
+die "City setup must require authenticated manage access and protected POST\n"
+    unless $wizard =~ /assert_manage_access\(\)/ &&
+           $wizard =~ /assert_post_and_csrf\(\)/ &&
+           $wizard =~ /request_rate_limit\('geoip_city_setup'/;
+die "City setup must protect credentials and use vendor config\n"
+    unless $wizard =~ /autocomplete="new-password"/ &&
+           $wizard =~ /chmod\(0600,\$temp\)/ &&
+           $wizard =~ /EditionIDs GeoLite2-City GeoLite2-Country/ &&
+           $wizard =~ /run_command\(\[\$exe,'-f',\$conf\]/;
 print "GeoIP freshness, secure configuration and vendor timer activation tests passed\n";
