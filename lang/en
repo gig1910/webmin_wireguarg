@@ -527,3 +527,6 @@ ui_form_invalid=Check this field.
 ui_form_endpoint=Hostname or IP address with optional port 1–65535
 ui_save_changes=Save changes
 ui_unknown_network=Unknown network
+
+ui_network_edit=Edit network assignment
+ui_network_maintenance=Network cache maintenance
