@@ -142,7 +142,7 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
         '<span class="wg-network-icon" data-wg-net-icon="'.$id.'"'.
          ($endpoint eq '-'?' hidden':'').' title="'.html_escape($text{'network_icons_unknown'}).'">?</span>',
         '<span class="wg-geoip-country" data-wg-geoip-country="'.$id.'" hidden></span>',
-        '<span class="wg-ui-mono" data-wg-endpoint="'.$id.'">'.html_escape($endpoint).'</span>',
+        wg_ui_ip_value($endpoint,kind=>'endpoint',attrs=>{'data-wg-endpoint'=>$id}),
         '<span data-wg-handshake="'.$id.'">'.html_escape($handshake).'</span>',
         '<span data-wg-rx="'.$id.'">—</span>',
         '<span data-wg-tx="'.$id.'">—</span>',
