@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use FindBin;
 use JSON::PP qw(encode_json);
-use File::Temp qw(tempfile);
+require "$FindBin::Bin/node-harness.pl";
 require "$FindBin::Bin/../lib/index-page-ui-lib.pl";
 
 my $markup1=wg_index_collector_script(q{"collector-one"},(map { q{"test"} } 1..19));
@@ -11,13 +11,9 @@ my $markup2=wg_index_collector_script(q{"collector-two"},(map { q{"test"} } 1..1
 my ($js1)=$markup1=~m{<script>\s*(.*?)</script>}s;
 my ($js2)=$markup2=~m{<script>\s*(.*?)</script>}s;
 die "Collector scripts not generated\n" unless $js1 && $js2;
-my $node=qx(command -v node 2>/dev/null);$node=~s/[\r\n]+\z//;
-if($node){
-    my ($fh,$path)=tempfile(SUFFIX=>'.js',UNLINK=>1);
-    print {$fh} "const vm=require('vm');\n";
-    print {$fh} "const first=".encode_json($js1).";\n";
-    print {$fh} "const second=".encode_json($js2).";\n";
-    print {$fh} <<'JS';
+my $js = "const vm=require('vm');\\n" .
+    "const first=".encode_json($js1).";\\n" .
+    "const second=".encode_json($js2).";\\n" . <<'JS';
 const timers=new Map(),pagehide=new Set();
 let timerId=0;
 global.window=global;
@@ -62,8 +58,5 @@ if(timers.size!==0||roots['collector-two'].listeners.size!==0||pagehide.size!==0
   throw Error('Collector lifecycle did not clean up');
 console.log('collector SPA lifecycle checks passed');
 JS
-    close($fh);
-    system($node,'--check',$path)==0 or die "Collector page JavaScript invalid\n";
-    system($node,$path)==0 or die "Collector SPA lifecycle behavior invalid\n";
-}
+wg_test_node_script($js, 'collector SPA lifecycle');
 print "collector SPA lifecycle tests passed\n";
