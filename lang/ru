@@ -572,3 +572,5 @@ geoip_city_credentials_required=Сначала укажите Account ID и Lice
 geoip_city_write_failed=Не удалось сохранить защищённую конфигурацию.
 geoip_city_download_failed=Настройки сохранены, но скачивание GeoLite2 City не удалось. Проверьте учётные данные и сеть сервера.
 geoip_city_success=GeoLite2 City обновлена. Штатный таймер обновлений включён.
+
+unlocode_return=Вернуться к справочнику сетей
