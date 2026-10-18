@@ -4,6 +4,7 @@ use warnings;
 use FindBin;
 use File::Temp qw(tempdir);
 use Cwd qw(getcwd);
+our $WIREGUARD_WEBMIN_VERSION;
 our %text = (
     wg_build_label => 'Installed build', wg_build_unstamped => 'Unstamped',
     wg_build_commit => 'Commit', wg_build_date => 'Built',
