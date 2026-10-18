@@ -8,8 +8,8 @@ sub wg_ui_icon {
       edit=>'<path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z"/>',
       plus=>'<path d="M12 5v14M5 12h14"/>',
       refresh=>'<path d="M20 7v5h-5M4 17v-5h5"/><path d="M5 9a8 8 0 0 1 14-2l1 5M19 15a8 8 0 0 1-14 2l-1-5"/>',
-      play=>'<path d="m8 5 11 7-11 7z"/>',
-      stop=>'<rect x="5" y="5" width="14" height="14" rx="2"/>',
+      play=>'<path d="m7 4 13 8-13 8z" fill="currentColor"/>',
+      stop=>'<rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/>',
       trash=>'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"/>',
       copy=>'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
       log=>'<path d="M7 3h10l4 4v14H7zM17 3v5h4M10 12h8M10 16h8"/>',
@@ -43,7 +43,9 @@ sub wg_ui_icon_action {
     my $label=html_escape($a{'label'}||'');
     my $tone=$a{'tone'}||($a{'danger'}?'danger':'neutral');
     $tone='neutral' unless $tone =~ /^(?:neutral|success|warning|danger|info)$/;
-    my $attr=' class="wg-ui-icon-btn wg-ui-tone-'.$tone.'" title="'.$label.
+    my %theme=(neutral=>'text-muted',success=>'text-success',
+        warning=>'text-warning',danger=>'text-danger',info=>'text-primary');
+    my $attr=' class="btn btn-link wg-ui-icon-btn wg-ui-tone-'.$tone.' '.$theme{$tone}.'" title="'.$label.
         '" aria-label="'.$label.'"'.wg_ui_attrs($a{'attrs'});
     if($a{'href'}) {
         return '<a href="'.html_escape($a{'href'}).'"'.$attr.
@@ -60,7 +62,10 @@ sub wg_ui_button {
     my $body=($a{'icon'}?wg_ui_icon($a{'icon'}).' ':'').'<span>'.$label.'</span>';
     my $extra=($a{'class'}||'');
     $extra='' if $extra =~ /[^A-Za-z0-9 _-]/;
-    my $attr=' class="btn wg-ui-btn wg-ui-tone-'.$tone.($extra?' '.$extra:'').'"'.
+    my %theme=(neutral=>'btn-default',success=>'btn-success',
+        warning=>'btn-warning',danger=>'btn-danger',info=>'btn-primary');
+    my $attr=' class="btn '.$theme{$tone}.' wg-ui-btn wg-ui-tone-'.$tone.
+        ($extra?' '.$extra:'').'"'.
         wg_ui_attrs($a{'attrs'});
     if($a{'href'}) {
         return '<a href="'.html_escape($a{'href'}).'"'.$attr.
@@ -116,17 +121,14 @@ sub wg_ui_foundation {
 .wg-ui .wg-ui-action-bar,.wg-ui .wg-ui-button-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:10px 0 14px}
 .wg-ui .wg-ui-action-group{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
 .wg-ui .wg-ui-action-right{margin-left:auto}
-.wg-ui .wg-ui-action-bar .btn,.wg-ui .wg-ui-button-row .btn,.wg-ui .wg-ui-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font:inherit;font-size:12px;line-height:1.35;min-height:31px;padding:5px 10px;margin:0;border-radius:4px;white-space:nowrap}
-.wg-ui .wg-ui-btn{border:1px solid var(--wg-border);background:transparent;color:inherit;text-decoration:none}
-.wg-ui .wg-ui-btn:hover,.wg-ui .wg-ui-btn:focus-visible{background:rgba(127,127,127,.14);text-decoration:none}
-.wg-ui .wg-ui-tone-success{color:var(--wg-success)!important}
-.wg-ui .wg-ui-tone-warning{color:var(--wg-warning)!important}
-.wg-ui .wg-ui-tone-danger{color:var(--wg-danger)!important}
-.wg-ui .wg-ui-tone-info{color:var(--wg-info)!important}
-.wg-ui .wg-ui-btn.wg-ui-tone-success{border-color:var(--wg-success)}
-.wg-ui .wg-ui-btn.wg-ui-tone-warning{border-color:var(--wg-warning)}
-.wg-ui .wg-ui-btn.wg-ui-tone-danger{border-color:var(--wg-danger)}
-.wg-ui .wg-ui-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;min-width:30px;border:1px solid transparent;border-radius:4px;background:transparent;color:inherit;cursor:pointer;text-decoration:none;padding:0;vertical-align:middle;font:inherit}
+.wg-ui .wg-ui-action-bar .wg-ui-btn,.wg-ui .wg-ui-button-row .wg-ui-btn,.wg-ui .wg-ui-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:31px;padding:5px 10px;margin:0;white-space:nowrap}
+/* Authentic Theme owns all button backgrounds, borders, foregrounds and states. */
+.wg-ui .wg-ui-btn{text-decoration:none}
+.wg-ui .wg-ui-icon-btn.wg-ui-tone-success{color:var(--success-color,#55c899)}
+.wg-ui .wg-ui-icon-btn.wg-ui-tone-warning{color:var(--warning-color,#e5ac55)}
+.wg-ui .wg-ui-icon-btn.wg-ui-tone-danger{color:var(--danger-color,#d26d65)}
+.wg-ui .wg-ui-icon-btn.wg-ui-tone-info{color:var(--primary-color,#5d9de2)}
+.wg-ui .wg-ui-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;min-width:30px;border:1px solid transparent;border-radius:4px;background:transparent;cursor:pointer;text-decoration:none;padding:0;vertical-align:middle}
 .wg-ui .wg-ui-icon-btn svg{display:block;width:17px;height:17px;flex:none;stroke:currentColor;stroke-width:1.9}
 .wg-ui .wg-ui-icon-btn:hover,.wg-ui .wg-ui-icon-btn:focus-visible{border-color:currentColor;background:rgba(127,127,127,.15);text-decoration:none;outline-offset:2px}
 .wg-ui .wg-ui-icon-btn:disabled{opacity:.5;cursor:wait}
