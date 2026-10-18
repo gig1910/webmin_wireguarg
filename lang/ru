@@ -527,3 +527,6 @@ ui_form_invalid=Проверьте значение поля.
 ui_form_endpoint=Адрес или имя хоста с необязательным портом 1–65535
 ui_save_changes=Сохранить изменения
 ui_unknown_network=Неизвестная сеть
+
+ui_network_edit=Изменить назначение сети
+ui_network_maintenance=Обслуживание сетевого кеша
