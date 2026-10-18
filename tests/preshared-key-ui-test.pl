@@ -26,7 +26,7 @@ require "$FindBin::Bin/../wireguard-lib.pl";
 
     my $configured = preshared_key_form_rows_for_state(1);
     die "concise configured PresharedKey status missing\n"
-        if ($configured !~ /alert-success/ || $configured !~ />Установлен</);
+        if ($configured !~ /label-success/ || $configured !~ />Установлен</);
     die "configured PresharedKey status contains redundant explanation\n"
         if ($configured =~ /Сохранённое значение|Для этого пира установлен/);
     die "configured PresharedKey remove button missing\n"
