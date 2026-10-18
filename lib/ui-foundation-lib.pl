@@ -65,14 +65,18 @@ sub wg_ui_button {
     }
     return '<button type="'.html_escape($a{'type'}||'button').'"'.$attr.'>'.$body.'</button>';
 }
-sub wg_ui_panel {
-    my ($title,$body,%opts)=@_;
+sub wg_ui_panel_start {
+    my ($title,%opts)=@_;
     my $danger=($opts{'tone'}||'') eq 'danger';
     return '<details class="wg-ui-panel '.($danger?'wg-ui-danger':'wg-ui-tools').'"'.
         ($danger?' data-wg-danger-zone':' data-wg-tool-panel').'>'.
         '<summary>'.wg_ui_icon('chevron').' '.html_escape($title||'').'</summary>'.
-        '<div class="'.($danger?'wg-ui-danger-body':'wg-ui-tools-body').'">'.
-        ($body||'').'</div></details>';
+        '<div class="'.($danger?'wg-ui-danger-body':'wg-ui-tools-body').'">';
+}
+sub wg_ui_panel_end { return '</div></details>'; }
+sub wg_ui_panel {
+    my ($title,$body,%opts)=@_;
+    return wg_ui_panel_start($title,%opts).($body||'').wg_ui_panel_end();
 }
 sub wg_ui_action_bar {
     my ($left,$right)=@_;
