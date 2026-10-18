@@ -19,8 +19,8 @@ die "interface CGI must delegate to isolated page controller\n"
            $interface =~ /wg_interface_page_script\(/;
 $interface .= "\n".slurp("$FindBin::Bin/../lib/interface-page-ui-lib.pl");
 die "peer actions column missing\n" if $interface !~ /interface_peer_actions/;
-die "enabled peer color marker missing\n" if $interface !~ /label-success wg-peer-state-enabled/;
-die "disabled peer color marker missing\n" if $interface !~ /label-default wg-peer-state-disabled/;
+die "enabled peer color marker missing\n" if $interface !~ /label-success wg-ui-status wg-ui-status--success wg-peer-state-enabled/;
+die "disabled peer color marker missing\n" if $interface !~ /label-default wg-ui-status wg-ui-status--muted wg-peer-state-disabled/;
 die "peer row toggle control missing\n" if $interface !~ /wg-peer-toggle/;
 die "peer row toggle is not a non-submitting button\n" if $interface !~ /type=\"button\"[^>]+data-peer-toggle-button/;
 die "peer row toggle does not send POST\n" if $interface !~ /method:\s*'POST'/;
