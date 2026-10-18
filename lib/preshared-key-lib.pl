@@ -131,15 +131,17 @@ sub preshared_key_form_rows_for_state
     my $html = '';
 
     if ($present) {
-        my $notice = '<div class="alert alert-success" style="margin:0 0 8px 0">'.
-            '<b>'.html_escape(preshared_key_text('configured')).'</b>'.
-            '</div>';
-        my $remove = '<button type="submit" class="btn btn-danger"'.
+        my $label=preshared_key_text('configured');
+        my $notice='<span class="label label-success">'.
+            html_escape($label).'</span>';
+        my $remove='<button type="submit" class="wg-ui-icon-btn wg-ui-icon-danger"'.
             ' name="remove_preshared_key" value="1"'.
-            ' data-confirm="'.html_escape(preshared_key_text('remove_confirm')).'"'.
-            ' onclick="return window.confirm(this.getAttribute(\'data-confirm\'))">'.
-            html_escape(preshared_key_text('remove')).'</button>';
-        return ui_table_row('PresharedKey', $notice.$remove);
+            ' title="'.html_escape(preshared_key_text('remove')).'"'.
+            ' aria-label="'.html_escape(preshared_key_text('remove')).'"'.
+            ' data-wg-confirm="'.html_escape(preshared_key_text('remove_confirm')).'">'.
+            wg_ui_icon('trash').'</button>';
+        return ui_table_row('PresharedKey',
+            '<span class="wg-ui-copy">'.$notice.$remove.'</span>');
     }
 
     $html .= ui_table_row(
