@@ -67,12 +67,25 @@ die "SVG mirrored graph or theme colors missing"
            $ui =~ /createElementNS\(svgNs/ && $ui =~ /fill-opacity/ &&
            $ui =~ /--primary-color/ && $ui =~ /--success-color/ &&
            $ui =~ /data-chart-svg/;
-die "two exclusive sub-tabs missing"
-    unless $ui =~ /data-wg-analytics-tab="graph"/ &&
-           $ui =~ /data-wg-analytics-tab="events"/ &&
-           $ui =~ /data-wg-analytics-pane="graph"/ &&
-           $ui =~ /data-wg-analytics-pane="events"/ &&
-           $ui =~ /aria-selected/ && $ui =~ /pane\.hidden/;
+# Check actual tab markup and initial accessibility state, independently of
+# how the controller names its local variables.
+my @tabs=($ui =~ /<a\b([^>]*\bdata-wg-analytics-tab="(?:graph|events)"[^>]*)>/g);
+my @panes=($ui =~ /<div\b([^>]*\bdata-wg-analytics-pane="(?:graph|events)"[^>]*)>/g);
+die "analytics must have exactly two tabs and panes\n"
+    unless @tabs==2 && @panes==2;
+for my $name (qw(graph events)) {
+    my @matching_tabs=grep { /\bdata-wg-analytics-tab="\Q$name\E"/ } @tabs;
+    my @matching_panes=grep { /\bdata-wg-analytics-pane="\Q$name\E"/ } @panes;
+    die "analytics $name tab and pane must be unique\n"
+        unless @matching_tabs==1 && @matching_panes==1;
+    my $expected=$name eq 'graph' ? 'true' : 'false';
+    die "analytics $name initial selection is wrong\n"
+        unless $matching_tabs[0] =~ /\baria-selected="\Q$expected\E"/;
+    die "analytics $name initial visibility is wrong\n"
+        unless (($matching_panes[0] =~ /\bhidden(?:\s|$)/) ? 'false' : 'true') eq $expected;
+}
+die "analytics tab controller does not update accessibility and visibility\n"
+    unless $ui =~ /setAttribute\('aria-selected'/ && $ui =~ /pane\.hidden/;
 die "event sorting missing"
     unless $ui =~ /data-wg-event-sort-table/ && $ui =~ /eventSort\.apply\(\)/;
 die "peer name in selector and event list missing\n"
