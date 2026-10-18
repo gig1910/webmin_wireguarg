@@ -86,13 +86,13 @@ sub wg_ui_main_tabs {
         ['interfaces','index.cgi',$text{'analytics_interfaces_tab'}],
         ['analytics','analytics.cgi',$text{'analytics_title'}],
     );
-    return '<ul class="nav nav-tabs" role="tablist">'.
+    return '<ul class="nav nav-tabs" aria-label="WireGuard">'.
         join('',map {
             my ($id,$href,$label)=@$_;
             my $selected=($current eq $id);
-            '<li role="presentation"'.($selected?' class="active"':'').'>'.
-            '<a href="'.html_escape($href).'" role="tab"'.
-            ($selected?' aria-selected="true" aria-current="page"':' aria-selected="false"').
+            '<li'.($selected?' class="active"':'').'>'.
+            '<a href="'.html_escape($href).'"'.
+            ($selected?' aria-current="page"':'').
             ' data-wg-module-navigation="1">'.html_escape($label||'').'</a></li>'
         } @tabs).'</ul>';
 }
