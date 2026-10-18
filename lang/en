@@ -552,3 +552,5 @@ unlocode_update_button=Update UN/LOCODE now
 unlocode_update_queued=UN/LOCODE refresh queued through systemd. Status will update when complete.
 unlocode_update_failed=Cannot schedule UN/LOCODE update.
 unlocode_last_updated=UN/LOCODE last successful update: %s
+
+unlocode_update_warning=The latest UN/LOCODE update failed:
