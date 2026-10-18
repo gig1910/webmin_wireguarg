@@ -70,9 +70,9 @@ my $index_left=$access{'manage'}
         label=>$text{'index_add'},tone=>'success') : '';
 my $index_right=($access{'logs'} ? wg_ui_button(
     href=>'journal.cgi',icon=>'log',label=>$text{'index_logs'}) : '').
-    ($access{'manage'} ? wg_ui_icon_action(
-    href=>'network_icons.cgi',icon=>'globe',
-    label=>$text{'network_icons_title'},tone=>'info') : '');
+    ($access{'manage'} ? wg_ui_button(
+    href=>'network_icons.cgi',icon=>'network',
+    label=>$text{'network_icons_title'}) : '');
 print wg_ui_action_bar($index_left,$index_right);
 
 
