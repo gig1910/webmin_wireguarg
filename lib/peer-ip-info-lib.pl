@@ -47,19 +47,6 @@ sub peer_ip_mmdb_value
     return $1;
 }
 
-sub wg_city_abbreviation
-{
-    my ($city)=@_;
-    return '' unless defined($city) && length($city);
-    my %known=('Moscow'=>'MSK','Saint Petersburg'=>'LED',
-        'St Petersburg'=>'LED','Belgrade'=>'BEG','New York'=>'NYC',
-        'London'=>'LON','Paris'=>'PAR','Berlin'=>'BER');
-    return $known{$city} if exists($known{$city});
-    my $ascii=uc($city);
-    $ascii =~ s/[^A-Z0-9]//g;
-    return substr($ascii,0,3);
-}
-
 sub peer_ip_geoip
 {
     my ($ip) = @_;
@@ -89,7 +76,7 @@ sub peer_ip_geoip
             return { ok => @fields ? JSON::PP::true() : JSON::PP::false(),
                      source=>'GeoLite2 / MaxMind (local database)',
                      country_code=>$country_code,city=>$city||"",
-                     city_code=>wg_city_abbreviation($city),
+                     city_code=>'', # canonical UN/LOCODE resolved by SQLite backend
                      fields=>\@fields, detail=>@fields ? '' : 'IP not found in GeoIP database' };
         }
     }
