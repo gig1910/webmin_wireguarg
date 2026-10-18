@@ -48,8 +48,8 @@ def fetch(url):
     req = urllib.request.Request(url, headers={"User-Agent": "Webmin-WireGuard-UNLOCODE/1"})
     with opener.open(req, timeout=30) as response:
         data = response.read(MAX_DOWNLOAD + 1)
-    if len(data) > MAX_DOWNLOAD or not data.startswith(b"PK\\x03\\x04"):
-        raise ValueError("UN/LOCODE download invalid or exceeds size limit")
+    if len(data) > MAX_DOWNLOAD or not data.startswith(b"PK\x03\x04"):
+        raise ValueError("UN/LOCODE response is not ZIP or exceeds 64 MiB")
     return data
 
 
