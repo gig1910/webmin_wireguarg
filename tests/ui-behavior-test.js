@@ -36,9 +36,9 @@ assert.equal(country.textContent,'🇷🇺 RU');
 assert.equal(country.hidden,false);
 const city={hidden:true,textContent:'',title:''};
 ui.renderNetwork(badge,country,{icon:'T2',country:'RU',city:'Moscow',
-  city_code:'MSK',city_source:'geoip'},'92.36.0.19',city);
+  city_code:'RUMOW',city_source:'geoip'},'92.36.0.19',city);
 assert.equal(country.textContent,'🇷🇺 RU');
-assert.equal(city.textContent,'MSK');
+assert.equal(city.textContent,'MOW');
 assert.equal(city.hidden,false);
 assert.match(city.title,/Moscow/);
 ui.renderNetwork(badge,country,null,'',city);
