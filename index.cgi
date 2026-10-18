@@ -36,7 +36,7 @@ foreach my $item (@$items) {
                 mini_action_form($name, 'start', $text{'interface_start'}, 'success', '', 'play').
             '</span>'.
             '<span data-wg-action-stop="'.html_escape($name).'" style="display:none">'.
-                mini_action_form($name, 'stop', $text{'interface_stop'}, 'danger', $text{'confirm_stop'}, 'stop').
+                mini_action_form($name, 'stop', $text{'interface_stop'}, 'warning', $text{'confirm_stop'}, 'stop').
             '</span>';
     }
     push @rows, [
@@ -158,12 +158,16 @@ for my $item (
         '</span> <small>'.html_escape($info||'').'</small></div>';
 }
 if ($access{'install_dependencies'} && $qr_status->{'package_manager_available'}) {
-    $dep_markup.=wg_ui_button(
-        href=>'install_dependency.cgi?dependency=qrencode',
-        icon=>'plus',label=>$text{'qr_install_button'});
-    $dep_markup.=' '.wg_ui_button(
-        href=>'install_dependency.cgi?dependency=geoip',
-        icon=>'plus',label=>$text{'geoip_install_button'});
+    if (!$qr_status->{'command_available'}) {
+        $dep_markup.=wg_ui_button(
+            href=>'install_dependency.cgi?dependency=qrencode',
+            icon=>'plus',label=>$text{'qr_install_button'},tone=>'success');
+    }
+    if (!$has_geoip || !has_command($whois)) {
+        $dep_markup.=wg_ui_button(
+            href=>'install_dependency.cgi?dependency=geoip',
+            icon=>'plus',label=>$text{'geoip_install_button'},tone=>'success');
+    }
 }
 $dep_markup.='</div>';
 print wg_ui_panel($text{'dependencies_title'},$dep_markup);
