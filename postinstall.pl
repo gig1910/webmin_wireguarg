@@ -105,6 +105,62 @@ sub _wg_unit_content
         "WantedBy=multi-user.target\n";
 }
 
+sub _wg_unlocode_units
+{
+    my ($python,$module_dir,$db,$state_dir)=@_;
+    my $service="# Managed by Webmin WireGuard module; UN/LOCODE is optional.\n".
+        "[Unit]\nDescription=Refresh Webmin WireGuard UN/LOCODE catalog\n".
+        "After=network-online.target\nWants=network-online.target\n\n".
+        "[Service]\nType=oneshot\n".
+        "ExecStart=$python $module_dir/unlocode-update.py $db $state_dir\n".
+        "TimeoutStartSec=180\nUMask=0077\nNoNewPrivileges=true\n".
+        "PrivateTmp=true\nProtectSystem=strict\nProtectHome=true\n".
+        "ReadWritePaths=$state_dir\n\n";
+    my $timer="# Managed by Webmin WireGuard module; UN/LOCODE is optional.\n".
+        "[Unit]\nDescription=Periodic Webmin WireGuard UN/LOCODE refresh\n\n".
+        "[Timer]\nOnCalendar=monthly\nRandomizedDelaySec=12h\n".
+        "Persistent=true\nUnit=webmin-wireguard-unlocode.service\n\n".
+        "[Install]\nWantedBy=timers.target\n";
+    return ($service,$timer);
+}
+
+sub _wg_install_unlocode_timer
+{
+    my ($module_dir,$state_dir,$stats_dir,$unit_dir,$systemctl,$log)=@_;
+    return if $ENV{'WEBMIN_WIREGUARD_SKIP_UNLOCODE'};
+    my $python=_wg_first_executable('/usr/bin/python3','/bin/python3');
+    return _wg_install_log($log,'UN/LOCODE: python3 unavailable, optional update skipped')
+        if !$python;
+    my ($service,$timer)=_wg_unlocode_units(
+        $python,$module_dir,"$stats_dir/analytics.sqlite3",$state_dir);
+    my %wanted=(
+        'webmin-wireguard-unlocode.service'=>$service,
+        'webmin-wireguard-unlocode.timer'=>$timer
+    );
+    my $changed=0;
+    for my $name (sort keys %wanted) {
+        my $file="$unit_dir/$name";
+        my $old=_wg_slurp($file);
+        if (defined($old) && $old !~ /^# Managed by Webmin WireGuard module;/) {
+            _wg_install_log($log,"UN/LOCODE: unmanaged unit $file left unchanged");
+            return;
+        }
+        next if defined($old) && $old eq $wanted{$name};
+        my ($ok,$error)=_wg_atomic_write($file,$wanted{$name},0644);
+        if (!$ok) {
+            _wg_install_log($log,"UN/LOCODE: cannot install $file: $error");
+            return;
+        }
+        $changed=1;
+    }
+    return if !$systemctl;
+    system($systemctl,'daemon-reload') if $changed;
+    my $enable=system($systemctl,'enable','--now','webmin-wireguard-unlocode.timer');
+    # Do not delay the installer for network downloads or CSV imports.
+    my $start=system($systemctl,'start','--no-block','webmin-wireguard-unlocode.service');
+    _wg_install_log($log,"UN/LOCODE: timer enable=$enable, initial queue=$start");
+}
+
 sub module_install
 {
     my $module_dir = $ENV{'WEBMIN_WIREGUARD_MODULE_DIR'} || abs_path(dirname(__FILE__));
@@ -169,6 +225,14 @@ sub module_install
         }
         $unit_changed = 1;
     }
+
+    # Independent optional location catalog. Queue download asynchronously;
+    # unreachable UNECE must never block initial installation or upgrades.
+    eval {
+        _wg_install_unlocode_timer($module_dir,$state_dir,$stats_dir,
+            $unit_dir,$systemctl,$log);
+    };
+    _wg_install_log($log,"UN/LOCODE optional setup: $@") if $@;
 
     # Create the first snapshot immediately without deleting existing history.
     if (!$ENV{'WEBMIN_WIREGUARD_SKIP_ONESHOT'}) {
