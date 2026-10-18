@@ -418,6 +418,8 @@ if ($access{'manage'}) {
         my $toggle_name_js = json_encode_utf8($name);
         my $toggle_busy_js = json_encode_utf8($text{'peer_toggle_busy'});
         my $toggle_confirm_js = json_encode_utf8($text{'confirm_peer_disable'});
+        my $toggle_non_json_js = json_encode_utf8($text{'ui_api_non_json'});
+        my $toggle_bad_json_js = json_encode_utf8($text{'ui_api_bad_json'});
         print <<TOGGLE_SCRIPT;
 <script>
 (function() {
@@ -427,25 +429,28 @@ if ($access{'manage'}) {
     const interfaceName = $toggle_name_js;
     const busyText = $toggle_busy_js;
     const confirmDisable = $toggle_confirm_js;
+    const nonJsonText = $toggle_non_json_js;
+    const badJsonText = $toggle_bad_json_js;
 
     async function decodeJsonResponse(response) {
         const body = await response.text();
         const contentType = (response.headers.get('content-type') || '').toLowerCase();
         if (!contentType.includes('application/json')) {
             const sample = body.replace(/\\s+/g, ' ').trim().slice(0, 240);
-            throw new Error('HTTP ' + response.status + ': сервер вернул не JSON' + (sample ? ': ' + sample : ''));
+            throw new Error('HTTP ' + response.status + ': ' + nonJsonText + (sample ? ': ' + sample : ''));
         }
         try { return JSON.parse(body); }
         catch (error) {
             const sample = body.replace(/\\s+/g, ' ').trim().slice(0, 240);
-            throw new Error('Некорректный JSON-ответ' + (sample ? ': ' + sample : ''));
+            throw new Error(badJsonText + (sample ? ': ' + sample : ''));
         }
     }
 
     button.addEventListener('click', async function(event) {
         event.preventDefault();
         const currentlyDisabled = button.dataset.peerDisabled === '1';
-        if (!currentlyDisabled && !window.confirm(confirmDisable)) return;
+        if (!currentlyDisabled &&
+            !await window.WireGuardUI.confirmAction(confirmDisable)) return;
         const originalHtml = button.innerHTML;
         button.disabled = true;
         button.textContent = busyText;
