@@ -158,7 +158,7 @@ if (@rows) {
     print '<div class="wg-runtime-time">'.$text{'runtime_updated'}.': <span data-wg-runtime-time>'.$text{'runtime_loading'}.'</span></div>';
     print '<div class="wg-ui-compact-table" data-wg-peer-sort-table="1">';
     print ui_columns_start(
-        [$text{'interface_peer_name'}, $text{'interface_peer_state'}, $text{'interface_peer_allowed'}, '', '', $text{'network_icons_city_code'}, $text{'interface_peer_endpoint'}, $text{'interface_peer_handshake'}, $text{'interface_peer_rx'}, $text{'interface_peer_tx'}, $text{'analytics_peer_short'}, $text{'interface_peer_actions'}],
+        [$text{'interface_peer_name'}, $text{'interface_peer_state'}, $text{'interface_peer_allowed'}, '', '', $text{'network_icons_city'}, $text{'interface_peer_endpoint'}, $text{'interface_peer_handshake'}, $text{'interface_peer_rx'}, $text{'interface_peer_tx'}, $text{'analytics_peer_short'}, $text{'interface_peer_actions'}],
         100, 0, undef, $text{'interface_peers'}
     );
     print ui_columns_row($_) for @rows;
