@@ -55,7 +55,7 @@ my $interface_toolbar_right= '';
 if ($access{'manage'}) {
     $interface_toolbar_left=wg_ui_button(
         href=>'interface_form.cgi?name='.urlize($name),
-        icon=>'edit',label=>$text{'interface_edit'},tone=>'info').
+        icon=>'edit',label=>$text{'interface_edit'},action=>'edit').
         wg_ui_button(href=>'edit_peer.cgi?name='.urlize($name),
         icon=>'plus',label=>$text{'interface_add_peer'},tone=>'success');
     $interface_toolbar_left.='<span class="wg-actions">'.
