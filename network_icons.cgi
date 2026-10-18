@@ -21,6 +21,25 @@ print '<p class="help-block">'.html_escape(
     '<a href="https://unlocode.unece.org/publications/" target="_blank" rel="noopener noreferrer">'.
     html_escape($text{'unlocode_official'}).'</a></p>';
 
+# UNECE refresh is asynchronous and distinct from geoipupdate.
+print '<div class="wg-ui-form-row">';
+print ui_form_start(module_script_url('unlocode_update.cgi'),'post');
+print csrf_hidden();
+print wg_ui_button(type=>'submit',icon=>'refresh-cw',action=>'restart',
+    label=>$text{'unlocode_update_button'});
+print ui_form_end();
+print '</div>';
+my $unlocode_state=File::Spec->catfile(_state_dir(),'unlocode-status.json');
+if (-f $unlocode_state && -r $unlocode_state) {
+    my $raw=read_file_contents($unlocode_state) || '';
+    my $state=eval { JSON::PP::decode_json($raw) };
+    if ($state && ref($state) eq 'HASH' && $state->{'updated_at'} =~ /^\d{9,12}$/) {
+        print '<p class="help-block">'.html_escape(
+            text('unlocode_last_updated',
+                 strftime('%Y-%m-%d %H:%M',localtime($state->{'updated_at'})))).'</p>';
+    }
+}
+
 # Shared network/GeoIP controls live here, independently of any peer.
 my $geo=wg_geoip_update_status();
 my $deps=optional_dependency_quick_status('geoip');
