@@ -32,7 +32,8 @@ sub wg_peer_activity_tabs_script
      ['time','text','actions','actions','ip','ip','actions']);
  const status=root.querySelector('[data-wg-peer-activity-status]');
  const body=root.querySelector('[data-wg-peer-activity-rows]');
- const ipTemplate=root.querySelector('[data-wg-ip-template] button');
+ const ipMarkup=root.querySelector('[data-wg-ip-template]');
+ const ipTemplate=ipMarkup&&ipMarkup.content&&ipMarkup.content.querySelector('button');
  let request=null,seq=0,networkRequest=null;
  root.addEventListener('wg-network-cache-updated',()=>fillKnownNetworks(seq));
  function isNumericIp(value){
