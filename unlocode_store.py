@@ -57,14 +57,24 @@ def import_release(conn, file_path):
     if path.is_dir():
         sources = [(p.name, p.read_bytes()) for p in sorted(path.glob("*.csv"))]
     elif path.suffix.lower() == ".zip":
-        with zipfile.ZipFile(path) as archive:
-            members = [info for info in archive.infolist()
-                       if info.filename.lower().endswith(".csv")
-                       and not info.filename.startswith("__MACOSX")
-                       and "codelistpart" in info.filename.lower().replace(" ", "")]
-            if len(members) > 16 or sum(i.file_size for i in members) > 80 * 1024 * 1024:
-                raise ValueError("UN/LOCODE archive exceeds safe CSV limits")
-            sources = [(info.filename, archive.read(info)) for info in members]
+        # The published production artifact may itself contain ZIP bundles.
+        import io
+        def csv_members(payload, depth=0):
+            with zipfile.ZipFile(io.BytesIO(payload)) as bundle:
+                members = bundle.infolist()
+                if len(members) > 128 or sum(x.file_size for x in members) > 100*1024*1024:
+                    raise ValueError("UN/LOCODE archive exceeds safe extraction limit")
+                result = []
+                for info in members:
+                    name = info.filename.lower().replace(" ", "")
+                    if "codelistpart" in name and name.endswith(".csv"):
+                        if info.file_size > 32*1024*1024:
+                            raise ValueError("Oversized UN/LOCODE CSV")
+                        result.append((info.filename,bundle.read(info)))
+                    elif depth == 0 and name.endswith(".zip") and info.file_size < 64*1024*1024:
+                        result.extend(csv_members(bundle.read(info),depth+1))
+                return result
+        sources = csv_members(path.read_bytes())
     elif path.suffix.lower() == ".csv":
         sources = [(path.name, path.read_bytes())]
     else:
