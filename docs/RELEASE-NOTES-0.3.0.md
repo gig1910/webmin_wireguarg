@@ -22,8 +22,11 @@ configuration before installing, and verify its pages in Authentic Theme.
 Automated tests and packaging checks are run by scripts/build-release.sh;
 browser and deployment verification remain separate steps.
 
-City names are approximate GeoIP data. Short codes such as MSK are UI
-abbreviations, not standardized ISO city identifiers. Automatic City results
-require the MaxMind GeoLite2-City.mmdb dataset (not Country-only) and are
-cached on explicit WHOIS/GeoIP lookups. Existing SQLite installations gain
-city fields through a non-destructive migration.
+City names come from approximate GeoLite2 City IP geolocation, while
+UN/LOCODE provides optional, officially published location identifiers.
+The full code (e.g. `RUMOW`) is stored and its three-character location
+portion (`MOW`) is displayed in the peer tables. No guessed abbreviations
+are presented as UN/LOCODE. Ambiguous/unmatched locations have no official
+code. Manual network mappings can select a known full five-character code.
+Import a UNECE release explicitly using `scripts/import-unlocode.py` and
+an existing analytics database; see `docs/UNLOCODE.ru.md`.
