@@ -91,7 +91,6 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
     my $public_key = get_section_value($peer, 'PublicKey') || '';
     my $endpoint = get_section_value($peer, 'Endpoint') || '-';
     my $allowed = join(', ', get_section_values($peer, 'AllowedIPs')) || '-';
-    my $short_allowed = shorten_text($allowed, 55);
     my $id = substr(sha256_hex($public_key), 0, 16);
     my $peer_url='edit_peer.cgi?name='.urlize($name).'&peer='.$i;
     my $name_link='<a href="'.html_escape($peer_url).'"><b>'.
@@ -114,13 +113,13 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
         icon=>'globe',label=>$text{'peer_ip_lookup'}||'WHOIS / GeoIP',tone=>'info',
         attrs=>{'data-wg-ip-inspect'=>"$i"});
     my $edit_action=wg_ui_icon_action(
-        icon=>'edit',label=>$text{'peer_edit_title'}||'Редактировать',tone=>'info',
+        icon=>'edit',label=>$text{'peer_edit_title'}||'Edit',action=>'edit',
         href=>$peer_url);
-    my $actions='<span class="wg-ui-table-actions">'.$ip_action.$edit_action;
+    my @row_actions=($ip_action,$edit_action);
     if ($access{'manage'}) {
         my $button_class = $disabled ? 'wg-ui-tone-success' : 'wg-ui-tone-warning';
         my $button_text = $disabled ? $text{'peer_enable'} : $text{'peer_disable'};
-        $actions .= '<div class="wg-peer-toggle"'.
+        push @row_actions, '<div class="wg-peer-toggle"'.
             ' data-peer-id="'.$id.'"'.
             ' data-peer-index="'.$i.'"'.
             ' data-peer-disabled="'.($disabled ? '1' : '0').'"'.
@@ -133,7 +132,7 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
             '<span data-wg-toggle-stop'.($disabled?' hidden':'').'>'.wg_ui_icon('stop').'</span>'.
             '</button></div>';
     }
-    $actions.='</span>';
+    my $actions=wg_ui_table_actions(@row_actions);
 
     push @rows, [
         $name_link,
