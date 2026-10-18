@@ -71,7 +71,7 @@ print '<div class="wg-ui-form-row">'.
     '<label>'.html_escape($text{'network_icons_symbol'}).' <input name="icon" value="?" maxlength="8" size="5"></label> '.
     '<label>'.html_escape($text{'network_icons_label'}).' <input name="label" maxlength="100" size="30"></label> '.
     '<label>'.html_escape($text{'network_icons_city'}).' <input name="city" maxlength="100" size="22"></label> '.
-    '<label>'.html_escape($text{'network_icons_city_code'}).' <input name="city_code" maxlength="8" size="8" placeholder="MSK" title="'.html_escape($text{'network_icons_city_help'}).'"></label> '.
+    '<label>'.html_escape($text{'network_icons_city_code'}).' <input name="city_code" maxlength="5" size="8" placeholder="RUMOW" title="'.html_escape($text{'network_icons_city_help'}).'"></label> '.
     wg_ui_button(type=>'submit',icon=>'save',tone=>'success',
         label=>$text{'network_icons_save'}).'</div>';
 print ui_form_end();
@@ -98,7 +98,7 @@ for my $cidr (sort keys %ranges) {
         '<td>'.html_escape($icon).'</td><td>'.html_escape($label).'</td>'.
         '<td>'.html_escape($owner).'</td>'.
         '<td><span data-wg-country="'.html_escape($country).'">'.html_escape($country).'</span></td>'.
-        '<td title="'.html_escape($city||$cities).'">'.html_escape($city_code||$cities||'—').'</td>'.
+        '<td title="'.html_escape($city||$cities).'">'.html_escape(($city_code=~/^[A-Z]{2}([A-Z0-9]{3})$/ ? $1 : '')||$cities||'—').'</td>'.
         '<td><span data-wg-geoip-codes="'.html_escape($geoip_codes).'" title="'.html_escape($text{'network_icons_geoip_help'}).'">'.html_escape($geoip_codes).'</span></td>'.
         '<td><span class="wg-ui-table-actions">'.
         wg_ui_icon_action(icon=>'edit',tone=>'info',
