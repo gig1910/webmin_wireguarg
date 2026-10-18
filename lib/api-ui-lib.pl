@@ -233,8 +233,8 @@ sub direct_link_button
 sub mini_action_form
 {
     my ($name,$operation,$label,$kind,$confirm,$icon,$compact)=@_;
-    # Action semantics take precedence over caller-provided legacy colors.
-    $kind=wg_ui_action_tone($operation);
+    # The legacy $kind argument is retained for existing callers; the
+    # operation determines the rendered tone through the shared resolver.
     $compact=defined($compact)?$compact:!!$icon;
     # Native confirm is a progressive-enhancement fallback; when the common
     # modal handler is present it prevents the first submit in capture phase.
