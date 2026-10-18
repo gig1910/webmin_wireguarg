@@ -115,15 +115,82 @@ sub wg_ui_foundation {
      setTimeout(()=>{if(button.isConnected)button.title=original;},1800);
    }).catch(()=>{button.title=button.dataset.wgCopyError||'Копирование недоступно';});
  },true);
+ function confirmModal(message,word){
+  return new Promise(resolve=>{
+   const overlay=document.createElement('div');
+   overlay.className='wg-ui-modal wg-ui';
+   overlay.setAttribute('role','presentation');
+   const panel=document.createElement('div');
+   panel.className='wg-ui-modal-panel';
+   panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');
+   panel.setAttribute('aria-label','Подтверждение операции');
+   const heading=document.createElement('h3');heading.textContent='Подтверждение операции';
+   const body=document.createElement('p');body.textContent=message||'Подтвердить действие?';
+   panel.append(heading,body);
+   let field=null;
+   if(word){
+    const label=document.createElement('label');
+    label.textContent='Для подтверждения введите '+word;
+    field=document.createElement('input');
+    field.className='form-control';field.autocomplete='off';
+    field.setAttribute('aria-label',word);
+    label.append(field);panel.append(label);
+   }
+   const buttons=document.createElement('div');
+   buttons.className='wg-ui-action-bar';
+   const cancel=document.createElement('button');cancel.type='button';
+   cancel.className='btn btn-default';cancel.textContent='Отмена';
+   const accept=document.createElement('button');accept.type='button';
+   accept.className='btn btn-danger';accept.textContent='Подтвердить';
+   if(word)accept.disabled=true;
+   buttons.append(cancel,accept);panel.append(buttons);overlay.append(panel);
+   const active=document.activeElement;
+   let finished=false;
+   const onKey=e=>{
+    if(e.key==='Escape'){e.preventDefault();finish(false);}
+    if(e.key==='Enter'&&field&&document.activeElement===field&&!accept.disabled){
+     e.preventDefault();finish(true);
+    }
+   };
+   function finish(result){
+    if(finished)return;finished=true;
+    document.removeEventListener('keydown',onKey,true);
+    overlay.remove();
+    if(active&&active.isConnected&&typeof active.focus==='function')active.focus();
+    resolve(result);
+   }
+   overlay.addEventListener('click',e=>{if(e.target===overlay)finish(false);});
+   cancel.addEventListener('click',()=>finish(false));
+   accept.addEventListener('click',()=>finish(true));
+   if(field)field.addEventListener('input',()=>{accept.disabled=field.value!==word;});
+   document.addEventListener('keydown',onKey,true);
+   document.body.append(overlay);
+   (field||cancel).focus();
+  });
+ }
  document.addEventListener('submit',function(ev){
-   const form=ev.target.closest('form[data-wg-confirm]');
-   if(form && form.closest('.wg-ui') && !ui.confirm(form.dataset.wgConfirm))
-     ev.preventDefault();
+  const form=ev.target.closest('form[data-wg-confirm]');
+  if(!form||!form.closest('.wg-ui'))return;
+  if(form.dataset.wgConfirmed==='1'){delete form.dataset.wgConfirmed;return;}
+  ev.preventDefault();ev.stopImmediatePropagation();
+  const submitter=ev.submitter;
+  confirmModal(form.dataset.wgConfirm,form.dataset.wgConfirmWord||'').then(ok=>{
+   if(!ok||!form.isConnected)return;
+   const token= form.querySelector('input[name="confirm"]');
+   if(token&&form.dataset.wgConfirmWord)token.value=form.dataset.wgConfirmWord;
+   form.dataset.wgConfirmed='1';
+   if(typeof form.requestSubmit==='function')form.requestSubmit(submitter||undefined);
+   else form.submit();
+  });
  },true);
  document.addEventListener('click',function(ev){
-   const anchor=ev.target.closest('a[data-wg-confirm]');
-   if(anchor && anchor.closest('.wg-ui') && !ui.confirm(anchor.dataset.wgConfirm))
-     ev.preventDefault();
+  const anchor=ev.target.closest('a[data-wg-confirm]');
+  if(!anchor||!anchor.closest('.wg-ui'))return;
+  if(anchor.dataset.wgConfirmed==='1'){delete anchor.dataset.wgConfirmed;return;}
+  ev.preventDefault();ev.stopImmediatePropagation();
+  confirmModal(anchor.dataset.wgConfirm,anchor.dataset.wgConfirmWord||'').then(ok=>{
+   if(ok&&anchor.isConnected){anchor.dataset.wgConfirmed='1';anchor.click();}
+  });
  },true);
 })();
 </script>
