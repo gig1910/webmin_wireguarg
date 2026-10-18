@@ -169,9 +169,9 @@ else {
 if ($access{'manage'}) {
     my $url='delete_interface.cgi?name='.urlize($name);
     print wg_ui_danger_zone(
-        '<a href="'.html_escape($url).'" class="btn btn-danger"'.
-        ' data-wg-confirm="'.html_escape($text{'interface_delete'}.' '.$name).'">'.
-        html_escape($text{'interface_delete'}).'</a>');
+        wg_ui_button(href=>$url,icon=>'trash',tone=>'danger',
+            label=>$text{'interface_delete'},
+            attrs=>{'data-wg-confirm'=>$text{'interface_delete'}.' '.$name}));
 }
 
 my $js_page_instance = json_encode_utf8($page_instance);
