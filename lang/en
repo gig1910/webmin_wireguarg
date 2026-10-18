@@ -504,3 +504,26 @@ network_icons_clear=Clear range cache
 peer_tab_settings=Settings
 peer_tab_usage=Consumption history
 peer_tab_activity=Activities
+
+# Shared user-interface components
+ui_close=Close
+ui_refresh_runtime=Refresh interface runtime data
+ui_copy_public=Copy public key
+ui_copy_endpoint=Copy endpoint
+ui_copy_config=Copy client configuration
+ui_storage_maintenance=Storage maintenance
+ui_dependency_qr=QR generation
+ui_dependency_whois=WHOIS
+ui_dependency_geoip=Local GeoIP
+ui_dependency_geoip_update=GeoIP database updates
+ui_dependency_available=Available
+ui_dependency_unavailable=Unavailable
+ui_dependency_country_only=Country database: city information unavailable
+ui_dependency_city=City database: location may be available for matched IPs
+ui_dependency_missing_db=GeoIP database not found
+ui_collector_controls=Metric collector controls
+ui_ip_city_note=City is displayed only when GeoIP City contains a record for this IP; location is approximate.
+ui_form_invalid=Check this field.
+ui_form_endpoint=Hostname or IP address with optional port 1–65535
+ui_save_changes=Save changes
+ui_unknown_network=Unknown network
