@@ -11,7 +11,7 @@ for my $tone (sort keys %native) {
 }
 # Verify rendered semantic controls, not caller-specific legacy tone arguments.
 my %actions=(start=>'btn-success',add=>'btn-success',save=>'btn-success',
-    stop=>'btn-warning',restart=>'btn-warning',edit=>'btn-primary',
+    stop=>'btn-danger',restart=>'btn-warning',edit=>'btn-primary',
     delete=>'btn-danger',clear=>'btn-danger');
 for my $action (sort keys %actions) {
     my $html=wg_ui_button(icon=>'save',label=>'Action',action=>$action);
