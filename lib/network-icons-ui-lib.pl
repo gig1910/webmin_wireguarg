@@ -23,11 +23,15 @@ sub wg_network_icons_page_script
     const cidr=editor.querySelector('[name="cidr"]');
     const icon=editor.querySelector('[name="icon"]');
     const label=editor.querySelector('[name="label"]');
+    const city=editor.querySelector('[name="city"]');
+    const cityCode=editor.querySelector('[name="city_code"]');
     root.querySelectorAll('[data-wg-edit-range]').forEach(function(button){
         button.addEventListener('click',function(){
             cidr.value=button.dataset.cidr||'';
             icon.value=button.dataset.icon||'?';
             label.value=button.dataset.label||'';
+            if(city)city.value=button.dataset.city||'';
+            if(cityCode)cityCode.value=button.dataset.cityCode||'';
             editor.scrollIntoView({behavior:'smooth',block:'center'});
             icon.focus({preventScroll:true});
         });
