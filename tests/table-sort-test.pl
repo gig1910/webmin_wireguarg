@@ -37,6 +37,29 @@ if(!eq(parse('10.66.66.10/32'),[4,10,66,66,10]))
 if(!eq(parse('[2001:db8::a]:5000'),[6,8193,3512,0,0,0,0,0,10]))
     throw new Error('IPv6 parsing mismatch');
 if(parse('(none)')!==null)throw new Error('Invalid IP accepted');
+
+const cases=[
+  ['10.0.0.2',[4,10,0,0,2]],
+  ['10.0.0.10:51820',[4,10,0,0,10]],
+  ['10.0.0.2/24',[4,10,0,0,2]],
+  ['::1',[6,0,0,0,0,0,0,0,1]],
+  ['2001:db8::2',[6,8193,3512,0,0,0,0,0,2]],
+  ['2001:db8::10/64',[6,8193,3512,0,0,0,0,0,16]],
+  ['[2001:db8::2]:51820',[6,8193,3512,0,0,0,0,0,2]],
+  ['[::1]:51820',[6,0,0,0,0,0,0,0,1]],
+];
+for(const [input,expected] of cases)
+  if(!eq(parse(input),expected))
+    throw new Error('IP sort regression '+input+': '+JSON.stringify(parse(input)));
+for(const input of ['256.1.1.1','2001:db8:::1','[2001:db8::1','not an IP'])
+  if(parse(input)!==null)throw new Error('Malformed IP accepted: '+input);
+if(sort.compare(parse('10.0.0.2'),parse('10.0.0.10'),'ip')>=0)
+  throw new Error('IPv4 numeric sort incorrect');
+if(sort.compare(parse('2001:db8::2'),parse('2001:db8::10'),'ip')>=0)
+  throw new Error('IPv6 numeric sort incorrect');
+if(sort.compare(parse('10.0.0.2'),parse('::1'),'ip')>=0)
+  throw new Error('IPv4/IPv6 ordering inconsistent');
+
 // NULL/"Никогда" is larger than ANY real value for ASC; DESC reverses it.
 for(const kind of ['time','handshake','bytes','ip','endpoint','name']){
   const present=kind==='ip'||kind==='endpoint'?[4,10,66,66,2]:12345;
