@@ -17,7 +17,7 @@ print '<div class="wg-ui" data-wg-network-page="'.html_escape($network_page_id).
 print '<div class="alert alert-success">'.html_escape($notice).'</div>' if $notice;
 print '<p>'.html_escape($text{'network_icons_help'}).'</p>';
 print '<p class="help-block">'.html_escape(
-    text('unlocode_status',0+($report->{'unlocode_count'}||0))).' '.
+    sprintf($text{'unlocode_status'},0+($report->{'unlocode_count'}||0))).' '.
     '<a href="https://unlocode.unece.org/publications/" target="_blank" rel="noopener noreferrer">'.
     html_escape($text{'unlocode_official'}).'</a></p>';
 
@@ -53,7 +53,7 @@ if (-f $unlocode_error && -r $unlocode_error && -s $unlocode_error < 2048) {
 my $geo=wg_geoip_update_status();
 my $deps=optional_dependency_quick_status('geoip');
 my $geo_message=$geo->{'database_mtime'}
-    ? text('geoip_update_age',strftime('%Y-%m-%d %H:%M',localtime($geo->{'database_mtime'})),
+    ? sprintf($text{'geoip_update_age'},strftime('%Y-%m-%d %H:%M',localtime($geo->{'database_mtime'})),
         0+($geo->{'database_age_days'}||0))
     : ($geo->{'legacy_database_available'} ? $text{'geoip_legacy_ready'} : $text{'geoip_update_missing_db'});
 $geo_message .= ' — '.$text{'geoip_update_stale'} if $geo->{'stale'};
