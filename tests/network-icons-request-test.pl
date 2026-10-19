@@ -95,8 +95,9 @@ die "Network refresh must require ACL, CSRF and rate limiting\n"
            $refresh =~ /request_rate_limit\('network_refresh'/;
 die "Network refresh may only query exact previously observed IPs\n"
     unless $refresh =~ /check_observed_ip/ && $refresh =~ /\$known->\{'known'\}/;
-die "Network refresh must separate source queries from city lookup\n"
-    unless $refresh =~ /peer_ip_whois\(\$ip\)/ &&
-           $refresh =~ /peer_ip_geoip\(\$ip\)/ &&
-           $refresh =~ /get_observed_ip/;
+die "Cache refresh must combine WHOIS and GeoIP into one JSON reply\n"
+    unless $refresh =~ /peer_ip_whois/ &&
+           $refresh =~ /peer_ip_geoip/ &&
+           $refresh =~ /json_response/ &&
+           $refresh =~ /network_record/;
 print "network directory navigation and mutation CSRF regression tests passed\n";
