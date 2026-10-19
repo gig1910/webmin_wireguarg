@@ -211,6 +211,18 @@ print '<div class="wg-ui-modal" data-wg-cache-dialog hidden role="dialog" aria-m
     '<div class="wg-ui-modal-body" data-wg-cache-output role="status" aria-live="polite"></div>'.
     '<div class="wg-cache-confirm-actions" data-wg-cache-confirm hidden></div>'.
     '</div></div>';
+print '<div class="wg-ui-modal" data-wg-locode-dialog hidden role="dialog" aria-modal="true">'.
+    '<div class="wg-ui-modal-panel panel panel-default">'.
+    '<div class="wg-ui-modal-header"><h3>Поиск UN/LOCODE</h3>'.
+    wg_ui_button(type=>'button',icon=>'close',label=>$text{'ui_close'},
+        attrs=>{'data-wg-locode-close'=>'1'}).'</div>'.
+    '<div class="wg-locode-searchbar"><input type="search" data-wg-locode-query placeholder="Название или код города" aria-label="Поиск города">'.
+    '<span data-wg-locode-count role="status"></span></div>'.
+    '<div data-wg-locode-results class="wg-locode-results"></div>'.
+    '<div class="wg-locode-pagination"><button type="button" class="btn btn-default" data-wg-locode-prev>Назад</button>'.
+    '<span data-wg-locode-page></span>'.
+    '<button type="button" class="btn btn-default" data-wg-locode-next>Далее</button></div>'.
+    '</div></div>';
 print '<div hidden data-wg-city-save-url="'.html_escape(module_script_url('network_save.cgi')).'"></div>';
 print '<div hidden data-wg-unlocode-search-url="'.html_escape(module_script_url('unlocode_search.cgi')).'"></div>';
 print '<div hidden data-wg-cache-options data-wg-cache-url="'.
