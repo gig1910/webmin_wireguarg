@@ -657,6 +657,16 @@ class AnalyticsTest(unittest.TestCase):
 
         self.assertEqual(store.network_manage(self.conn,{
             "action":"search_unlocode","term":"bel","country":"RU"})["matches"],[])
+        # Zero-result diagnostics distinguish request normalization from a
+        # missing or damaged on-disk catalog, without altering its contents.
+        empty=store.network_manage(self.conn,{
+            "action":"search_unlocode","term":"unlikely_location_xyz"})
+        self.assertEqual(empty["total"],0)
+        self.assertEqual(empty["diagnostic"]["normalized_term"],
+                         "unlikely location xyz")
+        self.assertEqual(empty["diagnostic"]["catalog_count"],2)
+        self.assertEqual(empty["diagnostic"]["rumow"]["name"],"Moskva")
+
 
         store.network_record(self.conn, {
             "ip":"8.8.8.8","geoip_country_code":"RU",
