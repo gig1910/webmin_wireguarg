@@ -609,6 +609,7 @@ class AnalyticsTest(unittest.TestCase):
         self.assertEqual(locodes.import_release(self.conn,catalog),2)
         found=store.network_manage(self.conn,{
             "action":"search_unlocode","term":"bel","country":"RS"})["matches"]
+        self.assertEqual(store.network_manage(self.conn,{"action":"search_unlocode","term":"Москва","country":"RU"})["matches"][0]["code"],"RUMOW")
         self.assertEqual([(x["code"],x["name"]) for x in found],
                          [("RSBEG","Belgrade")])
         self.assertEqual(store.network_manage(self.conn,{
