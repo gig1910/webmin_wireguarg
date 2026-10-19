@@ -51,82 +51,127 @@ sub wg_network_icons_page_script
             icon.focus({preventScroll:true});
         });
     });
-    if(city&&cityCode&&choices&&locodeSource){
-        const searchUrl=locodeSource.dataset.wgUnlocodeSearchUrl;
-        let timeoutId=null;
-        const clear=()=>{choices.replaceChildren();choices.hidden=true;};
-        const search=()=>{
-            clear();
-            const query=city.value.trim()||cityCode.value.trim();
-            if(timeoutId)clearTimeout(timeoutId);
-            const seq=++searchSequence;
-            if(query.length<2)return;
-            timeoutId=setTimeout(async()=>{
-                choices.hidden=false;
-                choices.textContent='Поиск UN/LOCODE…';
-                try{
-                    const url=searchUrl+'?'+new URLSearchParams({
-                        term:query,country:countryHint||''
-                    }).toString();
-                    const response=await window.WireGuardTransport.requestJson(url,{
-                        method:'GET'
-                    },{requireOk:true});
-                    if(seq!==searchSequence)return;
-                    clear();
-                    if(!Array.isArray(response.matches)||!response.matches.length){
-                        choices.hidden=false;
-                        choices.textContent='Совпадений нет';
-                        return;
+    const picker=root.querySelector('[data-wg-locode-dialog]');
+    const queryInput=picker?.querySelector('[data-wg-locode-query]');
+    const count=picker?.querySelector('[data-wg-locode-count]');
+    const results=picker?.querySelector('[data-wg-locode-results]');
+    const page=picker?.querySelector('[data-wg-locode-page]');
+    const prev=picker?.querySelector('[data-wg-locode-prev]');
+    const next=picker?.querySelector('[data-wg-locode-next]');
+    if(city&&cityCode&&picker&&locodeSource&&queryInput&&results){
+        const url=locodeSource.dataset.wgUnlocodeSearchUrl;
+        let offset=0,total=0,sequence=0,debounce=null,abort=null;
+        const normalize=value=>String(value||'').normalize('NFD')
+            .replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase();
+        function highlight(parent,name,term){
+            // Highlight literal matching fragments, never inject server text as HTML.
+            const original=String(name||'');
+            const plain=normalize(original),needle=normalize(term);
+            const at=plain.indexOf(needle);
+            if(at<0||!needle){parent.textContent=original;return;}
+            const chars=Array.from(original);
+            const before=chars.slice(0,at).join('');
+            const match=chars.slice(at,at+Array.from(term).length).join('');
+            parent.append(document.createTextNode(before));
+            const mark=document.createElement('mark');
+            mark.textContent=match;
+            parent.append(mark,document.createTextNode(chars.slice(at+Array.from(term).length).join('')));
+        }
+        async function search(){
+            const term=queryInput.value.trim();
+            const seq=++sequence;
+            abort?.abort();
+            abort=new AbortController();
+            results.replaceChildren();
+            prev.disabled=next.disabled=true;
+            if(term.length<2){count.textContent='Введите минимум 2 символа';return;}
+            count.textContent='Поиск…';
+            try{
+                const query=new URLSearchParams({term,offset:String(offset)});
+                const response=await window.WireGuardTransport.requestJson(
+                    url+'?'+query.toString(),{method:'GET',signal:abort.signal},{requireOk:true});
+                if(seq!==sequence||picker.hidden)return;
+                total=Number(response.total||0);
+                count.textContent='Найдено: '+total;
+                page.textContent=total?(offset+1)+'–'+Math.min(offset+100,total)+' из '+total:'';
+                prev.disabled=offset===0;
+                next.disabled=offset+100>=total;
+                let lastCountry='';
+                const table=document.createElement('table');
+                table.className='table table-striped table-hover wg-locode-table';
+                const tbody=document.createElement('tbody');
+                table.append(tbody);
+                (response.matches||[]).forEach(place=>{
+                    if(lastCountry!==place.country){
+                        lastCountry=place.country;
+                        const group=document.createElement('tr');
+                        group.className='wg-locode-country';
+                        const heading=document.createElement('th');
+                        heading.colSpan=3;
+                        heading.textContent=lastCountry;
+                        group.append(heading);tbody.append(group);
                     }
-                    response.matches.forEach(place=>{
-                        const button=document.createElement('button');
-                        button.type='button';
-                        button.className='btn btn-default wg-city-choice';
-                        button.textContent=place.name+' · '+place.code+
-                            (place.subdivision?' ('+place.subdivision+')':'');
-                        button.addEventListener('click',()=>{
-                            city.value=place.name;
-                            cityCode.value=place.code;
-                            clear();
-                        });
-                        choices.append(button);
+                    const tr=document.createElement('tr');
+                    const name=document.createElement('td');
+                    highlight(name,place.name,term);
+                    const sub=document.createElement('small');
+                    sub.textContent=place.subdivision?' ('+place.subdivision+')':'';
+                    name.append(sub);
+                    const code=document.createElement('td');
+                    highlight(code,place.code,term);
+                    const action=document.createElement('td');
+                    const choose=document.createElement('button');
+                    choose.type='button';choose.className='btn btn-info btn-sm';
+                    choose.textContent='Выбрать';
+                    choose.addEventListener('click',()=>{
+                        city.value=place.name;cityCode.value=place.code;
+                        picker.hidden=true;city.focus();
                     });
-                    choices.hidden=false;
-                }catch(error){
-                    if(seq===searchSequence){
-                        choices.hidden=false;
-                        choices.textContent='Поиск недоступен: '+(error.message||String(error));
-                    }
+                    action.append(choose);
+                    tr.append(name,code,action);tbody.append(tr);
+                });
+                if(!tbody.children.length)results.textContent='Совпадений нет';
+                else results.append(table);
+            }catch(error){
+                if(seq===sequence && !abort.signal.aborted){
+                    count.textContent='Ошибка поиска';
+                    results.textContent=error.message||String(error);
                 }
-            },200);
+            }
+        }
+        const schedule=()=>{
+            clearTimeout(debounce);offset=0;
+            debounce=setTimeout(search,250);
         };
-        city.addEventListener('input',()=>{
-            cityCode.value='';
-            search();
+        editor.querySelector('[data-wg-city-search-button]')?.addEventListener('click',()=>{
+            picker.hidden=false;
+            queryInput.value=city.value.trim()||cityCode.value.trim();
+            offset=0;search();queryInput.focus();
         });
-        editor.querySelector('[data-wg-city-search-button]')?.addEventListener('click',search);
-        cityCode.addEventListener('input',()=>{
-            searchSequence++;
-            clear();
+        queryInput.addEventListener('input',schedule);
+        prev.addEventListener('click',()=>{offset=Math.max(0,offset-100);search();});
+        next.addEventListener('click',()=>{if(offset+100<total){offset+=100;search();}});
+        picker.querySelector('[data-wg-locode-close]')?.addEventListener('click',()=>{
+            picker.hidden=true;abort?.abort();
+        });
+        picker.addEventListener('click',event=>{
+            if(event.target===picker){picker.hidden=true;abort?.abort();}
+        });
+        root.addEventListener('keydown',event=>{
+            if(event.key==='Escape'&&!picker.hidden){picker.hidden=true;abort?.abort();}
+        });
+        // Code lookup resolves full official names without guessing.
+        cityCode.addEventListener('change',async()=>{
             const code=cityCode.value.trim().toUpperCase();
             if(!/^[A-Z]{2}[A-Z0-9]{3}$/.test(code))return;
-            const seq=++searchSequence;
-            (async()=>{
-                try{
-                    const url=searchUrl+'?'+new URLSearchParams({term:code}).toString();
-                    const result=await window.WireGuardTransport.requestJson(url,{method:'GET'},{requireOk:true});
-                    if(seq!==searchSequence)return;
-                    const match=(result.matches||[]).find(p=>p.code===code);
-                    if(match)city.value=match.name;
-                }catch(error){
-                    if(seq===searchSequence){
-                        choices.hidden=false;
-                        choices.textContent='Не удалось найти код: '+(error.message||String(error));
-                    }
-                }
-            })();
+            try{
+                const data=await window.WireGuardTransport.requestJson(
+                    url+'?'+new URLSearchParams({term:code}).toString(),
+                    {method:'GET'},{requireOk:true});
+                const match=(data.matches||[]).find(place=>place.code===code);
+                if(match)city.value=match.name;
+            }catch(error){}
         });
-        editor.addEventListener('reset',()=>{countryHint='';clear();});
     }
     const saveUrl=root.querySelector('[data-wg-city-save-url]')?.dataset.wgCitySaveUrl;
     const saveForm=editor.querySelector('form');
