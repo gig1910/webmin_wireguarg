@@ -29,6 +29,7 @@ sub wg_network_icons_page_script
     const locodeSource=root.querySelector('[data-wg-unlocode-search-url]');
     let countryHint='';
     let searchSequence=0;
+    if(choices){choices.className='wg-unlocode-choices';}
     root.querySelectorAll('[data-wg-edit-range]').forEach(function(button){
         button.addEventListener('click',function(){
             cidr.value=button.dataset.cidr||'';
@@ -37,7 +38,7 @@ sub wg_network_icons_page_script
             if(city)city.value=button.dataset.city||button.dataset.suggestedCity||'';
             countryHint=button.closest('tr')?.querySelector('[data-wg-country]')?.dataset.wgCountry||'';
             if(choices)choices.hidden=true;
-            if(cityCode)cityCode.value=button.dataset.cityCode||'';
+            if(cityCode)cityCode.value=button.dataset.cityCode||button.dataset.suggestedCode||'';
             editor.scrollIntoView({behavior:'smooth',block:'center'});
             icon.focus({preventScroll:true});
         });
