@@ -39,16 +39,12 @@ else {
         $city=$response->{'city'}||'';
     }
     else {
-        my ($cache,$cache_error)=analytics_backend('network_lookup',{ips=>[$ip]});
-        error($cache_error || $text{'network_icons_invalid'}) unless $cache;
-        my $value=$cache->{'results'}{$ip}||{};
-        $country=$value->{'geoip_country'}||'';
-        # Manual CIDR city overrides are NOT copied into the per-IP GeoIP cache.
-        # Retrieve the observed city from dedicated backend operation below.
+        # Read the original observation, not a manual CIDR override.
         my ($observed,$observed_error)=analytics_backend('network_manage',{
             action=>'get_observed_ip',ip=>$ip
         });
         error($observed_error || $text{'network_icons_invalid'}) unless $observed;
+        $country=$observed->{'country'}||'';
         $city=$observed->{'city'}||'';
     }
     ($result,$err)=analytics_backend('network_manage',{
