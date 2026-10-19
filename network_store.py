@@ -183,6 +183,27 @@ def network_manage(conn, req):
             })
         count=conn.execute("SELECT COUNT(*) FROM unlocode_places").fetchone()[0]
         return {"ok": True, "cache": cache, "icons": icons, "unlocode_count": count}
+    if action == "search_unlocode":
+        term=req.get("term") or ""
+        country=req.get("country") or ""
+        if not isinstance(term,str) or len(term)>80 or len(term.strip())<2:
+            return {"ok":True,"matches":[]}
+        if not isinstance(country,str) or (country and not re.fullmatch(r"[A-Z]{2}",country)):
+            raise ValueError("invalid country filter")
+        from unlocode_store import normalize
+        key=normalize(term)
+        if not key or len(key)<2:
+            return {"ok":True,"matches":[]}
+        escaped=key.replace("\\","\\\\").replace("%","\\%").replace("_","\\_")
+        where="WHERE (name_key LIKE ? ESCAPE '\\' OR ascii_key LIKE ? ESCAPE '\\')"
+        args=[escaped+"%",escaped+"%"]
+        if country:
+            where+=" AND country=?"
+            args.append(country)
+        rows=conn.execute("SELECT country,code,name,subdivision FROM unlocode_places "+
+                          where+" ORDER BY name_key,country,code LIMIT 25",args).fetchall()
+        return {"ok":True,"matches":[{"code":c+loc,"name":name,"country":c,
+                                      "subdivision":sub} for c,loc,name,sub in rows]}
     if action == "check_observed_ip":
         raw=req.get("ip") or ""
         try:
