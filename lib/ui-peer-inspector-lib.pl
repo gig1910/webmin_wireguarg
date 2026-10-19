@@ -114,6 +114,14 @@ sub wg_ui_peer_inspector_script {
    element('h4',data.ip||'',out,'wg-ui-mono');
    section(opts.wgIpWhois,data.whois);
    section(opts.wgIpGeoip,data.geoip);
+   if(data.city_match && data.city_match.city){
+    const group=element('section',null,out,'wg-peer-ip-section');
+    const isManual=data.city_match.source==='manual';
+    element('h4',isManual?'City (manual override)':'City / UN/LOCODE',group);
+    const description=data.city_match.city+
+      (data.city_match.city_code?' — '+data.city_match.city_code:'');
+    element('p',description,group,'wg-ui-mono');
+   }
    if(data.network_cached)
      root.dispatchEvent(new CustomEvent('wg-network-cache-updated',{bubbles:true}));
   }catch(err){
