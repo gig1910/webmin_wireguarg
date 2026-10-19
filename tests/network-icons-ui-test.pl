@@ -33,6 +33,14 @@ die "Location lookup must append parameters through URL.searchParams (versioned 
 die "Location lookup must never append a second question mark to versioned API URL\n"
     if index($network_ui,"url+'?'+")>=0;
 die "Network cache refresh must use compact modal controls\n" unless index($icons,'data-wg-cache-refresh')>=0 && index($icons,'data-wg-cache-dialog')>=0;
+# The preview and confirmed commit share one AbortController. Clearing it
+# after the preview causes the commit response to be discarded as stale.
+die "Cache refresh controller must remain active through confirmation and commit\n"
+    unless $network_ui =~ /if\(controller\.signal\.aborted && pending===controller\)pending=null/ &&
+           $network_ui =~ /if\(pending===controller\)pending=null;\s*}\s*\);\s*}\s*catch\(error\)/s;
+die "Cache refresh must not reset its controller unconditionally after preview\n"
+    if $network_ui =~ /busy\(trigger,false\);\s*if\(pending===controller\)pending=null/;
+
 
 die "network directory UI helper not used by CGI\n"
     unless $icons =~ m{require './lib/network-icons-ui-lib.pl'} &&
