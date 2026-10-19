@@ -204,6 +204,16 @@ sub wg_ui_foundation {
 .wg-ui .wg-cache-loading:before{content:'';display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:wg-cache-spin .8s linear infinite}
 @keyframes wg-cache-spin{to{transform:rotate(360deg)}}
 .wg-ui .wg-cache-busy{opacity:.65;cursor:progress}
+.wg-ui [data-wg-locode-dialog] .wg-ui-modal-panel{width:min(900px,94vw);max-height:85vh;display:flex;flex-direction:column}
+.wg-ui .wg-locode-searchbar{display:flex;align-items:center;gap:12px;padding:10px 0}
+.wg-ui .wg-locode-searchbar input{flex:1;min-width:0}
+.wg-ui .wg-locode-results{overflow:auto;min-height:70px;flex:1}
+.wg-ui .wg-locode-table{width:100%}
+.wg-ui .wg-locode-table .wg-locode-country th{background:var(--wg-surface,rgba(128,128,128,.12));font-weight:700;position:sticky;top:0}
+.wg-ui .wg-locode-table td:last-child{text-align:right}
+.wg-ui .wg-locode-table mark{background:#f2d56b;color:#1c1c1c;border-radius:2px;padding:0 1px}
+.wg-ui .wg-locode-pagination{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:10px 0}
+.wg-ui [data-wg-locode-dialog][hidden]{display:none!important}
 .wg-ui .wg-unlocode-choices[hidden]{display:none!important}
 .wg-ui .wg-unlocode-choices{display:flex;flex-wrap:wrap;gap:4px;padding:6px 0;max-height:170px;overflow:auto}
 .wg-ui .wg-unlocode-choices .wg-city-choice{white-space:normal;text-align:left;font-size:12px}
