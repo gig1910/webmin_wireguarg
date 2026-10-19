@@ -82,7 +82,7 @@ def connect(path):
         conn.execute("ALTER TABLE peers ADD COLUMN name TEXT NOT NULL DEFAULT ''")
     # In-place additive migration for existing analytics databases.
     for table, fields in {
-        "network_icons": ("city", "city_code"),
+        "network_icons": ("city", "city_code", "country_override"),
         "geoip_cache": ("city", "city_code"),
     }.items():
         existing = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
