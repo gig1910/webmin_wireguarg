@@ -1,6 +1,6 @@
 # Release procedure
 
-The current tracked base version is `0.2.0` (see `VERSION` and `module.info`).
+The current tracked base version is `0.3.0` (see `VERSION` and `module.info`).
 Development builds are uniquely stamped with UTC timestamp and the Git SHA.
 
 ## Prepare
@@ -40,7 +40,7 @@ data or runtime state. A module upgrade must never implicitly rewrite live
 ## Unique build identifiers
 
 Each `./scripts/build-release.sh` invocation stamps a version such as
-`0.2.0+<UTC nanosecond timestamp>.g<Git SHA>`. The WBM package contains the
+`0.3.0+<UTC nanosecond timestamp>.g<Git SHA>`. The WBM package contains the
 exact `module.info` version and `build.info`; source files remain unchanged.
 Set `SOURCE_DATE_EPOCH` to reproduce an intentionally fixed build timestamp.
 
