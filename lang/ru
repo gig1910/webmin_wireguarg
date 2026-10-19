@@ -574,3 +574,6 @@ geoip_city_download_failed=Настройки сохранены, но скач�
 geoip_city_success=GeoLite2 City обновлена. Штатный таймер обновлений включён.
 
 unlocode_return=Вернуться к справочнику сетей
+
+geoip_city_installed=GeoLite2 City установлена
+geoip_city_refresh=Обновить GeoLite2 City
