@@ -622,6 +622,13 @@ class AnalyticsTest(unittest.TestCase):
         self.assertEqual(store.network_manage(self.conn,{"action":"search_unlocode","term":"Москва","country":"RU"})["matches"][0]["code"],"RUMOW")
         self.assertEqual([(x["code"],x["name"]) for x in found],
                          [("RSBEG","Belgrade")])
+        middle=store.network_manage(self.conn,{"action":"search_unlocode",
+                                               "term":"grad"}) 
+        self.assertEqual(middle["total"],1)
+        self.assertEqual(middle["matches"][0]["code"],"RSBEG")
+        self.assertEqual(store.network_manage(self.conn,{"action":"search_unlocode",
+                     "term":"grad","offset":100})["matches"],[])
+
         self.assertEqual(store.network_manage(self.conn,{
             "action":"search_unlocode","term":"bel","country":"RU"})["matches"],[])
 
