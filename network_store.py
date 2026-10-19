@@ -223,9 +223,25 @@ def network_manage(conn, req):
         rows=conn.execute("SELECT country,code,name,subdivision FROM unlocode_places"+
                           where+" ORDER BY country,name_key,code LIMIT 100 OFFSET ?",
                           args+[offset]).fetchall()
-        return {"ok":True,"total":total,"offset":offset,"limit":100,
+        result={"ok":True,"total":total,"offset":offset,"limit":100,
                 "matches":[{"code":c+loc,"name":name,"country":c,
                             "subdivision":sub} for c,loc,name,sub in rows]}
+        if total == 0:
+            # Read-only diagnostic for a populated catalog returning no matches.
+            # No paths, secrets, coordinates or arbitrary data are exposed.
+            sample=conn.execute(
+                "SELECT name,name_key,ascii_name,ascii_key "
+                "FROM unlocode_places WHERE country='RU' AND code='MOW'"
+            ).fetchone()
+            result["diagnostic"]={
+                "normalized_term":key,
+                "catalog_count":conn.execute(
+                    "SELECT COUNT(*) FROM unlocode_places"
+                ).fetchone()[0],
+                "rumow":dict(zip(("name","name_key","ascii_name","ascii_key"),sample))
+                         if sample else None
+            }
+        return result
     if action == "check_observed_ip":
         raw=req.get("ip") or ""
         try:
