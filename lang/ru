@@ -584,3 +584,5 @@ network_refresh_count=IP для повторного запроса: %s
 network_refresh_whois=WHOIS
 network_refresh_geoip=GeoIP
 network_refresh_city=Пересчитать город
+
+unlocode_search_button=Найти город в UN/LOCODE
