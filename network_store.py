@@ -292,10 +292,14 @@ def network_manage(conn, req):
     if city_code:
         if not re.fullmatch(r"[A-Z]{2}[A-Z0-9]{3}", city_code):
             raise ValueError("invalid UN/LOCODE")
-        found=conn.execute("SELECT 1 FROM unlocode_places WHERE country=? AND code=?",
+        found=conn.execute("SELECT name FROM unlocode_places WHERE country=? AND code=?",
                            (city_code[:2],city_code[2:])).fetchone()
         if not found:
-            raise ValueError("unknown UN/LOCODE: import UNECE catalog first")
+            raise ValueError("unknown UN/LOCODE")
+        # A selected official code also supplies the canonical place name.
+        # Preserve a manually entered spelling when one was explicitly given.
+        if not city.strip():
+            city=found[0]
     elif city:
         # A CIDR override may span locations; without explicit country no guessing.
         city_code = ""
