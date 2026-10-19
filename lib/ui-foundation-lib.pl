@@ -196,7 +196,8 @@ sub wg_ui_foundation {
 .wg-ui .wg-ui-icon-btn:hover,.wg-ui .wg-ui-icon-btn:focus-visible{border-color:currentColor;background:rgba(127,127,127,.15);text-decoration:none;outline-offset:2px}
 .wg-ui .wg-ui-icon-btn:disabled{opacity:.5;cursor:wait}
 .wg-ui .wg-ui-icon-btn [hidden]{display:none!important}
-.wg-ui .wg-network-refresh{margin-top:6px;max-width:520px;text-align:left}
+.wg-ui .wg-network-refresh{margin:3px 0;text-align:left;max-width:100%}
+.wg-ui tr.wg-network-refresh-detail>td{padding:4px 12px!important;background:var(--wg-surface,transparent)}
 .wg-ui .wg-network-refresh summary{cursor:pointer;white-space:nowrap}
 .wg-ui .wg-network-refresh-row{display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:6px 0;border-top:1px solid var(--wg-border)}
 .wg-ui .wg-network-refresh-row>span{flex:1 1 110px}
