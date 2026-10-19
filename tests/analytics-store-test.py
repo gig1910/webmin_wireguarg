@@ -613,6 +613,17 @@ class AnalyticsTest(unittest.TestCase):
                   if x["cidr"]=="1.1.1.0/24")
         self.assertEqual(item["city"],"Moskva")
         self.assertEqual(item["city_code"],"RUMOW")
+        # Existing installations may contain old location rows without
+        # populated normalized keys. Substring search must still work.
+        self.conn.execute("UPDATE unlocode_places SET name_key='',ascii_key='' "
+                          "WHERE country='RU' AND code='MOW'")
+        self.assertEqual(store.network_manage(self.conn,{"action":"search_unlocode",
+                          "term":"mos"})["total"],1)
+        self.assertEqual(store.network_manage(self.conn,{"action":"search_unlocode",
+                          "term":"Моск"})["matches"][0]["code"],"RUMOW")
+        # Restore keys for subsequent exact lookup checks.
+        self.conn.execute("UPDATE unlocode_places SET name_key='moskva',"
+                          "ascii_key='moskva' WHERE country='RU' AND code='MOW'")
         found_code=store.network_manage(self.conn,{"action":"search_unlocode",
                                                    "term":"RUMOW"})["matches"]
         self.assertEqual(found_code[0]["name"],"Moskva")
