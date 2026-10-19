@@ -47,6 +47,17 @@ sub peer_ip_mmdb_value
     return $1;
 }
 
+sub peer_ip_mmdb_number
+{
+    my ($path, $ip, @keys) = @_;
+    return undef if !-r $path;
+    my $tool = command_path('mmdblookup_cmd','/usr/bin/mmdblookup');
+    return undef if !has_command($tool);
+    my ($ok,$out)=run_command([$tool,'--file',$path,'--ip',$ip,@keys],1,5,1024);
+    return undef if !$ok || $out !~ /^\s*(-?\d+(?:\.\d+)?)\s+<(?:double|float|uint\d+|int\d+)>/;
+    return 0+$1;
+}
+
 sub peer_ip_geoip
 {
     my ($ip) = @_;
@@ -62,16 +73,21 @@ sub peer_ip_geoip
                 [ 'Country', 'country', 'names', 'en' ],
                 [ 'Region', 'subdivisions', '0', 'names', 'en' ],
                 [ 'City', 'city', 'names', 'en' ],
-                [ 'Latitude', 'location', 'latitude' ],
-                [ 'Longitude', 'location', 'longitude' ],
+                [ 'Time zone', 'location', 'time_zone' ],
             ) {
                 my ($label, @keys) = @$request;
-                # Numeric GeoIP coordinates are returned as floating-point
-                # scalars rather than strings; handled by local CLI fallback.
-                next if $label eq 'Latitude' || $label eq 'Longitude';
-                my $value = peer_ip_mmdb_value($database, $ip, @keys);
-                push(@fields, {label=>$label, value=>$value}) if defined($value);
+                my $value=peer_ip_mmdb_value($database,$ip,@keys);
+                push(@fields,{label=>$label,value=>$value}) if defined($value);
             }
+            my $lat=peer_ip_mmdb_number($database,$ip,'location','latitude');
+            my $lon=peer_ip_mmdb_number($database,$ip,'location','longitude');
+            my $radius=peer_ip_mmdb_number($database,$ip,'location','accuracy_radius');
+            if (defined($lat) && defined($lon) && abs($lat)<=90 && abs($lon)<=180) {
+                push(@fields,{label=>'Coordinates (approximate)',
+                    value=>sprintf('%.6f, %.6f',$lat,$lon)});
+            }
+            push(@fields,{label=>'Accuracy radius',value=>"$radius km"})
+                if defined($radius) && $radius>=0 && $radius<=20000;
             my ($city)=map { $_->{value} } grep { $_->{label} eq "City" } @fields;
             return { ok => @fields ? JSON::PP::true() : JSON::PP::false(),
                      source=>'GeoLite2 / MaxMind (local database)',
