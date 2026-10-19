@@ -44,7 +44,10 @@ sub peer_ip_mmdb_value
         [$tool, '--file', $path, '--ip', $ip, @keys], 1, 5, 1024
     );
     return undef if !$ok || $out !~ /^\s*"([^"]{1,200})"\s+</;
-    return $1;
+    # mmdblookup writes UTF-8 bytes. Decode exactly once before JSON::PP
+    # serializes the value for the Python analytics/cache backend.
+    my $value=eval { Encode::decode('UTF-8',$1,Encode::FB_CROAK()) };
+    return $@ ? undef : $value;
 }
 
 sub peer_ip_mmdb_number
