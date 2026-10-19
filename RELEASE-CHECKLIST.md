@@ -1,4 +1,4 @@
-# Release checklist 1.0.0
+# Release checklist 0.3.0
 
 - [ ] Review `git diff` and confirm the intended version.
 - [ ] Run `./tests/run-tests.sh`.
@@ -9,5 +9,5 @@
 - [ ] Verify interface/peer pages, client config, download and QR.
 - [ ] Verify collector start/restart/stop and retention reduction.
 - [ ] Verify SHA-256/SHA-512 checksums.
-- [ ] Create and push signed tag `v1.0.0`.
+- [ ] Create and push signed tag `0.3.0`.
 - [ ] Publish release assets and notes.
