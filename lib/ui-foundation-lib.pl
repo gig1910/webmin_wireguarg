@@ -196,6 +196,11 @@ sub wg_ui_foundation {
 .wg-ui .wg-ui-icon-btn:hover,.wg-ui .wg-ui-icon-btn:focus-visible{border-color:currentColor;background:rgba(127,127,127,.15);text-decoration:none;outline-offset:2px}
 .wg-ui .wg-ui-icon-btn:disabled{opacity:.5;cursor:wait}
 .wg-ui .wg-ui-icon-btn [hidden]{display:none!important}
+.wg-ui .wg-network-refresh{margin-top:6px;max-width:520px;text-align:left}
+.wg-ui .wg-network-refresh summary{cursor:pointer;white-space:nowrap}
+.wg-ui .wg-network-refresh-row{display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:6px 0;border-top:1px solid var(--wg-border)}
+.wg-ui .wg-network-refresh-row>span{flex:1 1 110px}
+.wg-ui .wg-network-refresh-row form{display:inline-flex;margin:0}
 .wg-ui .wg-peer-action-slots{display:grid;grid-template-columns:repeat(3,30px);gap:3px;justify-content:center;align-items:center;min-width:96px}
 .wg-ui .wg-peer-action-slot{width:30px;height:30px;display:flex;align-items:center;justify-content:center}
 .wg-ui .wg-ui-table-actions{display:inline-flex;align-items:center;justify-content:center;gap:3px;flex-wrap:nowrap;white-space:nowrap}
@@ -292,9 +297,9 @@ sub wg_ui_foundation {
     if(!cityNode&&city)country.title+=(country.title?' · ':'')+city;
    }
    if(cityNode){
-    cityNode.textContent=short;
+    cityNode.textContent=short+(network&&network.city_source==='manual'?' ✎':'');
     cityNode.hidden=!short;
-    cityNode.title=city ? city+' — '+(abbreviation||'') : abbreviation;
+    cityNode.title=(city ? city+' — '+(abbreviation||'') : abbreviation)+(network&&network.city_source==='manual'?' (manual override)':'');
    }
   }
  };
