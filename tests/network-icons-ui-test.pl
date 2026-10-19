@@ -26,6 +26,8 @@ my $network=read_file("$FindBin::Bin/../network_store.py");
 my $api=read_file("$FindBin::Bin/../peer_ip_info.cgi");
 my $icons=read_file("$FindBin::Bin/../network_icons.cgi");
 my $network_ui=read_file("$FindBin::Bin/../lib/network-icons-ui-lib.pl");
+die "Network cache refresh must use a separate full-width table row\n" unless index($icons,"wg-network-refresh-detail")>=0 && index($icons,'colspan="8"')>=0;
+
 die "network directory UI helper not used by CGI\n"
     unless $icons =~ m{require './lib/network-icons-ui-lib.pl'} &&
            $icons =~ /wg_network_icons_page_script\(json_encode_utf8/;
