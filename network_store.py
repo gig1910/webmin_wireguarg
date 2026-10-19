@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS network_cache (
 CREATE TABLE IF NOT EXISTS network_icons (
     cidr TEXT PRIMARY KEY, icon TEXT NOT NULL DEFAULT '?',
     label TEXT NOT NULL DEFAULT '', city TEXT NOT NULL DEFAULT '',
-    city_code TEXT NOT NULL DEFAULT ''
+    city_code TEXT NOT NULL DEFAULT '', country_override TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS geoip_cache (
     ip TEXT PRIMARY KEY,
@@ -159,8 +159,8 @@ def network_manage(conn, req):
         cache = [dict(zip(("cidr", "owner", "country", "observed_at"), row)) for row
                  in conn.execute("SELECT cidr,owner,country,observed_at FROM network_cache "
                                  "ORDER BY observed_at DESC LIMIT 1000")]
-        icons = [dict(zip(("cidr", "icon", "label", "city", "city_code"), row)) for row in
-                 conn.execute("SELECT cidr,icon,label,city,city_code FROM network_icons ORDER BY cidr LIMIT 1000")]
+        icons = [dict(zip(("cidr", "icon", "label", "city", "city_code", "country_override"), row)) for row in
+                 conn.execute("SELECT cidr,icon,label,city,city_code,country_override FROM network_icons ORDER BY cidr LIMIT 1000")]
         observations = [
             (ipaddress.ip_address(ip), code,city,city_code)
             for ip, code, city, city_code in conn.execute(
@@ -321,6 +321,15 @@ def network_manage(conn, req):
     if not isinstance(label, str) or len(label) > 100 or any(ord(c) < 32 for c in label):
         raise ValueError("invalid label")
     city,city_code=req.get("city") or "",req.get("city_code") or ""
+    country_override=req.get("country_override") or ""
+    if not isinstance(country_override,str) or (country_override and
+            not re.fullmatch(r"[A-Z]{2}",country_override)):
+        raise ValueError("invalid manual country")
+    if country_override and not city_code:
+        raise ValueError("country override requires a location code")
+    if country_override and city_code[:2].upper()!=country_override:
+        raise ValueError("country does not match UN/LOCODE")
+
     # A manually supplied 5-character UN/LOCODE is allowed only if catalog-backed.
     city_code = city_code.strip().upper() if isinstance(city_code,str) else city_code
     if city_code:
@@ -342,9 +351,9 @@ def network_manage(conn, req):
     if not isinstance(city_code,str) or not re.fullmatch(r"(?:[A-Z]{2}[A-Z0-9]{3})?",city_code):
         raise ValueError("invalid manual city code")
     with conn:
-        conn.execute("INSERT INTO network_icons(cidr,icon,label,city,city_code) VALUES(?,?,?,?,?) "
+        conn.execute("INSERT INTO network_icons(cidr,icon,label,city,city_code,country_override) VALUES(?,?,?,?,?,?) "
                      "ON CONFLICT(cidr) DO UPDATE SET icon=excluded.icon,label=excluded.label,"
-                     "city=excluded.city,city_code=excluded.city_code",
-                     (cidr, icon, label, city,city_code))
+                     "city=excluded.city,city_code=excluded.city_code,country_override=excluded.country_override",
+                     (cidr, icon, label, city,city_code,country_override))
     return {"ok": True}
 
