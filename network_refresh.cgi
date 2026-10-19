@@ -20,21 +20,22 @@ fail_refresh($known_err||$text{'network_icons_invalid'})
 # from that exact IP in the SQLite backend. Do not copy CIDR overrides.
 my $whois=peer_ip_whois($ip);
 my $geoip=peer_ip_geoip($ip);
+my $commit=($in{'commit'}||'') eq '1';
 my ($stored,$err);
-if ($whois->{'ok'} && $geoip->{'ok'}) {
+if ($commit && $whois->{'ok'} && $geoip->{'ok'}) {
     ($stored,$err)=analytics_backend('network_record',{
         ip=>$ip,whois_fields=>$whois->{'fields'}||[],
         geoip_country_code=>$geoip->{'country_code'}||'',
         geoip_city=>$geoip->{'city'}||''
     });
 }
-elsif ($whois->{'ok'}) {
+elsif ($commit && $whois->{'ok'}) {
     ($stored,$err)=analytics_backend('network_manage',{
         action=>'refresh_whois',ip=>$ip,
         whois_fields=>$whois->{'fields'}||[]
     });
 }
-elsif ($geoip->{'ok'}) {
+elsif ($commit && $geoip->{'ok'}) {
     ($stored,$err)=analytics_backend('network_manage',{
         action=>'refresh_geoip',ip=>$ip,
         country=>$geoip->{'country_code'}||'',city=>$geoip->{'city'}||''
@@ -45,6 +46,7 @@ my $info=$lookup && $lookup->{'results'} ? ($lookup->{'results'}{$ip}||{}) : {};
 json_response({
     ok=>JSON::PP::true(),available=>JSON::PP::true(),
     ip=>$ip,whois=>$whois,geoip=>$geoip,
+    committed=>$commit ? JSON::PP::true() : JSON::PP::false(),
     network_cached=>$stored ? JSON::PP::true() : JSON::PP::false(),
     network_cache_error=>$err||'',
     city_match=>{city=>$info->{'city'}||'',city_code=>$info->{'city_code'}||'',
