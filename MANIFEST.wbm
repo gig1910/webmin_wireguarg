@@ -98,5 +98,6 @@ lib/geoip-update-lib.pl
 geoip_timer.cgi
 geoip_city_setup.cgi
 network_icon_data.cgi
+network_refresh.cgi
 network_icons.cgi
 unlocode_update.cgi
