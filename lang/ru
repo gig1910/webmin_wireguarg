@@ -577,3 +577,10 @@ unlocode_return=Вернуться к справочнику сетей
 
 geoip_city_installed=GeoLite2 City установлена
 geoip_city_refresh=Обновить GeoLite2 City
+
+network_refresh_title=Обновление кеша IP
+network_refresh_done=Данные для IP обновлены:
+network_refresh_count=IP для повторного запроса: %s
+network_refresh_whois=WHOIS
+network_refresh_geoip=GeoIP
+network_refresh_city=Пересчитать город
