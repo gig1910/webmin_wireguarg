@@ -9,7 +9,10 @@ my $action=$in{'action'} || '';
 if (length($action)) {
     assert_post_and_csrf();
     request_rate_limit('network_icons',12,60);
-    error($text{'network_icons_invalid'}) if $action !~ /^(?:set_icon|delete_icon|clear_cache)$/;
+    if ($action !~ /^(?:set_icon|delete_icon|clear_cache)$/) {
+        if (($in{'_wg_ajax'}||'') eq '1') { die $text{'network_icons_invalid'}; }
+        error($text{'network_icons_invalid'});
+    }
     my $payload={
         action=>$action,
         cidr=>$in{'cidr'} || '',
@@ -25,10 +28,17 @@ if (length($action)) {
         my $value = $payload->{$field};
         next if !defined($value) || utf8::is_utf8($value) || $value !~ /[\x80-\xFF]/;
         $payload->{$field} = eval { Encode::decode('UTF-8', $value, Encode::FB_CROAK()) };
-        error($text{'network_icons_invalid'}) if $@;
+        if ($@) {
+            if (($in{'_wg_ajax'}||'') eq '1') { die $text{'network_icons_invalid'}; }
+            error($text{'network_icons_invalid'});
+        }
     }
     my ($result,$err)=analytics_backend('network_manage',$payload);
-    error($err || $text{'network_icons_invalid'}) if !$result;
+    if (!$result || !$result->{'ok'}) {
+        my $message=$err || ($result && $result->{'error'}) || $text{'network_icons_invalid'};
+        if (($in{'_wg_ajax'}||'') eq '1') { die $message; }
+        error($message);
+    }
     $notice=$text{'network_icons_saved'};
 }
     return $notice;
