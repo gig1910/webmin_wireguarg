@@ -521,6 +521,12 @@ class AnalyticsTest(unittest.TestCase):
             store.network_lookup(self.conn,{"ips":["1.1.1.1"]*129})
 
     def test_exact_ip_refresh_preserves_manual_city_and_independent_sources(self):
+        # An explicit WHOIS lookup must remain retryable even without a GeoIP match.
+        store.network_record(self.conn,{"ip":"9.9.9.9","whois_fields":[]})
+        self.assertTrue(store.network_manage(self.conn,{
+            "action":"check_observed_ip","ip":"9.9.9.9"})["known"])
+        self.assertEqual(store.network_manage(self.conn,{
+            "action":"get_observed_ip","ip":"9.9.9.9"})["city"],"")
         store.network_record(self.conn,{
             "ip":"8.8.8.8","geoip_country_code":"RU","geoip_city":"Moscow",
             "whois_fields":[{"label":"CIDR","value":"8.8.8.0/24"},
