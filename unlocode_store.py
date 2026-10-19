@@ -27,10 +27,19 @@ ALIASES = {
     ("RU", "st petersburg"): "sankt peterburg",
 }
 
+CYRILLIC = {
+    "а":"a","б":"b","в":"v","г":"g","д":"d","е":"e",
+    "ё":"e","ж":"zh","з":"z","и":"i","й":"y","к":"k",
+    "л":"l","м":"m","н":"n","о":"o","п":"p","р":"r",
+    "с":"s","т":"t","у":"u","ф":"f","х":"kh","ц":"ts",
+    "ч":"ch","ш":"sh","щ":"shch","ъ":"","ы":"y","ь":"",
+    "э":"e","ю":"yu","я":"ya",
+}
 def normalize(name):
     value = unicodedata.normalize("NFKD", str(name or "").casefold())
-    return re.sub(r"[^a-z0-9]+", " ", "".join(
-        c for c in value if not unicodedata.combining(c))).strip()
+    value = "".join(c for c in value if not unicodedata.combining(c))
+    value = "".join(CYRILLIC.get(c,c) for c in value)
+    return re.sub(r"[^a-z0-9]+", " ", value).strip()
 
 def lookup(conn, country, city, subdivision=""):
     if not re.fullmatch(r"[A-Z]{2}", country or "") or not city:
