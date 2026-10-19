@@ -156,8 +156,8 @@ for my $cidr (sort keys %ranges) {
                 'data-wg-edit-range'=>'1',
                 'data-cidr'=>$cidr,'data-icon'=>$icon,
                 'data-label'=>$label,'data-city'=>$city,'data-city-code'=>$city_code,
-                'data-suggested-city'=>$suggested_city,
-                'data-suggested-code'=>$suggested_code,
+                'data-suggested-city'=>($city ? '' : $suggested_city),
+                'data-suggested-code'=>($city ? '' : $suggested_code),
             });
     if ($manual) {
         print ui_form_start(module_script_url('network_icons.cgi'),'post');
