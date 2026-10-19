@@ -100,4 +100,17 @@ die "Cache refresh must combine WHOIS and GeoIP into one JSON reply\n"
            $refresh =~ /peer_ip_geoip/ &&
            $refresh =~ /json_response/ &&
            $refresh =~ /network_record/;
+die "WHOIS and GeoIP preview must never mutate cache before approval\n"
+    unless $refresh =~ /my \$commit=/ &&
+           $refresh =~ /if \(\$commit && \$whois/ &&
+           $refresh =~ /elsif \(\$commit && \$geoip/;
+my $client=do {
+    open(my $fh,'<',"$FindBin::Bin/../lib/network-icons-ui-lib.pl") or die $!;
+    local $/; <$fh>
+};
+die "Cache UI must preview before approval and update table in place\n"
+    unless $client =~ /queryIp\(ip,false,controller\)/ &&
+           $client =~ /queryIp\(ip,true,controller\)/ &&
+           $client =~ /refreshTable\(\)/ &&
+           $client =~ /replaceChildren/;
 print "network directory navigation and mutation CSRF regression tests passed\n";
