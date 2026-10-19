@@ -110,7 +110,7 @@ my $client=do {
 };
 die "Cache UI must preview before approval and update table in place\n"
     unless $client =~ /queryIp\(ip,false,controller\)/ &&
-           $client =~ /queryIp\(ip,true,controller\)/ &&
-           $client =~ /refreshTable\(\)/ &&
+           $client =~ /queryIp\(ip,true,controller,result\)/ &&
+           $client =~ /refreshTable\(controller.signal\)/ &&
            $client =~ /replaceChildren/;
 print "network directory navigation and mutation CSRF regression tests passed\n";
