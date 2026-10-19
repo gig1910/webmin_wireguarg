@@ -193,6 +193,19 @@ def network_manage(conn, req):
             raise ValueError("only public addresses may be refreshed")
         known=conn.execute("SELECT 1 FROM geoip_cache WHERE ip=?",(str(ip),)).fetchone()
         return {"ok":True,"known":bool(known)}
+    if action == "get_observed_ip":
+        raw=req.get("ip") or ""
+        try:
+            ip=ipaddress.ip_address(raw)
+        except ValueError as exc:
+            raise ValueError("invalid observed IP") from exc
+        if not ip.is_global:
+            raise ValueError("invalid observed IP")
+        row=conn.execute("SELECT country_code,city,city_code FROM geoip_cache WHERE ip=?",
+                         (str(ip),)).fetchone()
+        if not row:
+            raise ValueError("IP is not in the observed cache")
+        return {"ok":True,"country":row[0],"city":row[1],"city_code":row[2]}
     if action == "refresh_geoip":
         raw=req.get("ip") or ""
         try:
