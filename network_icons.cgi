@@ -110,7 +110,7 @@ print '<div class="wg-ui-form-row">'.
     wg_ui_button(type=>'submit',icon=>'save',tone=>'success',
         label=>$text{'network_icons_save'}).'</div>';
 print '<div class="wg-city-search-controls">'.
-    wg_ui_button(type=>'button',icon=>'x',tone=>'danger',label=>$text{'network_city_clear'},attrs=>{'data-wg-city-clear'=>'1'}).
+    wg_ui_button(type=>'button',icon=>'close',tone=>'danger',label=>$text{'network_city_clear'},attrs=>{'data-wg-city-clear'=>'1'}).
     wg_ui_button(type=>'button',icon=>'search',tone=>'info',label=>$text{'unlocode_search_button'},attrs=>{'data-wg-city-search-button'=>'1'}).'</div>';
 print '<div data-wg-city-choices hidden role="listbox"></div>';
 print ui_form_end();
