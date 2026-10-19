@@ -101,6 +101,7 @@ print '<div id="wg-network-editor">';
 print ui_form_start(module_script_url('network_icons.cgi'),'post');
 print csrf_hidden();
 print ui_hidden('action','set_icon');
+print '<input type="hidden" name="country_override" value="">';
 print '<div class="wg-ui-form-row">'.
     '<label>'.html_escape($text{'network_icons_prefix'}).' <input name="cidr" required placeholder="203.0.113.0/24" maxlength="64"></label> '.
     '<label>'.html_escape($text{'network_icons_symbol'}).' <input name="icon" value="?" maxlength="8" size="5"></label> '.
@@ -128,7 +129,8 @@ for my $cidr (sort keys %ranges) {
     my $manual=$item->{'manual'};
     my $icon=$manual ? ($manual->{'icon'}||'?') : '?';
     my $label=$manual ? ($manual->{'label'}||'') : '';
-    my $country=$item->{'country'} || '';
+    my $observed_country=$item->{'country'} || '';
+    my $country=$manual && $manual->{'country_override'} ? $manual->{'country_override'} : $observed_country;
     my $owner=$item->{'owner'} || '';
     my $city=$manual && $manual->{'city'} ? $manual->{'city'} : '';
     my $city_code=$manual && $manual->{'city_code'} ? $manual->{'city_code'} : ''; 
@@ -160,6 +162,8 @@ for my $cidr (sort keys %ranges) {
                 'data-wg-edit-range'=>'1',
                 'data-cidr'=>$cidr,'data-icon'=>$icon,
                 'data-label'=>$label,'data-city'=>$city,'data-city-code'=>$city_code,
+                'data-observed-country'=>$observed_country,
+                'data-manual-country'=>($manual->{'country_override'}||''),
                 'data-suggested-city'=>($city ? '' : $suggested_city),
                 'data-suggested-code'=>($city ? '' : $suggested_code),
             });
@@ -218,6 +222,7 @@ print '<div class="wg-ui-modal" data-wg-locode-dialog hidden role="dialog" aria-
         attrs=>{'data-wg-locode-close'=>'1'}).'</div>'.
     '<div class="wg-locode-searchbar"><input type="search" data-wg-locode-query placeholder="Название или код города" aria-label="Поиск города">'.
     '<span data-wg-locode-count role="status"></span></div>'.
+    '<label class="wg-locode-country-filter"><input type="checkbox" data-wg-locode-filter checked> Только ранее определённая страна: <strong data-wg-locode-country></strong></label>'.
     '<div data-wg-locode-results class="wg-locode-results"></div>'.
     '<div class="wg-locode-pagination"><button type="button" class="btn btn-default" data-wg-locode-prev>Назад</button>'.
     '<span data-wg-locode-page></span>'.
