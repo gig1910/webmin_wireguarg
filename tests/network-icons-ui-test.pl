@@ -42,6 +42,38 @@ die "Cache refresh must not reset its controller unconditionally after preview\n
     if $network_ui =~ /busy\(trigger,false\);\s*if\(pending===controller\)pending=null/;
 
 
+# Every mutation is JSON + selective DOM replacement, never a full-page reload.
+die "Network directory still performs a full page reload after save\n"
+    if $network_ui =~ /(?:window\.)?location\.reload\s*\(/;
+die "Async network mutation forms or status line missing\n"
+    unless $icons =~ /data-wg-network-mutation/ &&
+           $icons =~ /data-wg-network-action/ &&
+           $icons =~ /data-wg-network-status/ &&
+           $icons =~ /data-wg-unlocode-status-url/;
+die "Async network mutation routing is missing\n"
+    unless $network_ui =~ /root\.addEventListener\('submit'/ &&
+           $network_ui =~ /async function mutate\(/ &&
+           $network_ui =~ /await refreshTable\(/ &&
+           $network_ui =~ /table\.replaceChildren\(/;
+die "Edit actions must survive table refresh\n"
+    unless $network_ui =~ /root\.addEventListener\('click',function\(event\)/ &&
+           $network_ui =~ /event\.target\.closest\('\[data-wg-edit-range\]'\)/;
+die "Network refresh must use GET, not re-submit last mutation\n"
+    unless $network_ui =~ /url\.search='';/ &&
+           $network_ui =~ /method:'GET',credentials:'same-origin',cache:'no-store',signal/;
+die "Async cache mutations must have an authenticated JSON branch\n"
+    unless $icons =~ /\$in\{'_wg_ajax'\}/ &&
+           $icons =~ /json_response\(\{ok=>JSON::PP::true\(\)\}\)/;
+my $sync=read_file("$FindBin::Bin/../unlocode_status.cgi");
+die "Async UN/LOCODE status endpoint missing from release\n"
+    unless read_file("$FindBin::Bin/../MANIFEST.wbm") =~ /^unlocode_status\.cgi$/m &&
+           $sync =~ /assert_view_access\(\)/ &&
+           $sync =~ /updated_at/ &&
+           $network_ui =~ /async function followUnlocode\(/;
+for my $path (qw(unlocode_update.cgi geoip_timer.cgi)) {
+    die "$path missing AJAX JSON response\n"
+        unless read_file("$FindBin::Bin/../$path") =~ /\$in\{'_wg_ajax'\}/;
+}
 die "network directory UI helper not used by CGI\n"
     unless $icons =~ m{require './lib/network-icons-ui-lib.pl'} &&
            $icons =~ /wg_network_icons_page_script\(json_encode_utf8/;
