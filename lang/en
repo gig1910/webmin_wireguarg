@@ -584,3 +584,5 @@ network_refresh_count=Observed IPs: %s
 network_refresh_whois=WHOIS
 network_refresh_geoip=GeoIP
 network_refresh_city=Resolve city again
+
+unlocode_search_button=Find city in UN/LOCODE
