@@ -6,6 +6,11 @@ assert_post_and_csrf();
 request_rate_limit('geoip_timer',3,600);
 
 my ($ok,$message)=wg_geoip_enable_vendor_timer();
+if (($in{'_wg_ajax'}||'') eq '1') {
+    json_response({ok=>$ok ? JSON::PP::true() : JSON::PP::false(),
+        error=>$ok ? '' : ($message||'GeoIP timer failure')});
+    exit;
+}
 ui_print_header(undef,$text{'geoip_update_title'},'',undef,1,1);
 print wg_build_banner();
 print wg_ui_foundation();
