@@ -35,7 +35,7 @@ if (-f $unlocode_state && -r $unlocode_state) {
     my $state=eval { JSON::PP::decode_json($raw) };
     if ($state && ref($state) eq 'HASH' && $state->{'updated_at'} =~ /^\d{9,12}$/) {
         print '<p class="help-block">'.html_escape(
-            text('unlocode_last_updated',
+            sprintf($text{'unlocode_last_updated'},
                  strftime('%Y-%m-%d %H:%M',localtime($state->{'updated_at'})))).'</p>';
     }
 }
