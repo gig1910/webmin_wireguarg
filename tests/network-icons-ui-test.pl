@@ -37,7 +37,7 @@ die "Network cache refresh must use compact modal controls\n" unless index($icon
 # after the preview causes the commit response to be discarded as stale.
 die "Cache refresh controller must remain active through confirmation and commit\n"
     unless $network_ui =~ /if\(controller\.signal\.aborted && pending===controller\)pending=null/ &&
-           $network_ui =~ /if\(pending===controller\)pending=null;\s*}\s*\);\s*}\s*catch\(error\)/s;
+           $network_ui =~ /busy\(approve,false\);\s*if\(pending===controller\)pending=null;\s*}\s*}\);\s*}catch\(error\)/s;
 die "Cache refresh must not reset its controller unconditionally after preview\n"
     if $network_ui =~ /busy\(trigger,false\);\s*if\(pending===controller\)pending=null/;
 
