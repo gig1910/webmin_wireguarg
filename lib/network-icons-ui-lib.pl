@@ -47,14 +47,15 @@ sub wg_network_icons_page_script
         const searchUrl=locodeSource.dataset.wgUnlocodeSearchUrl;
         let timeoutId=null;
         const clear=()=>{choices.replaceChildren();choices.hidden=true;};
-        city.addEventListener('input',()=>{
-            cityCode.value='';
+        const search=()=>{
             clear();
-            const query=city.value.trim();
+            const query=city.value.trim()||cityCode.value.trim();
             if(timeoutId)clearTimeout(timeoutId);
             const seq=++searchSequence;
             if(query.length<2)return;
             timeoutId=setTimeout(async()=>{
+                choices.hidden=false;
+                choices.textContent='Поиск UN/LOCODE…';
                 try{
                     const url=searchUrl+'?'+new URLSearchParams({
                         term:query,country:countryHint||''
@@ -62,8 +63,13 @@ sub wg_network_icons_page_script
                     const response=await window.WireGuardTransport.requestJson(url,{
                         method:'GET'
                     },{requireOk:true});
-                    if(seq!==searchSequence||!response.ok||!Array.isArray(response.matches))return;
+                    if(seq!==searchSequence)return;
                     clear();
+                    if(!Array.isArray(response.matches)||!response.matches.length){
+                        choices.hidden=false;
+                        choices.textContent='Совпадений нет';
+                        return;
+                    }
                     response.matches.forEach(place=>{
                         const button=document.createElement('button');
                         button.type='button';
@@ -77,12 +83,50 @@ sub wg_network_icons_page_script
                         });
                         choices.append(button);
                     });
-                    choices.hidden=!choices.children.length;
-                }catch(error){if(seq===searchSequence)clear();}
-            },250);
+                    choices.hidden=false;
+                }catch(error){
+                    if(seq===searchSequence){
+                        choices.hidden=false;
+                        choices.textContent='Поиск недоступен: '+(error.message||String(error));
+                    }
+                }
+            },200);
+        };
+        city.addEventListener('input',()=>{
+            cityCode.value='';
+            search();
         });
+        editor.querySelector('[data-wg-city-search-button]')?.addEventListener('click',search);
         cityCode.addEventListener('input',()=>{searchSequence++;clear();});
         editor.addEventListener('reset',()=>{countryHint='';clear();});
+    }
+    const saveUrl=root.querySelector('[data-wg-city-save-url]')?.dataset.wgCitySaveUrl;
+    const saveForm=editor.querySelector('form');
+    if(saveForm&&saveUrl){
+        saveForm.addEventListener('submit',async event=>{
+            event.preventDefault();
+            const data=new URLSearchParams(new FormData(saveForm));
+            const display=root.querySelector('[data-wg-cache-dialog]');
+            const target=root.querySelector('[data-wg-cache-output]');
+            const header=display?.querySelector('.wg-ui-modal-header h3');
+            if(!display||!target)return;
+            if(header)header.textContent='Сохранение назначения';
+            display.hidden=false;
+            target.replaceChildren();
+            const status=document.createElement('p');
+            status.textContent='Сохранение…';
+            target.append(status);
+            try{
+                const result=await window.WireGuardTransport.requestJson(saveUrl,{
+                    method:'POST',
+                    headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+                    body:data.toString()
+                },{requireOk:true});
+                if(result.ok){window.location.reload();return;}
+            }catch(error){
+                status.textContent=error.message||String(error);
+            }
+        });
     }
     const dialog=root.querySelector('[data-wg-cache-dialog]');
     const output=root.querySelector('[data-wg-cache-output]');
@@ -136,6 +180,8 @@ sub wg_network_icons_page_script
             const controller=new AbortController();
             pending=controller;
             dialog.hidden=false;
+            const title=dialog.querySelector('.wg-ui-modal-header h3');
+            if(title)title.textContent='Обновление кеша IP';
             output.replaceChildren();
             add('p','Loading WHOIS / GeoIP / UN/LOCODE…',output);
             try{
