@@ -63,7 +63,7 @@ die "Network refresh must use GET, not re-submit last mutation\n"
            $network_ui =~ /method:'GET',credentials:'same-origin',cache:'no-store',signal/;
 die "Async cache mutations must have an authenticated JSON branch\n"
     unless $icons =~ /\$in\{'_wg_ajax'\}/ &&
-           $icons =~ /json_response\(\{ok=>JSON::PP::true\(\)\}\)/;
+           index($icons,'json_response({ok=>JSON::PP::true()})') >= 0;
 my $sync=read_file("$FindBin::Bin/../unlocode_status.cgi");
 die "Async UN/LOCODE status endpoint missing from release\n"
     unless read_file("$FindBin::Bin/../MANIFEST.wbm") =~ /^unlocode_status\.cgi$/m &&
