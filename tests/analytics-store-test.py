@@ -607,6 +607,16 @@ class AnalyticsTest(unittest.TestCase):
             writer.writerow(row("RU","MOW","Moskva"))
             writer.writerow(row("RS","BEG","Belgrade"))
         self.assertEqual(locodes.import_release(self.conn,catalog),2)
+        store.network_manage(self.conn,{"action":"set_icon","cidr":"1.1.1.0/24",
+                                        "city":"","city_code":"RUMOW"})
+        item=next(x for x in store.network_manage(self.conn,{"action":"list"})["icons"]
+                  if x["cidr"]=="1.1.1.0/24")
+        self.assertEqual(item["city"],"Moskva")
+        self.assertEqual(item["city_code"],"RUMOW")
+        found_code=store.network_manage(self.conn,{"action":"search_unlocode",
+                                                   "term":"RUMOW"})["matches"]
+        self.assertEqual(found_code[0]["name"],"Moskva")
+
         found=store.network_manage(self.conn,{
             "action":"search_unlocode","term":"bel","country":"RS"})["matches"]
         self.assertEqual(store.network_manage(self.conn,{"action":"search_unlocode","term":"Москва","country":"RU"})["matches"][0]["code"],"RUMOW")
