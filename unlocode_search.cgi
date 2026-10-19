@@ -5,6 +5,10 @@ eval {
     assert_view_access();
     request_rate_limit('unlocode_search',30,60);
     my $term=$in{'term'}||'';
+    if (!utf8::is_utf8($term)) {
+        require Encode;
+        $term=Encode::decode('UTF-8',$term,Encode::FB_CROAK());
+    }
     my $country=uc($in{'country'}||'');
     die 'Invalid city search' if length($term)>80 || $term =~ /[\x00-\x1f]/;
     die 'Invalid country filter' if $country ne '' && $country !~ /^[A-Z]{2}$/;
