@@ -25,17 +25,64 @@ sub wg_network_icons_page_script
     const label=editor.querySelector('[name="label"]');
     const city=editor.querySelector('[name="city"]');
     const cityCode=editor.querySelector('[name="city_code"]');
+    const choices=editor.querySelector('[data-wg-city-choices]');
+    const locodeSource=root.querySelector('[data-wg-unlocode-search-url]');
+    let countryHint='';
+    let searchSequence=0;
     root.querySelectorAll('[data-wg-edit-range]').forEach(function(button){
         button.addEventListener('click',function(){
             cidr.value=button.dataset.cidr||'';
             icon.value=button.dataset.icon||'?';
             label.value=button.dataset.label||'';
-            if(city)city.value=button.dataset.city||'';
+            if(city)city.value=button.dataset.city||button.dataset.suggestedCity||'';
+            countryHint=button.closest('tr')?.querySelector('[data-wg-country]')?.dataset.wgCountry||'';
+            if(choices)choices.hidden=true;
             if(cityCode)cityCode.value=button.dataset.cityCode||'';
             editor.scrollIntoView({behavior:'smooth',block:'center'});
             icon.focus({preventScroll:true});
         });
     });
+    if(city&&cityCode&&choices&&locodeSource){
+        const searchUrl=locodeSource.dataset.wgUnlocodeSearchUrl;
+        let timeoutId=null;
+        const clear=()=>{choices.replaceChildren();choices.hidden=true;};
+        city.addEventListener('input',()=>{
+            cityCode.value='';
+            clear();
+            const query=city.value.trim();
+            if(timeoutId)clearTimeout(timeoutId);
+            const seq=++searchSequence;
+            if(query.length<2)return;
+            timeoutId=setTimeout(async()=>{
+                try{
+                    const url=searchUrl+'?'+new URLSearchParams({
+                        term:query,country:countryHint||''
+                    }).toString();
+                    const response=await window.WireGuardTransport.requestJson(url,{
+                        method:'GET'
+                    },{requireOk:true});
+                    if(seq!==searchSequence||!response.ok||!Array.isArray(response.matches))return;
+                    clear();
+                    response.matches.forEach(place=>{
+                        const button=document.createElement('button');
+                        button.type='button';
+                        button.className='btn btn-default wg-city-choice';
+                        button.textContent=place.name+' · '+place.code+
+                            (place.subdivision?' ('+place.subdivision+')':'');
+                        button.addEventListener('click',()=>{
+                            city.value=place.name;
+                            cityCode.value=place.code;
+                            clear();
+                        });
+                        choices.append(button);
+                    });
+                    choices.hidden=!choices.children.length;
+                }catch(error){if(seq===searchSequence)clear();}
+            },250);
+        });
+        cityCode.addEventListener('input',()=>{searchSequence++;clear();});
+        editor.addEventListener('reset',()=>{countryHint='';clear();});
+    }
     const dialog=root.querySelector('[data-wg-cache-dialog]');
     const output=root.querySelector('[data-wg-cache-output]');
     const options=root.querySelector('[data-wg-cache-options]');
