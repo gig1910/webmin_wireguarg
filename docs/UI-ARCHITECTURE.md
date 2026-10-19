@@ -51,7 +51,35 @@ save/ACL semantics.
 | Network directory controller | `lib/network-icons-ui-lib.pl` | CIDR editor, manual icons and WHOIS/GeoIP country badge presentation |
 | Shared browser transport | `lib/ui-transport-lib.pl` | Same-origin JSON fetch defaults, Content-Type validation, parse errors and `nonJson` classification |
 
-### Three chart data models
+### Network directory: asynchronous mutation and refresh
+
+The network/cache administration view (\`network_icons.cgi\`) does not reload the
+page after applying a change. The initial table remains server-rendered for
+Webmin/Authentic Theme compatibility; the browser fetches a **read-only GET**
+of that page after each successful mutation and replaces only the table and
+the network/GeoIP metadata regions. No CGI mutation is repeated by this GET.
+
+| Operation | Endpoint | Completion semantics |
+|---|---|---|
+| Edit icon/city/country mapping | \`network_save.cgi\` | JSON acknowledgement, then refresh |
+| Delete mapping / clear cache | \`network_icons.cgi\` with \`_wg_ajax=1\` | JSON acknowledgement, then refresh |
+| Refresh WHOIS/GeoIP of observed IP | \`network_refresh.cgi\` | Preview first; only confirmed commit mutates; then refresh |
+| Enable GeoIP timer | \`geoip_timer.cgi\` with \`_wg_ajax=1\` | Timer setting applied, then refresh |
+| Start UN/LOCODE synchronization | \`unlocode_update.cgi\` with \`_wg_ajax=1\` | Only queues a background job; \`unlocode_status.cgi\` is polled until a new success or failure is reported, then refresh |
+
+Shared visual feedback uses \`data-wg-network-status\` with polite ARIA live
+announcements and the table's \`aria-busy\` attribute. Errors preserve the
+current table. The most recent table fetch wins; superseded responses never
+replace newer content. Delegated root click/submit listeners keep edit,
+delete and refresh actions usable after table row replacement.
+
+UN/LOCODE polling stops when the page fragment is detached and reports an
+unconfirmed state after the bounded wait, rather than claiming a queued job
+has already finished. The status endpoint is read-only and ACL-protected;
+all mutating CGI endpoints continue to enforce manage ACL, POST, CSRF and
+rate limits. External WHOIS/GeoIP lookups remain explicit and opt-in.
+
+## Three chart data models
 
 1. **Live interface traffic**: counters are sampled from runtime WireGuard
    state; deltas are converted to bytes per second, on a sliding time window.
