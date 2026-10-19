@@ -196,6 +196,8 @@ sub wg_ui_foundation {
 .wg-ui .wg-ui-icon-btn:hover,.wg-ui .wg-ui-icon-btn:focus-visible{border-color:currentColor;background:rgba(127,127,127,.15);text-decoration:none;outline-offset:2px}
 .wg-ui .wg-ui-icon-btn:disabled{opacity:.5;cursor:wait}
 .wg-ui .wg-ui-icon-btn [hidden]{display:none!important}
+.wg-ui .wg-cache-lookup{display:inline-flex;align-items:center;gap:4px;margin-left:4px;vertical-align:middle}
+.wg-ui .wg-cache-lookup select{max-width:155px;min-width:0;height:29px;font-size:12px;background:var(--wg-surface,transparent);color:inherit;border:1px solid var(--wg-border)}
 .wg-ui .wg-network-refresh{margin:3px 0;text-align:left;max-width:100%}
 .wg-ui tr.wg-network-refresh-detail>td{padding:4px 12px!important;background:var(--wg-surface,transparent)}
 .wg-ui .wg-network-refresh summary{cursor:pointer;white-space:nowrap}
