@@ -158,6 +158,7 @@ for my $cidr (sort keys %ranges) {
             attrs=>{'data-wg-confirm'=>$text{'network_icons_delete'}.' — '.$cidr});
         print ui_form_end();
     }
+    print '</span>';
     if ($item->{'observed_ips'} && @{$item->{'observed_ips'}}) {
         my @observed=@{$item->{'observed_ips'}};
         print '<details class="wg-network-refresh"><summary>'.
@@ -185,7 +186,7 @@ for my $cidr (sort keys %ranges) {
         }
         print '</details>';
     }
-    print '</span></td></tr>';
+    print '</td></tr>';
 }
 print '</tbody></table>';
 print wg_ui_panel_start($text{'ui_network_maintenance'}).
