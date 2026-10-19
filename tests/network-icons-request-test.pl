@@ -80,4 +80,23 @@ my $invalid=run_case('POST',{action=>'evil'},1);
 die "Unsupported network mutation reached backend\n"
     if $invalid->{ok} || $invalid->{writes} || $invalid->{checks}!=1 || $invalid->{rate}!=1;
 
+my $refresh=do {
+    open(my $fh,'<',"$FindBin::Bin/../network_refresh.cgi") or die $!;
+    local $/; <$fh>
+};
+die "Network refresh endpoint missing from package\n"
+    unless do {
+        open(my $fh,'<',"$FindBin::Bin/../MANIFEST.wbm") or die $!;
+        local $/; my $manifest=<$fh>; $manifest =~ /^network_refresh\.cgi$/m;
+    };
+die "Network refresh must require ACL, CSRF and rate limiting\n"
+    unless $refresh =~ /assert_manage_access\(\)/ &&
+           $refresh =~ /assert_post_and_csrf\(\)/ &&
+           $refresh =~ /request_rate_limit\('network_refresh'/;
+die "Network refresh may only query exact previously observed IPs\n"
+    unless $refresh =~ /check_observed_ip/ && $refresh =~ /\$known->\{'known'\}/;
+die "Network refresh must separate source queries from city lookup\n"
+    unless $refresh =~ /peer_ip_whois\(\$ip\)/ &&
+           $refresh =~ /peer_ip_geoip\(\$ip\)/ &&
+           $refresh =~ /get_observed_ip/;
 print "network directory navigation and mutation CSRF regression tests passed\n";
