@@ -520,6 +520,40 @@ class AnalyticsTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             store.network_lookup(self.conn,{"ips":["1.1.1.1"]*129})
 
+    def test_exact_ip_refresh_preserves_manual_city_and_independent_sources(self):
+        store.network_record(self.conn,{
+            "ip":"8.8.8.8","geoip_country_code":"RU","geoip_city":"Moscow",
+            "whois_fields":[{"label":"CIDR","value":"8.8.8.0/24"},
+                            {"label":"Organization","value":"Old provider"}]})
+        self.assertTrue(store.network_manage(self.conn,{
+            "action":"check_observed_ip","ip":"8.8.8.8"})["known"])
+        self.assertFalse(store.network_manage(self.conn,{
+            "action":"check_observed_ip","ip":"1.1.1.1"})["known"])
+        with self.assertRaises(ValueError):
+            store.network_manage(self.conn,{
+                "action":"refresh_geoip","ip":"1.1.1.1",
+                "country":"RU","city":"Moscow"})
+        store.network_manage(self.conn,{
+            "action":"set_icon","cidr":"8.8.8.0/24","city":"Manual city"})
+        store.network_manage(self.conn,{
+            "action":"refresh_geoip","ip":"8.8.8.8",
+            "country":"RS","city":"Belgrade"})
+        observed=store.network_manage(self.conn,{
+            "action":"get_observed_ip","ip":"8.8.8.8"})
+        self.assertEqual(observed["country"],"RS")
+        self.assertEqual(observed["city"],"Belgrade")
+        self.assertEqual(store.network_lookup(self.conn,{
+            "ips":["8.8.8.8"]})["results"]["8.8.8.8"]["city"],"Manual city")
+        store.network_manage(self.conn,{
+            "action":"refresh_whois","ip":"8.8.8.8",
+            "whois_fields":[{"label":"CIDR","value":"8.8.8.0/24"},
+                            {"label":"Organization","value":"New provider"}]})
+        self.assertEqual(store.network_manage(self.conn,{
+            "action":"get_observed_ip","ip":"8.8.8.8"})["city"],"Belgrade")
+        ranges=store.network_manage(self.conn,{"action":"list"})["cache"]
+        self.assertIn("8.8.8.8",ranges[0]["observed_ips"])
+        self.assertEqual(ranges[0]["owner"],"New provider")
+
     def test_existing_network_database_city_migration(self):
         old = Path(self.tmp.name) / "legacy.sqlite3"
         connection = sqlite3.connect(old)
