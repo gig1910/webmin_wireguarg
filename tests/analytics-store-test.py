@@ -557,8 +557,9 @@ class AnalyticsTest(unittest.TestCase):
         self.assertEqual(store.network_manage(self.conn,{
             "action":"get_observed_ip","ip":"8.8.8.8"})["city"],"Belgrade")
         ranges=store.network_manage(self.conn,{"action":"list"})["cache"]
-        self.assertIn("8.8.8.8",ranges[0]["observed_ips"])
-        self.assertEqual(ranges[0]["owner"],"New provider")
+        target=next(x for x in ranges if x["cidr"]=="8.8.8.0/24")
+        self.assertIn("8.8.8.8",target["observed_ips"])
+        self.assertEqual(target["owner"],"New provider")
 
     def test_existing_network_database_city_migration(self):
         old = Path(self.tmp.name) / "legacy.sqlite3"
