@@ -574,3 +574,6 @@ geoip_city_download_failed=Configuration saved but City download failed. Check c
 geoip_city_success=GeoLite2 City updated; vendor update timer enabled.
 
 unlocode_return=Return to network directory
+
+geoip_city_installed=GeoLite2 City installed
+geoip_city_refresh=Refresh GeoLite2 City
