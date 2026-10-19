@@ -163,35 +163,22 @@ for my $cidr (sort keys %ranges) {
             attrs=>{'data-wg-confirm'=>$text{'network_icons_delete'}.' — '.$cidr});
         print ui_form_end();
     }
-    print '</span></td></tr>';
     if ($item->{'observed_ips'} && @{$item->{'observed_ips'}}) {
-        my @observed=@{$item->{'observed_ips'}};
-        print '<tr class="wg-network-refresh-detail"><td colspan="8"><details class="wg-network-refresh"><summary>'.
-            html_escape(sprintf($text{'network_refresh_count'},scalar(@observed))).
-            '</summary>';
-        for my $ip (@observed) {
-            next if $ip !~ /^[0-9A-Fa-f:.]{3,45}$/;
-            print '<div class="wg-network-refresh-row"><span class="wg-ui-mono">'.
-                html_escape($ip).'</span>';
-            for my $entry (
-                ['whois','network_refresh_whois','refresh-cw'],
-                ['geoip','network_refresh_geoip','globe'],
-                ['city','network_refresh_city','map-pin']
-            ) {
-                my ($mode,$label,$glyph)=@$entry;
-                print ui_form_start(module_script_url('network_refresh.cgi'),'post');
-                print csrf_hidden();
-                print ui_hidden('ip',$ip);
-                print ui_hidden('mode',$mode);
-                print wg_ui_button(type=>'submit',icon=>$glyph,action=>'restart',
-                    label=>$text{$label});
-                print ui_form_end();
+        my @ips=grep { /^[0-9A-Fa-f:.]{3,45}$/ } @{$item->{'observed_ips'}};
+        if (@ips) {
+            print '<span class="wg-cache-lookup">';
+            if (@ips > 1) {
+                print '<select aria-label="'.html_escape($text{'network_refresh_select_ip'}).'">'.
+                    join('',map { '<option value="'.html_escape($_).'">'.html_escape($_).'</option>' } @ips).
+                    '</select>';
             }
-            print '</div>';
+            print wg_ui_icon_action(icon=>'globe',tone=>'info',
+                label=>$text{'network_refresh_all'},
+                attrs=>{'data-wg-cache-refresh'=> $ips[0]});
+            print '</span>';
         }
-        print '</details></td></tr>';
     }
-
+    print '</span></td></tr>';
 }
 print '</tbody></table>';
 print wg_ui_panel_start($text{'ui_network_maintenance'}).
@@ -206,6 +193,16 @@ print wg_ui_button(type=>'submit',icon=>'trash',tone=>'danger',
         'data-wg-confirm-word'=>'CLEAR'});
 print ui_form_end();
 print wg_ui_panel_end();
+print '<div class="wg-ui-modal" data-wg-cache-dialog hidden role="dialog" aria-modal="true">'.
+    '<div class="wg-ui-modal-panel panel panel-default">'.
+    '<div class="wg-ui-modal-header"><h3>'.html_escape($text{'network_refresh_title'}).'</h3>'.
+    wg_ui_button(type=>'button',icon=>'close',label=>$text{'ui_close'},
+        attrs=>{'data-wg-cache-close'=>'1'}).'</div>'.
+    '<div class="wg-ui-modal-body" data-wg-cache-output role="status" aria-live="polite"></div>'.
+    '</div></div>';
+print '<div hidden data-wg-cache-options data-wg-cache-url="'.
+    html_escape(module_script_url('network_refresh.cgi')).'" data-wg-cache-token="'.
+    html_escape(csrf_token()).'"></div>';
 print wg_network_icons_page_script(json_encode_utf8($network_page_id));
 print '</div>';
 ui_print_footer('index.cgi',$text{'index_title'});
