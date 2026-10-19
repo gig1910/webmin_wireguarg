@@ -613,6 +613,23 @@ class AnalyticsTest(unittest.TestCase):
                   if x["cidr"]=="1.1.1.0/24")
         self.assertEqual(item["city"],"Moskva")
         self.assertEqual(item["city_code"],"RUMOW")
+        # Explicit cross-border location changes only the manual display
+        # country, never the source WHOIS/GeoIP observations.
+        store.network_manage(self.conn,{"action":"set_icon","cidr":"1.1.1.0/24",
+            "icon":"X","label":"test","city":"Belgrade","city_code":"RSBEG",
+            "country_override":"RS"})
+        item=next(x for x in store.network_manage(self.conn,{"action":"list"})["icons"]
+                  if x["cidr"]=="1.1.1.0/24")
+        self.assertEqual((item["country_override"],item["city_code"]),("RS","RSBEG"))
+        with self.assertRaises(ValueError):
+            store.network_manage(self.conn,{"action":"set_icon","cidr":"1.1.1.0/24",
+                "city":"Moskva","city_code":"RUMOW","country_override":"RS"})
+        store.network_manage(self.conn,{"action":"set_icon","cidr":"1.1.1.0/24",
+            "city":"","city_code":"","country_override":""})
+        item=next(x for x in store.network_manage(self.conn,{"action":"list"})["icons"]
+                  if x["cidr"]=="1.1.1.0/24")
+        self.assertEqual(item["country_override"],"")
+
         # Existing installations may contain old location rows without
         # populated normalized keys. Substring search must still work.
         self.conn.execute("UPDATE unlocode_places SET name_key='',ascii_key='' "
