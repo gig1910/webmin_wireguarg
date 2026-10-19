@@ -621,6 +621,21 @@ class AnalyticsTest(unittest.TestCase):
                           "term":"mos"})["total"],1)
         self.assertEqual(store.network_manage(self.conn,{"action":"search_unlocode",
                           "term":"Моск"})["matches"][0]["code"],"RUMOW")
+        # Casefolding and Cyrillic transliteration must be independent of
+        # user-entered letter case, including mixed-case Unicode.
+        for term in ("mos", "MOS", "MoS", "mOsKv", "моск", "МОСК",
+                     "МоСк", "МОСКВА", "Москва"):
+            with self.subTest(unlocode_case=term):
+                result=store.network_manage(self.conn,{
+                    "action":"search_unlocode","term":term})
+                self.assertEqual(result["total"],1)
+                self.assertEqual(result["matches"][0]["code"],"RUMOW")
+        for term in ("bel", "BEL", "BeL", "grad", "GRAD", "GrAd"):
+            with self.subTest(unlocode_case=term):
+                result=store.network_manage(self.conn,{
+                    "action":"search_unlocode","term":term})
+                self.assertEqual(result["total"],1)
+                self.assertEqual(result["matches"][0]["code"],"RSBEG")
         # Restore keys for subsequent exact lookup checks.
         self.conn.execute("UPDATE unlocode_places SET name_key='moskva',"
                           "ascii_key='moskva' WHERE country='RU' AND code='MOW'")
