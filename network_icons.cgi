@@ -163,7 +163,7 @@ for my $cidr (sort keys %ranges) {
                 'data-cidr'=>$cidr,'data-icon'=>$icon,
                 'data-label'=>$label,'data-city'=>$city,'data-city-code'=>$city_code,
                 'data-observed-country'=>$observed_country,
-                'data-manual-country'=>($manual->{'country_override'}||''),
+                'data-manual-country'=>($manual ? ($manual->{'country_override'}||'') : ''),
                 'data-suggested-city'=>($city ? '' : $suggested_city),
                 'data-suggested-code'=>($city ? '' : $suggested_code),
             });
