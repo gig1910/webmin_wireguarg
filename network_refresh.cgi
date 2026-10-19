@@ -21,12 +21,23 @@ fail_refresh($known_err||$text{'network_icons_invalid'})
 my $whois=peer_ip_whois($ip);
 my $geoip=peer_ip_geoip($ip);
 my ($stored,$err);
-if ($whois->{'ok'} || $geoip->{'ok'}) {
+if ($whois->{'ok'} && $geoip->{'ok'}) {
     ($stored,$err)=analytics_backend('network_record',{
-        ip=>$ip,
-        whois_fields=>$whois->{'ok'} ? ($whois->{'fields'}||[]) : [],
-        geoip_country_code=>$geoip->{'ok'} ? ($geoip->{'country_code'}||'') : '',
-        geoip_city=>$geoip->{'ok'} ? ($geoip->{'city'}||'') : ''
+        ip=>$ip,whois_fields=>$whois->{'fields'}||[],
+        geoip_country_code=>$geoip->{'country_code'}||'',
+        geoip_city=>$geoip->{'city'}||''
+    });
+}
+elsif ($whois->{'ok'}) {
+    ($stored,$err)=analytics_backend('network_manage',{
+        action=>'refresh_whois',ip=>$ip,
+        whois_fields=>$whois->{'fields'}||[]
+    });
+}
+elsif ($geoip->{'ok'}) {
+    ($stored,$err)=analytics_backend('network_manage',{
+        action=>'refresh_geoip',ip=>$ip,
+        country=>$geoip->{'country_code'}||'',city=>$geoip->{'city'}||''
     });
 }
 my ($lookup,$lookup_error)=analytics_backend('network_lookup',{ips=>[$ip]});
