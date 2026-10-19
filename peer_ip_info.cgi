@@ -62,12 +62,18 @@ my ($cached,$cache_error)=analytics_backend('network_record', {
     geoip_city=>$geoip->{'city'} || '',
     geoip_city_code=>$geoip->{'city_code'} || ''
 });
+my ($lookup,$lookup_error)=analytics_backend('network_lookup',{ips=>[$ip]});
+my $city_match=$lookup && $lookup->{'results'} ?
+    ($lookup->{'results'}{$ip} || {}) : {};
 my $result={
     ok=>JSON::PP::true(),
     available=>JSON::PP::true(),
     ip=>$ip, handshake=>0+($record->{'handshake'} || 0),
     whois=>$whois, geoip=>$geoip,
     network_cached=>$cached ? JSON::PP::true() : JSON::PP::false(),
+    city_match=>{city=>$city_match->{'city'}||'',
+        city_code=>$city_match->{'city_code'}||'',
+        source=>$city_match->{'city_source'}||''},
     network_cache_error=>$cached ? '' : ($cache_error||'Cache unavailable'),
 };
 json_response($result);
