@@ -607,6 +607,13 @@ class AnalyticsTest(unittest.TestCase):
             writer.writerow(row("RU","MOW","Moskva"))
             writer.writerow(row("RS","BEG","Belgrade"))
         self.assertEqual(locodes.import_release(self.conn,catalog),2)
+        found=store.network_manage(self.conn,{
+            "action":"search_unlocode","term":"bel","country":"RS"})["matches"]
+        self.assertEqual([(x["code"],x["name"]) for x in found],
+                         [("RSBEG","Belgrade")])
+        self.assertEqual(store.network_manage(self.conn,{
+            "action":"search_unlocode","term":"bel","country":"RU"})["matches"],[])
+
         store.network_record(self.conn, {
             "ip":"8.8.8.8","geoip_country_code":"RU",
             "geoip_city":"Moscow",
@@ -622,6 +629,7 @@ class AnalyticsTest(unittest.TestCase):
         self.assertEqual(got["8.8.8.9"]["city_code"],"RSBEG")
         listing=store.network_manage(self.conn,{"action":"list"})
         self.assertEqual(listing["cache"][0]["geoip_cities"],["RUMOW"])
+        self.assertEqual(listing["cache"][0]["geoip_city_names"],["Moscow"])
         store.network_manage(self.conn,{"action":"clear_cache","confirm":"CLEAR"})
         self.assertEqual(store.network_lookup(
             self.conn,{"ips":["8.8.8.8"]})["results"]["8.8.8.8"]["city_code"],"RSBEG")
