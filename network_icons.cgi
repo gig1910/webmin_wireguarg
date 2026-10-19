@@ -109,6 +109,8 @@ print '<div class="wg-ui-form-row">'.
     '<label>'.html_escape($text{'network_icons_city_code'}).' <input name="city_code" maxlength="5" size="8" placeholder="RUMOW" title="'.html_escape($text{'network_icons_city_help'}).'"></label> '.
     wg_ui_button(type=>'submit',icon=>'save',tone=>'success',
         label=>$text{'network_icons_save'}).'</div>';
+print '<div class="wg-city-search-controls">'.
+    wg_ui_button(type=>'button',icon=>'search',tone=>'info',label=>$text{'unlocode_search_button'},attrs=>{'data-wg-city-search-button'=>'1'}).'</div>';
 print '<div data-wg-city-choices hidden role="listbox"></div>';
 print ui_form_end();
 print '</div>';
@@ -206,6 +208,7 @@ print '<div class="wg-ui-modal" data-wg-cache-dialog hidden role="dialog" aria-m
         attrs=>{'data-wg-cache-close'=>'1'}).'</div>'.
     '<div class="wg-ui-modal-body" data-wg-cache-output role="status" aria-live="polite"></div>'.
     '</div></div>';
+print '<div hidden data-wg-city-save-url="'.html_escape(module_script_url('network_save.cgi')).'"></div>';
 print '<div hidden data-wg-unlocode-search-url="'.html_escape(module_script_url('unlocode_search.cgi')).'"></div>';
 print '<div hidden data-wg-cache-options data-wg-cache-url="'.
     html_escape(module_script_url('network_refresh.cgi')).'" data-wg-cache-token="'.
