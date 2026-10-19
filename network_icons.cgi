@@ -30,6 +30,7 @@ print '<div class="wg-ui" data-wg-network-page="'.html_escape($network_page_id).
 print '<div class="alert alert-success">'.html_escape($notice).'</div>' if $notice;
 print '<p>'.html_escape($text{'network_icons_help'}).'</p>';
 print '<div data-wg-network-status role="status" aria-live="polite" hidden></div>';
+print '<div data-wg-unlocode-meta>';
 print '<p class="help-block">'.html_escape(
     sprintf($text{'unlocode_status'},0+($report->{'unlocode_count'}||0))).' '.
     '<a href="https://unlocode.unece.org/publications/" target="_blank" rel="noopener noreferrer">'.
@@ -37,7 +38,8 @@ print '<p class="help-block">'.html_escape(
 
 # UNECE refresh is asynchronous and distinct from geoipupdate.
 print '<div class="wg-ui-form-row">';
-print ui_form_start(module_script_url('unlocode_update.cgi'),'post');
+
+print '<form method="post" action="'.html_escape(module_script_url('unlocode_update.cgi')).'" data-wg-network-action="unlocode">';
 print csrf_hidden();
 print wg_ui_button(type=>'submit',icon=>'refresh-cw',action=>'restart',
     label=>$text{'unlocode_update_button'});
@@ -63,6 +65,8 @@ if (-f $unlocode_error && -r $unlocode_error && -s $unlocode_error < 2048) {
         html_escape($message).'</div>';
 }
 
+print '</div>';
+print '<div hidden data-wg-unlocode-status-url="'.html_escape(module_script_url('unlocode_status.cgi')).'"></div>';
 # Shared network/GeoIP controls live here, independently of any peer.
 my $geo=wg_geoip_update_status();
 my $deps=optional_dependency_quick_status('geoip');
@@ -77,7 +81,7 @@ if (@databases) {
         $text{'ui_dependency_city'} : $text{'ui_dependency_country_only'};
     $geo_message.=' — '.$type;
 }
-print '<section class="panel panel-default"><div class="panel-heading"><b>'.
+print '<section class="panel panel-default" data-wg-geoip-meta><div class="panel-heading"><b>'.
     html_escape($text{'geoip_update_title'}).'</b></div><div class="panel-body"><p>'.
     html_escape($geo_message).'</p>';
 if (!$deps->{'command_available'}) {
@@ -89,7 +93,7 @@ if (!$deps->{'command_available'}) {
 }
 if ($access{'manage'} && $geo->{'configured'} && $geo->{'command_available'} &&
     $geo->{'timer_available'} && (!$geo->{'timer_enabled'} || !$geo->{'timer_active'})) {
-    print ui_form_start('geoip_timer.cgi','post');
+    print '<form method="post" action="'.html_escape(module_script_url('geoip_timer.cgi')).'" data-wg-network-action="geoip">';
     print csrf_hidden();
     print wg_ui_button(type=>'submit',icon=>'play',tone=>'success',
         label=>$text{'geoip_update_enable'});
