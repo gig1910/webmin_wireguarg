@@ -36,6 +36,102 @@ sub wg_network_icons_page_script
             icon.focus({preventScroll:true});
         });
     });
+    const dialog=root.querySelector('[data-wg-cache-dialog]');
+    const output=root.querySelector('[data-wg-cache-output]');
+    const options=root.querySelector('[data-wg-cache-options]');
+    let pending=null;
+    function add(tag,value,parent) {
+        const node=document.createElement(tag);
+        if(value!==null && value!==undefined)node.textContent=String(value);
+        parent.append(node);
+        return node;
+    }
+    function section(label,source) {
+        const block=add('section',null,output);
+        block.className='wg-peer-ip-section';
+        add('h4',label,block);
+        if(!source||!source.ok){
+            add('p',source&&source.detail||'No data',block);
+            return;
+        }
+        const table=add('table',null,block);
+        table.className='table table-striped';
+        const body=add('tbody',null,table);
+        (source.fields||[]).forEach(field=>{
+            const tr=add('tr',null,body);
+            add('th',field.label||'',tr);
+            add('td',field.value||'',tr);
+        });
+        if(source.source)add('small',source.source,block);
+        if(source.raw){
+            const details=add('details',null,block);
+            add('summary','WHOIS raw response',details);
+            add('pre',source.raw,details);
+        }
+    }
+    function closeDialog(){
+        if(pending){pending.abort();pending=null;}
+        if(dialog)dialog.hidden=true;
+    }
+    if(dialog && output && options){
+        root.addEventListener('click',async event=>{
+            if(event.target.closest('[data-wg-cache-close]')){
+                closeDialog();return;
+            }
+            const trigger=event.target.closest('[data-wg-cache-refresh]');
+            if(!trigger || !root.contains(trigger))return;
+            event.preventDefault();
+            const group=trigger.closest('.wg-cache-lookup');
+            const chosen=group&&group.querySelector('select');
+            const ip=chosen?chosen.value:trigger.dataset.wgCacheRefresh;
+            if(pending)pending.abort();
+            const controller=new AbortController();
+            pending=controller;
+            dialog.hidden=false;
+            output.replaceChildren();
+            add('p','Loading WHOIS / GeoIP / UN/LOCODE…',output);
+            try{
+                const payload=new URLSearchParams({ip:ip,_wg_csrf:options.dataset.wgCacheToken});
+                const response=await window.WireGuardTransport.requestJson(
+                    options.dataset.wgCacheUrl,{
+                        method:'POST',signal:controller.signal,
+                        headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+                        body:payload.toString()
+                    },{requireOk:true});
+                if(controller.signal.aborted || pending!==controller || dialog.hidden)return;
+                output.replaceChildren();
+                add('h4',response.ip||ip,output);
+                section('WHOIS',response.whois);
+                section('GeoIP',response.geoip);
+                const place=response.city_match||{};
+                const city=add('section',null,output);
+                city.className='wg-peer-ip-section';
+                add('h4','City / UN/LOCODE',city);
+                add('p',place.city?
+                    place.city+(place.city_code?' — '+place.city_code:'')+
+                    (place.source==='manual'?' (manual)':''):'Not determined',city);
+                if(!response.network_cached)
+                    add('p',response.network_cache_error||'Cache update unavailable',output);
+                else{
+                    const hint=add('p','Cache updated. Reload the list to view new data.',output);
+                    hint.className='help-block';
+                }
+            }catch(error){
+                if(!controller.signal.aborted){
+                    output.replaceChildren();
+                    add('p',error.message||String(error),output);
+                }
+            }finally{
+                if(pending===controller)pending=null;
+            }
+        });
+        dialog.addEventListener('click',event=>{
+            if(event.target===dialog)closeDialog();
+        });
+        root.addEventListener('keydown',event=>{
+            if(event.key==='Escape'&&!dialog.hidden)closeDialog();
+        });
+    }
     const flagFor=code=>window.WireGuardUI.flag(code);
     root.querySelectorAll('[data-wg-geoip-codes]').forEach(function(node){
         const codes=(node.dataset.wgGeoipCodes||'').split(',').map(s=>s.trim().toUpperCase())
