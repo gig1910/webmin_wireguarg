@@ -26,6 +26,12 @@ my $network=read_file("$FindBin::Bin/../network_store.py");
 my $api=read_file("$FindBin::Bin/../peer_ip_info.cgi");
 my $icons=read_file("$FindBin::Bin/../network_icons.cgi");
 my $network_ui=read_file("$FindBin::Bin/../lib/network-icons-ui-lib.pl");
+die "Location lookup must append parameters through URL.searchParams (versioned API URLs already contain ?_wg_api)\n"
+    unless $network_ui =~ /new URL\(url,window\.location\.href\)/ &&
+           $network_ui =~ /requestUrl\.searchParams\.set\('term',term\)/ &&
+           $network_ui =~ /lookupUrl\.searchParams\.set\('term',code\)/;
+die "Location lookup must never append a second question mark to versioned API URL\n"
+    if index($network_ui,"url+'?'+")>=0;
 die "Network cache refresh must use compact modal controls\n" unless index($icons,'data-wg-cache-refresh')>=0 && index($icons,'data-wg-cache-dialog')>=0;
 
 die "network directory UI helper not used by CGI\n"
