@@ -164,8 +164,8 @@ def network_manage(conn, req):
         observations = [
             (ipaddress.ip_address(ip), code,city,city_code)
             for ip, code, city, city_code in conn.execute(
-                "SELECT ip,country_code,city,city_code FROM geoip_cache WHERE observed_at>=? "
-                "ORDER BY observed_at DESC LIMIT 1000", (int(time.time())-30*86400,))]
+                "SELECT ip,country_code,city,city_code FROM geoip_cache "
+                "ORDER BY observed_at DESC LIMIT 1000")]
         for item in cache:
             prefix=ipaddress.ip_network(item["cidr"])
             item["observed_ips"]=[str(ip) for ip,code,city,city_code in observations
