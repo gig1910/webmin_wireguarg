@@ -213,6 +213,7 @@ print '<div hidden data-wg-unlocode-search-url="'.html_escape(module_script_url(
 print '<div hidden data-wg-cache-options data-wg-cache-url="'.
     html_escape(module_script_url('network_refresh.cgi')).'" data-wg-cache-token="'.
     html_escape(csrf_token()).'"></div>';
+print wg_ui_transport_script();
 print wg_network_icons_page_script(json_encode_utf8($network_page_id));
 print '</div>';
 ui_print_footer('index.cgi',$text{'index_title'});
