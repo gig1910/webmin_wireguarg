@@ -130,7 +130,19 @@ sub wg_network_icons_page_script
                     action.append(choose);
                     tr.append(name,code,action);tbody.append(tr);
                 });
-                if(!tbody.children.length)results.textContent='Совпадений нет';
+                if(!tbody.children.length){
+                    results.textContent='Совпадений нет';
+                    if(response.diagnostic){
+                        const diagnostic=document.createElement('details');
+                        const title=document.createElement('summary');
+                        title.textContent='Диагностика поиска';
+                        diagnostic.append(title);
+                        const pre=document.createElement('pre');
+                        pre.textContent=JSON.stringify(response.diagnostic,null,2);
+                        diagnostic.append(pre);
+                        results.append(diagnostic);
+                    }
+                }
                 else results.append(table);
             }catch(error){
                 if(seq===sequence && !abort.signal.aborted){
