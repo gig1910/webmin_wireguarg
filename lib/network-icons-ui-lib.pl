@@ -42,8 +42,9 @@ sub wg_network_icons_page_script
         city?.focus();
     });
     if(choices){choices.className='wg-unlocode-choices';}
-    root.querySelectorAll('[data-wg-edit-range]').forEach(function(button){
-        button.addEventListener('click',function(){
+    root.addEventListener('click',function(event){
+        const button=event.target.closest('[data-wg-edit-range]');
+        if(!button || !root.contains(button))return;
             cidr.value=button.dataset.cidr||'';
             icon.value=button.dataset.icon||'?';
             label.value=button.dataset.label||'';
@@ -55,7 +56,6 @@ sub wg_network_icons_page_script
             if(cityCode)cityCode.value=button.dataset.cityCode||button.dataset.suggestedCode||'';
             editor.scrollIntoView({behavior:'smooth',block:'center'});
             icon.focus({preventScroll:true});
-        });
     });
     const picker=root.querySelector('[data-wg-locode-dialog]');
     const queryInput=picker?.querySelector('[data-wg-locode-query]');
@@ -212,33 +212,57 @@ sub wg_network_icons_page_script
         });
     }
     const saveUrl=root.querySelector('[data-wg-city-save-url]')?.dataset.wgCitySaveUrl;
+    const statusLine=root.querySelector('[data-wg-network-status]');
+    let tableSequence=0;
+    function showStatus(message,kind){
+        if(!statusLine)return;
+        statusLine.textContent=message;
+        statusLine.className='alert alert-'+(kind||'info');
+        statusLine.hidden=false;
+    }
+    async function mutate(url,data){
+        const result=await window.WireGuardTransport.requestJson(url,{
+            method:'POST',credentials:'same-origin',
+            headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+            body:new URLSearchParams(data).toString()
+        },{requireOk:true});
+        if(!result.ok)throw new Error(result.error||'Не удалось сохранить изменения');
+        showStatus('Данные сохранены. Обновление таблицы…','info');
+        await refreshTable();
+        showStatus('Таблица обновлена','success');
+    }
     const saveForm=editor.querySelector('form');
     if(saveForm&&saveUrl){
         saveForm.addEventListener('submit',async event=>{
             event.preventDefault();
-            const data=new URLSearchParams(new FormData(saveForm));
-            const display=root.querySelector('[data-wg-cache-dialog]');
-            const target=root.querySelector('[data-wg-cache-output]');
-            const header=display?.querySelector('.wg-ui-modal-header h3');
-            if(!display||!target)return;
-            if(header)header.textContent='Сохранение назначения';
-            display.hidden=false;
-            target.replaceChildren();
-            const status=document.createElement('p');
-            status.textContent='Сохранение…';
-            target.append(status);
+            const submit=saveForm.querySelector('[type="submit"]');
+            if(submit?.disabled)return;
+            if(submit)busy(submit,true);
+            showStatus('Сохранение назначения…','info');
             try{
-                const result=await window.WireGuardTransport.requestJson(saveUrl,{
-                    method:'POST',
-                    headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
-                    body:data.toString()
-                },{requireOk:true});
-                if(result.ok){window.location.reload();return;}
-            }catch(error){
-                status.textContent=error.message||String(error);
-            }
+                await mutate(saveUrl,new FormData(saveForm));
+            }catch(error){showStatus(error.message||String(error),'danger');}
+            finally{if(submit)busy(submit,false);}
         });
     }
+    // Destructive forms use the shared confirmation modal; its second
+    // submit event (after confirmation) is handled asynchronously here.
+    root.addEventListener('submit',async event=>{
+        const form=event.target;
+        if(!form.matches('[data-wg-network-mutation]'))return;
+        event.preventDefault();
+        const action=form.querySelector('[name="action"]')?.value;
+        const submit=event.submitter||form.querySelector('[type="submit"]');
+        if(submit?.disabled)return;
+        if(submit)busy(submit,true);
+        showStatus(action==='clear_cache'?'Очистка кеша…':'Удаление назначения…','info');
+        try{
+            const data=new FormData(form);
+            data.set('_wg_ajax','1');
+            await mutate(form.action,data);
+        }catch(error){showStatus(error.message||String(error),'danger');}
+        finally{if(submit)busy(submit,false);}
+    });
     const dialog=root.querySelector('[data-wg-cache-dialog]');
     const output=root.querySelector('[data-wg-cache-output]');
     const confirmation=root.querySelector('[data-wg-cache-confirm]');
@@ -279,26 +303,31 @@ sub wg_network_icons_page_script
         confirmation.replaceChildren();
     }
     async function refreshTable(signal){
-        // Fetch the latest server-rendered network table and replace only its DOM.
-        // No navigation, page reload, or replacement of the editor/modal.
-        const response=await fetch(window.location.href,{
-            credentials:'same-origin',cache:'no-store',signal,
-            headers:{'X-Requested-With':'XMLHttpRequest'}
-        });
-        if(!response.ok)throw new Error('Не удалось обновить таблицу: HTTP '+response.status);
-        const documentCopy=new DOMParser().parseFromString(await response.text(),'text/html');
-        const updated=documentCopy.querySelector('[data-wg-network-table]');
-        if(!updated)throw new Error('В ответе отсутствует таблица сетей');
-        table.replaceChildren(...Array.from(updated.children).map(node=>node.cloneNode(true)));
-        // GeoIP flag placeholders in the replaced table need normal decoration.
-        root.querySelectorAll('[data-wg-country]').forEach(node=>{
-            const code=node.dataset.wgCountry||'';
-            if(/^[A-Z]{2}$/.test(code))node.textContent=window.WireGuardUI.flag(code)+' '+code;
-        });
-        root.querySelectorAll('[data-wg-geoip-codes]').forEach(node=>{
-            const codes=(node.dataset.wgGeoipCodes||'').split(',').filter(c=>/^[A-Z]{2}$/.test(c));
-            node.textContent=codes.map(c=>window.WireGuardUI.flag(c)+' '+c).join(', ');
-        });
+        const seq=++tableSequence;
+        table.setAttribute('aria-busy','true');
+        showStatus('Обновление таблицы…','info');
+        try{
+            // Read only: rendering the current table must never repeat a POST.
+            const url=new URL(window.location.href);
+            url.search='';
+            const response=await fetch(url.toString(),{
+                method:'GET',credentials:'same-origin',cache:'no-store',signal,
+                headers:{'X-Requested-With':'XMLHttpRequest'}
+            });
+            if(!response.ok)throw new Error('Не удалось обновить таблицу: HTTP '+response.status);
+            const documentCopy=new DOMParser().parseFromString(await response.text(),'text/html');
+            const updated=documentCopy.querySelector('[data-wg-network-table]');
+            if(!updated)throw new Error('В ответе отсутствует таблица сетей');
+            if(seq!==tableSequence || signal?.aborted)return;
+            table.replaceChildren(...Array.from(updated.children).map(node=>node.cloneNode(true)));
+            decorateCountries();
+            showStatus('Таблица обновлена','success');
+        }catch(error){
+            if(seq===tableSequence&&!signal?.aborted)showStatus(error.message||String(error),'danger');
+            throw error;
+        }finally{
+            if(seq===tableSequence)table.removeAttribute('aria-busy');
+        }
     }
     async function queryIp(ip,commit,controller,preview){
         const body=new URLSearchParams({
@@ -392,6 +421,7 @@ sub wg_network_icons_page_script
             if(event.key==='Escape'&&!dialog.hidden)closeDialog();
         });
     }
+    function decorateCountries(){
     const flagFor=code=>window.WireGuardUI.flag(code);
     root.querySelectorAll('[data-wg-geoip-codes]').forEach(function(node){
         const codes=(node.dataset.wgGeoipCodes||'').split(',').map(s=>s.trim().toUpperCase())
@@ -404,6 +434,8 @@ sub wg_network_icons_page_script
         const flag=flagFor(code);
         node.textContent=flag+' '+code;
     });
+    }
+    decorateCountries();
 })();
 </script>
 NETWORK_UI
