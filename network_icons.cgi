@@ -136,7 +136,9 @@ for my $cidr (sort keys %ranges) {
         /^[A-Za-z][A-Za-z .'-]{2,79}$/ ? $_ : ()
     } @city_observations;
     my $cities=join(', ',@display_cities);
-    my $suggested_city=@display_cities==1 ? $display_cities[0] : '';
+    my @observed_names=grep { defined($_) && length($_) } @{$item->{'geoip_city_names'}||[]};
+    my $suggested_city=@observed_names==1 ? $observed_names[0] : '';
+    my $suggested_code=@city_observations==1 && $city_observations[0]=~/^[A-Z]{2}[A-Z0-9]{3}$/ ? $city_observations[0] : '';
     my $city_hint=join(', ',grep {
         /^[A-Z]{2}[A-Z0-9]{3}$/ || /^[A-Za-z][A-Za-z .'-]{2,79}$/
     } @city_observations);
@@ -145,7 +147,7 @@ for my $cidr (sort keys %ranges) {
         '<td>'.html_escape($icon).'</td><td>'.html_escape($label).'</td>'.
         '<td>'.html_escape($owner).'</td>'.
         '<td><span data-wg-country="'.html_escape($country).'">'.html_escape($country).'</span></td>'.
-        '<td title="'.html_escape($city||$city_hint).'">'.html_escape(($city_code=~/^[A-Z]{2}([A-Z0-9]{3})$/ ? $1 : '')||$city||$cities||'—').'</td>'.
+        '<td title="'.html_escape($city||$city_hint).'">'.html_escape($city||($city_code=~/^[A-Z]{2}([A-Z0-9]{3})$/ ? $1 : '')||$cities||'—').'</td>'.
         '<td><span data-wg-geoip-codes="'.html_escape($geoip_codes).'" title="'.html_escape($text{'network_icons_geoip_help'}).'">'.html_escape($geoip_codes).'</span></td>'.
         '<td><span class="wg-ui-table-actions">'.
         wg_ui_icon_action(icon=>'edit',tone=>'info',
@@ -155,6 +157,7 @@ for my $cidr (sort keys %ranges) {
                 'data-cidr'=>$cidr,'data-icon'=>$icon,
                 'data-label'=>$label,'data-city'=>$city,'data-city-code'=>$city_code,
                 'data-suggested-city'=>$suggested_city,
+                'data-suggested-code'=>$suggested_code,
             });
     if ($manual) {
         print ui_form_start(module_script_url('network_icons.cgi'),'post');
