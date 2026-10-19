@@ -97,14 +97,14 @@ def network_record(conn, req):
             "ON CONFLICT(cidr) DO UPDATE SET owner=excluded.owner,"
             "country=excluded.country,observed_at=excluded.observed_at",
             (cidr, owner, country, int(time.time())))
-        if geoip_country:
-            # A GeoIP observation describes one IP, not its WHOIS parent CIDR.
-            conn.execute(
-                "INSERT INTO geoip_cache(ip,country_code,city,city_code,observed_at) VALUES(?,?,?,?,?) "
-                "ON CONFLICT(ip) DO UPDATE SET country_code=excluded.country_code,"
-                "city=excluded.city,city_code=excluded.city_code,"
-                "observed_at=excluded.observed_at",
-                (str(ip), geoip_country, geoip_city,geoip_city_code,int(time.time())))
+        # Retain every explicitly queried IP, including one with no GeoIP result.
+        # Otherwise absent City/Country entries could never be retried.
+        conn.execute(
+            "INSERT INTO geoip_cache(ip,country_code,city,city_code,observed_at) VALUES(?,?,?,?,?) "
+            "ON CONFLICT(ip) DO UPDATE SET country_code=excluded.country_code,"
+            "city=excluded.city,city_code=excluded.city_code,"
+            "observed_at=excluded.observed_at",
+            (str(ip), geoip_country, geoip_city,geoip_city_code,int(time.time())))
     return {"ok": True, "cidr": cidr}
 
 
