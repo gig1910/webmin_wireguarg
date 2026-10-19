@@ -200,8 +200,12 @@ def network_manage(conn, req):
             return {"ok":True,"matches":[]}
         escaped=key.replace("\\","\\\\").replace("%","\\%").replace("_","\\_")
         pattern="%"+escaped+"%"
-        conditions=["(name_key LIKE ? ESCAPE '\\' OR ascii_key LIKE ? ESCAPE '\\')"]
-        args=[pattern,pattern]
+        # Prefer normalized lookup keys, but tolerate catalog rows imported
+        # before those keys were populated. Raw name fields also cover that case.
+        conditions=["(name_key LIKE ? ESCAPE '\\' OR ascii_key LIKE ? ESCAPE '\\' "
+                    "OR lower(name) LIKE ? ESCAPE '\\' "
+                    "OR lower(ascii_name) LIKE ? ESCAPE '\\')"]
+        args=[pattern,pattern,pattern,pattern]
         exact=term.strip().upper()
         if re.fullmatch(r"[A-Z]{2}[A-Z0-9]{3}",exact):
             conditions.append("(country || code)=?")
