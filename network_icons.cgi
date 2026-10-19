@@ -158,6 +158,33 @@ for my $cidr (sort keys %ranges) {
             attrs=>{'data-wg-confirm'=>$text{'network_icons_delete'}.' — '.$cidr});
         print ui_form_end();
     }
+    if ($item->{'observed_ips'} && @{$item->{'observed_ips'}}) {
+        my @observed=@{$item->{'observed_ips'}};
+        print '<details class="wg-network-refresh"><summary>'.
+            html_escape(sprintf($text{'network_refresh_count'},scalar(@observed))).
+            '</summary>';
+        for my $ip (@observed) {
+            next if $ip !~ /^[0-9A-Fa-f:.]{3,45}$/;
+            print '<div class="wg-network-refresh-row"><span class="wg-ui-mono">'.
+                html_escape($ip).'</span>';
+            for my $entry (
+                ['whois','network_refresh_whois','refresh-cw'],
+                ['geoip','network_refresh_geoip','globe'],
+                ['city','network_refresh_city','map-pin']
+            ) {
+                my ($mode,$label,$glyph)=@$entry;
+                print ui_form_start(module_script_url('network_refresh.cgi'),'post');
+                print csrf_hidden();
+                print ui_hidden('ip',$ip);
+                print ui_hidden('mode',$mode);
+                print wg_ui_button(type=>'submit',icon=>$glyph,action=>'restart',
+                    label=>$text{$label});
+                print ui_form_end();
+            }
+            print '</div>';
+        }
+        print '</details>';
+    }
     print '</span></td></tr>';
 }
 print '</tbody></table>';
