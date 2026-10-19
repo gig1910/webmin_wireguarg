@@ -12,6 +12,7 @@ eval {
         label=>$in{'label'}||'',
         city=>$in{'city'}||'',
         city_code=>uc($in{'city_code'}||''),
+        country_override=>uc($in{'country_override'}||''),
     };
     for my $field (qw(icon label city city_code)) {
         my $value=$payload->{$field};
