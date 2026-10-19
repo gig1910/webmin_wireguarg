@@ -4,6 +4,7 @@ use warnings;
 use FindBin;
 use File::Temp qw(tempfile);
 use JSON::PP ();
+use Encode ();
 use MIME::Base64 ();
 our %config;
 our ($ip_dom_json,$ip_name_json,$ip_index_json,$ip_csrf_json,$ip_labels_json,$ip_url_json);
@@ -53,6 +54,21 @@ print {$fh} "fake\n"; close($fh);
 $allow_mmdb=1;
 my $country=peer_ip_mmdb_value($fake,'8.8.8.8','country','names','en');
 die "GeoLite2 mmdblookup parsing failed\n" unless $country eq 'Serbia';
+# mmdblookup stdout is raw UTF-8; the backend must receive decoded text.
+my $city_bytes=Encode::encode('UTF-8',"Pa\x{010D}ir");
+{
+    no warnings 'redefine';
+    local *run_command = sub {
+        return (1,'    "'.$city_bytes.'" <utf8_string>'."\n",0,'mmdblookup');
+    };
+    my $city=peer_ip_mmdb_value($fake,'95.85.188.59','city','names','en');
+    die "GeoIP city UTF-8 was not decoded exactly once\n"
+        unless defined($city) && $city eq "Pa\x{010D}ir";
+    my $encoded=JSON::PP::encode_json({geoip_city=>$city});
+    my $decoded=JSON::PP::decode_json($encoded);
+    die "GeoIP city corrupted across Perl JSON boundary\n"
+        unless $decoded->{geoip_city} eq "Pa\x{010D}ir";
+}
 die "GeoLite2 subprocess argument layout invalid\n"
     unless $calls[-1][0] eq '/usr/bin/mmdblookup' &&
            $calls[-1][1] eq '--file' && $calls[-1][2] eq $fake &&
