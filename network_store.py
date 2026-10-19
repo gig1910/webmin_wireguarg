@@ -167,6 +167,9 @@ def network_manage(conn, req):
                 "SELECT ip,country_code,city,city_code FROM geoip_cache WHERE observed_at>=? "
                 "ORDER BY observed_at DESC LIMIT 1000", (int(time.time())-30*86400,))]
         for item in cache:
+            prefix=ipaddress.ip_network(item["cidr"])
+            item["observed_ips"]=[str(ip) for ip,code,city,city_code in observations
+                                  if ip in prefix]
             prefix = ipaddress.ip_network(item["cidr"])
             # These are observed IP countries, NOT a location assigned to
             # the entire WHOIS prefix. Preserve this distinction in the UI.
@@ -180,6 +183,51 @@ def network_manage(conn, req):
             })
         count=conn.execute("SELECT COUNT(*) FROM unlocode_places").fetchone()[0]
         return {"ok": True, "cache": cache, "icons": icons, "unlocode_count": count}
+    if action == "check_observed_ip":
+        raw=req.get("ip") or ""
+        try:
+            ip=ipaddress.ip_address(raw)
+        except ValueError as exc:
+            raise ValueError("invalid observed IP") from exc
+        if not ip.is_global:
+            raise ValueError("only public addresses may be refreshed")
+        known=conn.execute("SELECT 1 FROM geoip_cache WHERE ip=?",(str(ip),)).fetchone()
+        return {"ok":True,"known":bool(known)}
+    if action == "refresh_geoip":
+        raw=req.get("ip") or ""
+        try:
+            ip=ipaddress.ip_address(raw)
+        except ValueError as exc:
+            raise ValueError("invalid observed IP") from exc
+        if not ip.is_global or not conn.execute(
+                "SELECT 1 FROM geoip_cache WHERE ip=?",(str(ip),)).fetchone():
+            raise ValueError("IP is not in the observed cache")
+        country=req.get("country") or ""
+        city=req.get("city") or ""
+        if country and not re.fullmatch(r"[A-Z]{2}",country):
+            raise ValueError("invalid country")
+        if not isinstance(city,str) or len(city)>100 or any(ord(c)<32 for c in city):
+            raise ValueError("invalid city")
+        code=locode_lookup(conn,country,city)
+        with conn:
+            conn.execute("UPDATE geoip_cache SET country_code=?,city=?,city_code=?,observed_at=? "
+                         "WHERE ip=?",(country,city,code,int(time.time()),str(ip)))
+        return {"ok":True,"city_code":code}
+    if action == "refresh_whois":
+        raw=req.get("ip") or ""
+        try:
+            ip=ipaddress.ip_address(raw)
+        except ValueError as exc:
+            raise ValueError("invalid observed IP") from exc
+        if not ip.is_global or not conn.execute(
+                "SELECT 1 FROM geoip_cache WHERE ip=?",(str(ip),)).fetchone():
+            raise ValueError("IP is not in the observed cache")
+        # Keep existing per-IP GeoIP fields when refreshing WHOIS only.
+        record=conn.execute("SELECT country_code,city FROM geoip_cache WHERE ip=?",
+                            (str(ip),)).fetchone()
+        return network_record(conn,{"ip":str(ip),
+            "geoip_country_code":record[0],"geoip_city":record[1],
+            "whois_fields":req.get("whois_fields") or []})
     if action == "clear_cache":
         if req.get("confirm") != "CLEAR":
             raise ValueError("explicit cache reset confirmation required")
