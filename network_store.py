@@ -205,7 +205,11 @@ def network_manage(conn, req):
             where+=" AND country=?"
             args.append(country)
         if re.fullmatch(r"[A-Z]{2}[A-Z0-9]{3}",term.strip().upper()):
-            where+=" OR (country || code)=?"
+            if country:
+                where="WHERE ((name_key LIKE ? ESCAPE '\\' OR ascii_key LIKE ? ESCAPE '\\') "
+                where+="AND country=?) OR (country || code)=?"
+            else:
+                where+=" OR (country || code)=?"
             args.append(term.strip().upper())
         rows=conn.execute("SELECT country,code,name,subdivision FROM unlocode_places "+
                           where+" ORDER BY name_key,country,code LIMIT 25",args).fetchall()
