@@ -158,92 +158,140 @@ sub wg_network_icons_page_script
     }
     const dialog=root.querySelector('[data-wg-cache-dialog]');
     const output=root.querySelector('[data-wg-cache-output]');
+    const confirmation=root.querySelector('[data-wg-cache-confirm]');
     const options=root.querySelector('[data-wg-cache-options]');
+    const table=root.querySelector('[data-wg-network-table]');
     let pending=null;
-    function add(tag,value,parent) {
+    function add(tag,value,parent){
         const node=document.createElement(tag);
-        if(value!==null && value!==undefined)node.textContent=String(value);
+        if(value!==null&&value!==undefined)node.textContent=String(value);
         parent.append(node);
         return node;
     }
-    function section(label,source) {
+    function section(title,data){
         const block=add('section',null,output);
         block.className='wg-peer-ip-section';
-        add('h4',label,block);
-        if(!source||!source.ok){
-            add('p',source&&source.detail||'No data',block);
-            return;
-        }
-        const table=add('table',null,block);
-        table.className='table table-striped';
-        const body=add('tbody',null,table);
-        (source.fields||[]).forEach(field=>{
-            const tr=add('tr',null,body);
-            add('th',field.label||'',tr);
-            add('td',field.value||'',tr);
+        add('h4',title,block);
+        if(!data||!data.ok){add('p',data?.detail||'Нет данных',block);return;}
+        const body=add('tbody',null,add('table',null,block));
+        (data.fields||[]).forEach(field=>{
+            const row=add('tr',null,body);
+            add('th',field.label||'',row);add('td',field.value||'',row);
         });
-        if(source.source)add('small',source.source,block);
-        if(source.raw){
+        if(data.raw){
             const details=add('details',null,block);
-            add('summary','WHOIS raw response',details);
-            add('pre',source.raw,details);
+            add('summary','Полный ответ WHOIS',details);
+            add('pre',data.raw,details);
         }
+    }
+    function busy(node,value){
+        node.disabled=value;
+        node.classList.toggle('wg-cache-busy',value);
+        node.setAttribute('aria-busy',String(value));
     }
     function closeDialog(){
-        if(pending){pending.abort();pending=null;}
-        if(dialog)dialog.hidden=true;
+        pending?.abort();pending=null;
+        dialog.hidden=true;
+        confirmation.hidden=true;
+        confirmation.replaceChildren();
     }
-    if(dialog && output && options){
+    async function refreshTable(){
+        // Fetch the latest server-rendered network table and replace only its DOM.
+        // No navigation, page reload, or replacement of the editor/modal.
+        const response=await fetch(window.location.href,{
+            credentials:'same-origin',cache:'no-store',
+            headers:{'X-Requested-With':'XMLHttpRequest'}
+        });
+        if(!response.ok)throw new Error('Не удалось обновить таблицу: HTTP '+response.status);
+        const documentCopy=new DOMParser().parseFromString(await response.text(),'text/html');
+        const updated=documentCopy.querySelector('[data-wg-network-table]');
+        if(!updated)throw new Error('В ответе отсутствует таблица сетей');
+        table.replaceChildren(...Array.from(updated.children).map(node=>node.cloneNode(true)));
+        // GeoIP flag placeholders in the replaced table need normal decoration.
+        root.querySelectorAll('[data-wg-country]').forEach(node=>{
+            const code=node.dataset.wgCountry||'';
+            if(/^[A-Z]{2}$/.test(code))node.textContent=window.WireGuardUI.flag(code)+' '+code;
+        });
+        root.querySelectorAll('[data-wg-geoip-codes]').forEach(node=>{
+            const codes=(node.dataset.wgGeoipCodes||'').split(',').filter(c=>/^[A-Z]{2}$/.test(c));
+            node.textContent=codes.map(c=>window.WireGuardUI.flag(c)+' '+c).join(', ');
+        });
+    }
+    async function queryIp(ip,commit,controller){
+        const body=new URLSearchParams({
+            ip:ip,_wg_csrf:options.dataset.wgCacheToken,commit:commit?'1':'0'
+        });
+        return window.WireGuardTransport.requestJson(options.dataset.wgCacheUrl,{
+            method:'POST',signal:controller.signal,
+            headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+            body:body.toString()
+        },{requireOk:true});
+    }
+    if(dialog&&output&&confirmation&&options&&table){
         root.addEventListener('click',async event=>{
-            if(event.target.closest('[data-wg-cache-close]')){
-                closeDialog();return;
-            }
+            if(event.target.closest('[data-wg-cache-close]')){closeDialog();return;}
             const trigger=event.target.closest('[data-wg-cache-refresh]');
-            if(!trigger || !root.contains(trigger))return;
+            if(!trigger||!root.contains(trigger))return;
             event.preventDefault();
             const group=trigger.closest('.wg-cache-lookup');
-            const chosen=group&&group.querySelector('select');
-            const ip=chosen?chosen.value:trigger.dataset.wgCacheRefresh;
-            if(pending)pending.abort();
+            const ip=group?.querySelector('select')?.value||trigger.dataset.wgCacheRefresh;
+            pending?.abort();
             const controller=new AbortController();
             pending=controller;
             dialog.hidden=false;
-            const title=dialog.querySelector('.wg-ui-modal-header h3');
-            if(title)title.textContent='Обновление кеша IP';
+            confirmation.hidden=true;
+            confirmation.replaceChildren();
             output.replaceChildren();
-            add('p','Loading WHOIS / GeoIP / UN/LOCODE…',output);
+            busy(trigger,true);
+            add('p','Запрос WHOIS и GeoIP выполняется…',output).className='wg-cache-loading';
             try{
-                const payload=new URLSearchParams({ip:ip,_wg_csrf:options.dataset.wgCacheToken});
-                const response=await window.WireGuardTransport.requestJson(
-                    options.dataset.wgCacheUrl,{
-                        method:'POST',signal:controller.signal,
-                        headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
-                        body:payload.toString()
-                    },{requireOk:true});
-                if(controller.signal.aborted || pending!==controller || dialog.hidden)return;
+                const result=await queryIp(ip,false,controller);
+                if(controller.signal.aborted||pending!==controller||dialog.hidden)return;
                 output.replaceChildren();
-                add('h4',response.ip||ip,output);
-                section('WHOIS',response.whois);
-                section('GeoIP',response.geoip);
-                const place=response.city_match||{};
-                const city=add('section',null,output);
-                city.className='wg-peer-ip-section';
-                add('h4','City / UN/LOCODE',city);
-                add('p',place.city?
-                    place.city+(place.city_code?' — '+place.city_code:'')+
-                    (place.source==='manual'?' (manual)':''):'Not determined',city);
-                if(!response.network_cached)
-                    add('p',response.network_cache_error||'Cache update unavailable',output);
-                else{
-                    const hint=add('p','Cache updated. Reload the list to view new data.',output);
-                    hint.className='help-block';
-                }
+                add('h4',result.ip||ip,output);
+                section('WHOIS',result.whois);
+                section('GeoIP',result.geoip);
+                const city=result.city_match||{};
+                const block=add('section',null,output);
+                add('h4','City / UN/LOCODE',block);
+                add('p',city.city?
+                    city.city+(city.city_code?' — '+city.city_code:'')+
+                    (city.source==='manual'?' (вручную)':''):'Не определён',block);
+                const approve=add('button','Обновить кеш',confirmation);
+                approve.type='button';
+                approve.className='btn btn-success';
+                const cancel=add('button','Оставить без изменений',confirmation);
+                cancel.type='button';
+                cancel.className='btn btn-default';
+                confirmation.hidden=false;
+                cancel.addEventListener('click',()=>{confirmation.hidden=true;});
+                approve.addEventListener('click',async()=>{
+                    busy(approve,true);confirmation.querySelectorAll('button').forEach(b=>b.disabled=true);
+                    const indicator=add('p','Обновление кеша…',output);
+                    indicator.className='wg-cache-loading';
+                    try{
+                        const committed=await queryIp(ip,true,controller);
+                        if(controller.signal.aborted||pending!==controller)return;
+                        if(!committed.network_cached)
+                            throw new Error(committed.network_cache_error||'Кеш не обновлён');
+                        indicator.textContent='Кеш обновлён. Обновление таблицы…';
+                        await refreshTable();
+                        indicator.textContent='Кеш и таблица обновлены';
+                        confirmation.hidden=true;
+                    }catch(error){
+                        if(!controller.signal.aborted)indicator.textContent=error.message||String(error);
+                    }finally{
+                        confirmation.querySelectorAll('button').forEach(b=>b.disabled=false);
+                        busy(approve,false);
+                    }
+                });
             }catch(error){
                 if(!controller.signal.aborted){
                     output.replaceChildren();
                     add('p',error.message||String(error),output);
                 }
             }finally{
+                busy(trigger,false);
                 if(pending===controller)pending=null;
             }
         });
