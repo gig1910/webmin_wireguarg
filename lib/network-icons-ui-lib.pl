@@ -350,7 +350,7 @@ sub wg_network_icons_page_script
                 cancel.type='button';
                 cancel.className='btn btn-default';
                 confirmation.hidden=false;
-                cancel.addEventListener('click',()=>{confirmation.hidden=true;});
+                cancel.addEventListener('click',()=>{confirmation.hidden=true;if(pending===controller)pending=null;});
                 approve.addEventListener('click',async()=>{
                     busy(approve,true);confirmation.querySelectorAll('button').forEach(b=>b.disabled=true);
                     const indicator=add('p','Обновление кеша…',output);
@@ -370,6 +370,7 @@ sub wg_network_icons_page_script
                     }finally{
                         confirmation.querySelectorAll('button').forEach(b=>b.disabled=false);
                         busy(approve,false);
+                        if(pending===controller)pending=null;
                     }
                 });
             }catch(error){
@@ -379,7 +380,9 @@ sub wg_network_icons_page_script
                 }
             }finally{
                 busy(trigger,false);
-                if(pending===controller)pending=null;
+                // Keep this controller active while the confirmation is displayed.
+                // The commit and table refresh are part of the same operation.
+                if(controller.signal.aborted && pending===controller)pending=null;
             }
         });
         dialog.addEventListener('click',event=>{
