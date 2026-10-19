@@ -7,6 +7,12 @@ request_rate_limit('unlocode_update',3,600);
 my $ctl=command_path('systemctl_cmd','/usr/bin/systemctl');
 my ($ok,$out)=run_command(
     [$ctl,'start','--no-block','webmin-wireguard-unlocode.service'],0,10,1024);
+if (($in{'_wg_ajax'}||'') eq '1') {
+    json_response({ok=>$ok ? JSON::PP::true() : JSON::PP::false(),
+        queued=>$ok ? JSON::PP::true() : JSON::PP::false(),
+        error=>$ok ? '' : ($out||$text{'unlocode_update_failed'})});
+    exit;
+}
 ui_print_header(undef,$text{'unlocode_update_title'},'',undef,1,1);
 print wg_ui_foundation();
 print '<div class="wg-ui"><div class="'.($ok?'alert alert-success':'alert alert-warning').'">'.
