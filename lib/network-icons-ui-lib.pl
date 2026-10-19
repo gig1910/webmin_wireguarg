@@ -195,11 +195,11 @@ sub wg_network_icons_page_script
         confirmation.hidden=true;
         confirmation.replaceChildren();
     }
-    async function refreshTable(){
+    async function refreshTable(signal){
         // Fetch the latest server-rendered network table and replace only its DOM.
         // No navigation, page reload, or replacement of the editor/modal.
         const response=await fetch(window.location.href,{
-            credentials:'same-origin',cache:'no-store',
+            credentials:'same-origin',cache:'no-store',signal,
             headers:{'X-Requested-With':'XMLHttpRequest'}
         });
         if(!response.ok)throw new Error('Не удалось обновить таблицу: HTTP '+response.status);
@@ -217,10 +217,13 @@ sub wg_network_icons_page_script
             node.textContent=codes.map(c=>window.WireGuardUI.flag(c)+' '+c).join(', ');
         });
     }
-    async function queryIp(ip,commit,controller){
+    async function queryIp(ip,commit,controller,preview){
         const body=new URLSearchParams({
             ip:ip,_wg_csrf:options.dataset.wgCacheToken,commit:commit?'1':'0'
         });
+        if(commit && preview)body.set('preview',JSON.stringify({
+            ip,whois:preview.whois,geoip:preview.geoip
+        }));
         return window.WireGuardTransport.requestJson(options.dataset.wgCacheUrl,{
             method:'POST',signal:controller.signal,
             headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
@@ -270,13 +273,14 @@ sub wg_network_icons_page_script
                     const indicator=add('p','Обновление кеша…',output);
                     indicator.className='wg-cache-loading';
                     try{
-                        const committed=await queryIp(ip,true,controller);
+                        const committed=await queryIp(ip,true,controller,result);
                         if(controller.signal.aborted||pending!==controller)return;
                         if(!committed.network_cached)
                             throw new Error(committed.network_cache_error||'Кеш не обновлён');
                         indicator.textContent='Кеш обновлён. Обновление таблицы…';
-                        await refreshTable();
+                        await refreshTable(controller.signal);
                         indicator.textContent='Кеш и таблица обновлены';
+                        indicator.classList.remove('wg-cache-loading');
                         confirmation.hidden=true;
                     }catch(error){
                         if(!controller.signal.aborted)indicator.textContent=error.message||String(error);
