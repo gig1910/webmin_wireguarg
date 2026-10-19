@@ -29,6 +29,14 @@ sub wg_network_icons_page_script
     const locodeSource=root.querySelector('[data-wg-unlocode-search-url]');
     let countryHint='';
     let searchSequence=0;
+    editor.querySelector('[data-wg-city-clear]')?.addEventListener('click',()=>{
+        if(city)city.value='';
+        if(cityCode)cityCode.value='';
+        searchSequence++;
+        const matches=editor.querySelector('[data-wg-city-choices]');
+        if(matches){matches.replaceChildren();matches.hidden=true;}
+        city?.focus();
+    });
     if(choices){choices.className='wg-unlocode-choices';}
     root.querySelectorAll('[data-wg-edit-range]').forEach(function(button){
         button.addEventListener('click',function(){
