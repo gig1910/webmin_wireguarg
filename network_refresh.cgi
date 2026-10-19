@@ -16,30 +16,51 @@ my ($known,$known_err)=analytics_backend('network_manage',
     {action=>'check_observed_ip',ip=>$ip});
 fail_refresh($known_err||$text{'network_icons_invalid'})
     unless $known && $known->{'known'};
-# One explicit request: independently query both sources; city is resolved
-# from that exact IP in the SQLite backend. Do not copy CIDR overrides.
-my $whois=peer_ip_whois($ip);
-my $geoip=peer_ip_geoip($ip);
 my $commit=($in{'commit'}||'') eq '1';
-my ($stored,$err);
-if ($commit && $whois->{'ok'} && $geoip->{'ok'}) {
-    ($stored,$err)=analytics_backend('network_record',{
-        ip=>$ip,whois_fields=>$whois->{'fields'}||[],
-        geoip_country_code=>$geoip->{'country_code'}||'',
-        geoip_city=>$geoip->{'city'}||''
-    });
+my ($whois,$geoip,$stored,$err);
+if ($commit) {
+    # Commit the exact preview approved by the administrator; do not issue
+    # a second WHOIS/GeoIP request that may block or return different data.
+    my $raw=$in{'preview'}||'';
+    fail_refresh('Invalid or oversized preview') if length($raw)>32768;
+    my $preview=eval { JSON::PP::decode_json($raw) };
+    fail_refresh('Invalid preview') unless ref($preview) eq 'HASH' &&
+        ($preview->{'ip'}||'') eq $ip;
+    $whois=$preview->{'whois'};
+    $geoip=$preview->{'geoip'};
+    fail_refresh('Invalid preview sources') unless
+        ref($whois) eq 'HASH' && ref($geoip) eq 'HASH';
+    my $fields=$whois->{'fields'};
+    fail_refresh('Invalid WHOIS fields') unless
+        ref($fields) eq 'ARRAY' && @$fields<=40 &&
+        !grep { ref($_) ne 'HASH' ||
+            length($_->{'label'}||'')>100 ||
+            length($_->{'value'}||'')>2048 } @$fields;
+    my $country=$geoip->{'country_code'}||'';
+    my $city=$geoip->{'city'}||'';
+    fail_refresh('Invalid GeoIP data') if
+        length($country)>2 || $country !~ /^(?:[A-Z]{2})?$/ ||
+        ref($city) || length($city)>100;
+    if ($whois->{'ok'} && $geoip->{'ok'}) {
+        ($stored,$err)=analytics_backend('network_record',{
+            ip=>$ip,whois_fields=>$fields,
+            geoip_country_code=>$country,geoip_city=>$city
+        });
+    }
+    elsif ($whois->{'ok'}) {
+        ($stored,$err)=analytics_backend('network_manage',{
+            action=>'refresh_whois',ip=>$ip,whois_fields=>$fields
+        });
+    }
+    elsif ($geoip->{'ok'}) {
+        ($stored,$err)=analytics_backend('network_manage',{
+            action=>'refresh_geoip',ip=>$ip,country=>$country,city=>$city
+        });
+    }
 }
-elsif ($commit && $whois->{'ok'}) {
-    ($stored,$err)=analytics_backend('network_manage',{
-        action=>'refresh_whois',ip=>$ip,
-        whois_fields=>$whois->{'fields'}||[]
-    });
-}
-elsif ($commit && $geoip->{'ok'}) {
-    ($stored,$err)=analytics_backend('network_manage',{
-        action=>'refresh_geoip',ip=>$ip,
-        country=>$geoip->{'country_code'}||'',city=>$geoip->{'city'}||''
-    });
+else {
+    $whois=peer_ip_whois($ip);
+    $geoip=peer_ip_geoip($ip);
 }
 my ($lookup,$lookup_error)=analytics_backend('network_lookup',{ips=>[$ip]});
 my $info=$lookup && $lookup->{'results'} ? ($lookup->{'results'}{$ip}||{}) : {};
