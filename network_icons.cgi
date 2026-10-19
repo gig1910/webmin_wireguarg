@@ -16,6 +16,7 @@ print wg_ui_foundation();
 print '<div class="wg-ui" data-wg-network-page="'.html_escape($network_page_id).'">';
 print '<div class="alert alert-success">'.html_escape($notice).'</div>' if $notice;
 print '<p>'.html_escape($text{'network_icons_help'}).'</p>';
+print '<div data-wg-network-status role="status" aria-live="polite" hidden></div>';
 print '<p class="help-block">'.html_escape(
     sprintf($text{'unlocode_status'},0+($report->{'unlocode_count'}||0))).' '.
     '<a href="https://unlocode.unece.org/publications/" target="_blank" rel="noopener noreferrer">'.
@@ -168,7 +169,7 @@ for my $cidr (sort keys %ranges) {
                 'data-suggested-code'=>($city ? '' : $suggested_code),
             });
     if ($manual) {
-        print ui_form_start(module_script_url('network_icons.cgi'),'post');
+        print '<form method="post" action="'.html_escape(module_script_url('network_icons.cgi')).'" data-wg-network-mutation="1">';
         print csrf_hidden();
         print ui_hidden('action','delete_icon');
         print ui_hidden('cidr',$cidr);
@@ -197,7 +198,7 @@ for my $cidr (sort keys %ranges) {
 print '</tbody></table>';
 print wg_ui_panel_start($text{'ui_network_maintenance'}).
     '<p class="help-block">'.html_escape($text{'network_icons_cache_help'}).'</p>';
-print ui_form_start(module_script_url('network_icons.cgi'),'post');
+print '<form method="post" action="'.html_escape(module_script_url('network_icons.cgi')).'" data-wg-network-mutation="1">';
 print csrf_hidden();
 print ui_hidden('action','clear_cache');
 print '<input type="hidden" name="confirm" value="">';
