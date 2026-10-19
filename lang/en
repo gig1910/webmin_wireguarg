@@ -577,3 +577,10 @@ unlocode_return=Return to network directory
 
 geoip_city_installed=GeoLite2 City installed
 geoip_city_refresh=Refresh GeoLite2 City
+
+network_refresh_title=Refresh IP cache
+network_refresh_done=Updated cache for IP:
+network_refresh_count=Observed IPs: %s
+network_refresh_whois=WHOIS
+network_refresh_geoip=GeoIP
+network_refresh_city=Resolve city again
