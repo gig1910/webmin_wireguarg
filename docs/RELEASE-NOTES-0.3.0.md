@@ -36,3 +36,16 @@ network directory. Offline imports remain supported via
 `scripts/import-unlocode.py` when required; see `docs/UNLOCODE.ru.md`.
 The download URL uses official UNECE HTTPS release archives; availability
 must still be confirmed on a server with Internet connectivity.
+
+## Asynchronous network directory operations
+
+- Save manual city, country and network icon assignments without reloading the page.
+- Delete assignments and clear the cache with in-place table updates and operation status.
+- Keep network-row edit buttons active after refreshing server-rendered rows.
+- Refresh WHOIS/GeoIP only on explicit confirmation, then update the table asynchronously.
+- Enable the GeoIP timer and queue UN/LOCODE updates without page navigation;
+  poll read-only UN/LOCODE status to distinguish queueing from completion.
+- Preserve server-side ACL, CSRF, validation, and rate limiting.
+
+The release is subject to Webmin/Authentic Theme browser acceptance testing;
+passing automated CI does not demonstrate successful production installation.
