@@ -199,22 +199,29 @@ def network_manage(conn, req):
         if not key or len(key)<2:
             return {"ok":True,"matches":[]}
         escaped=key.replace("\\","\\\\").replace("%","\\%").replace("_","\\_")
-        where="WHERE (name_key LIKE ? ESCAPE '\\' OR ascii_key LIKE ? ESCAPE '\\')"
-        args=[escaped+"%",escaped+"%"]
+        pattern="%"+escaped+"%"
+        conditions=["(name_key LIKE ? ESCAPE '\\' OR ascii_key LIKE ? ESCAPE '\\')"]
+        args=[pattern,pattern]
+        exact=term.strip().upper()
+        if re.fullmatch(r"[A-Z]{2}[A-Z0-9]{3}",exact):
+            conditions.append("(country || code)=?")
+            args.append(exact)
+        where=" WHERE ("+" OR ".join(conditions)+")"
         if country:
             where+=" AND country=?"
             args.append(country)
-        if re.fullmatch(r"[A-Z]{2}[A-Z0-9]{3}",term.strip().upper()):
-            if country:
-                where="WHERE ((name_key LIKE ? ESCAPE '\\' OR ascii_key LIKE ? ESCAPE '\\') "
-                where+="AND country=?) OR (country || code)=?"
-            else:
-                where+=" OR (country || code)=?"
-            args.append(term.strip().upper())
-        rows=conn.execute("SELECT country,code,name,subdivision FROM unlocode_places "+
-                          where+" ORDER BY name_key,country,code LIMIT 25",args).fetchall()
-        return {"ok":True,"matches":[{"code":c+loc,"name":name,"country":c,
-                                      "subdivision":sub} for c,loc,name,sub in rows]}
+        total=conn.execute("SELECT COUNT(*) FROM unlocode_places"+where,args).fetchone()[0]
+        try:
+            offset=max(0,int(req.get("offset") or 0))
+        except (ValueError,TypeError):
+            raise ValueError("invalid search offset")
+        offset=min(offset,1000000)
+        rows=conn.execute("SELECT country,code,name,subdivision FROM unlocode_places"+
+                          where+" ORDER BY country,name_key,code LIMIT 100 OFFSET ?",
+                          args+[offset]).fetchall()
+        return {"ok":True,"total":total,"offset":offset,"limit":100,
+                "matches":[{"code":c+loc,"name":name,"country":c,
+                            "subdivision":sub} for c,loc,name,sub in rows]}
     if action == "check_observed_ip":
         raw=req.get("ip") or ""
         try:
