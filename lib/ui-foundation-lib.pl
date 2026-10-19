@@ -196,6 +196,8 @@ sub wg_ui_foundation {
 .wg-ui .wg-ui-icon-btn:hover,.wg-ui .wg-ui-icon-btn:focus-visible{border-color:currentColor;background:rgba(127,127,127,.15);text-decoration:none;outline-offset:2px}
 .wg-ui .wg-ui-icon-btn:disabled{opacity:.5;cursor:wait}
 .wg-ui .wg-ui-icon-btn [hidden]{display:none!important}
+.wg-ui .wg-unlocode-choices{display:flex;flex-wrap:wrap;gap:4px;padding:6px 0;max-height:170px;overflow:auto}
+.wg-ui .wg-unlocode-choices .wg-city-choice{white-space:normal;text-align:left;font-size:12px}
 .wg-ui .wg-cache-lookup{display:inline-flex;align-items:center;gap:4px;margin-left:4px;vertical-align:middle}
 .wg-ui .wg-cache-lookup select{max-width:155px;min-width:0;height:29px;font-size:12px;background:var(--wg-surface,transparent);color:inherit;border:1px solid var(--wg-border)}
 .wg-ui .wg-network-refresh{margin:3px 0;text-align:left;max-width:100%}
