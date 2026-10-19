@@ -263,6 +263,69 @@ sub wg_network_icons_page_script
         }catch(error){showStatus(error.message||String(error),'danger');}
         finally{if(submit)busy(submit,false);}
     });
+    // Background synchronization is queued, not completed, by its CGI.
+    // Poll the read-only status until a new result appears, preserving the page.
+    const syncSource=root.querySelector('[data-wg-unlocode-status-url]')?.dataset.wgUnlocodeStatusUrl;
+    let syncSequence=0;
+    async function syncState(){
+        return window.WireGuardTransport.requestJson(syncSource,{
+            method:'GET',credentials:'same-origin',cache:'no-store'
+        },{requireOk:true});
+    }
+    async function followUnlocode(before){
+        const seq=++syncSequence;
+        for(let attempt=0;attempt<120;attempt++){
+            await new Promise(resolve=>setTimeout(resolve,5000));
+            if(seq!==syncSequence||!root.isConnected)return;
+            let state;
+            try{state=await syncState();}
+            catch(error){
+                showStatus('Ошибка проверки синхронизации: '+(error.message||String(error)),'danger');
+                return;
+            }
+            if(state.updated_at!==before.updated_at && state.updated_at){
+                showStatus('UN/LOCODE синхронизирован. Обновление таблицы…','info');
+                try{await refreshTable();}
+                catch(error){return;}
+                showStatus('UN/LOCODE и таблица обновлены','success');
+                return;
+            }
+            if(state.error && state.error_mtime>before.error_mtime){
+                showStatus('Ошибка UN/LOCODE: '+state.error,'danger');
+                return;
+            }
+        }
+        if(seq===syncSequence)showStatus('Синхронизация ещё не подтверждена. Проверьте статус задания.','warning');
+    }
+    root.addEventListener('submit',async event=>{
+        const form=event.target.closest('[data-wg-network-action]');
+        if(!form)return;
+        event.preventDefault();
+        const submit=event.submitter||form.querySelector('[type="submit"]');
+        if(submit?.disabled)return;
+        const action=form.dataset.wgNetworkAction;
+        if(submit)busy(submit,true);
+        showStatus(action==='unlocode'?'Запуск синхронизации UN/LOCODE…':'Настройка GeoIP…','info');
+        try{
+            const before=action==='unlocode' ? await syncState() : null;
+            const data=new FormData(form);
+            data.set('_wg_ajax','1');
+            const result=await window.WireGuardTransport.requestJson(form.action,{
+                method:'POST',credentials:'same-origin',
+                headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},
+                body:new URLSearchParams(data).toString()
+            },{requireOk:true});
+            if(!result.ok)throw new Error(result.error||'Ошибка операции');
+            if(action==='unlocode'){
+                showStatus('UN/LOCODE: задание запущено, ожидание завершения…','info');
+                void followUnlocode(before);
+            }else{
+                await refreshTable();
+                showStatus('Настройки GeoIP и таблица обновлены','success');
+            }
+        }catch(error){showStatus(error.message||String(error),'danger');}
+        finally{if(submit)busy(submit,false);}
+    });
     const dialog=root.querySelector('[data-wg-cache-dialog]');
     const output=root.querySelector('[data-wg-cache-output]');
     const confirmation=root.querySelector('[data-wg-cache-confirm]');
@@ -320,6 +383,13 @@ sub wg_network_icons_page_script
             if(!updated)throw new Error('В ответе отсутствует таблица сетей');
             if(seq!==tableSequence || signal?.aborted)return;
             table.replaceChildren(...Array.from(updated.children).map(node=>node.cloneNode(true)));
+            // Refresh status/configuration blocks without replacing the editor
+            // or installing duplicate listeners on newly rendered controls.
+            for(const selector of ['[data-wg-unlocode-meta]','[data-wg-geoip-meta]']){
+                const current=root.querySelector(selector);
+                const fresh=documentCopy.querySelector(selector);
+                if(current&&fresh)current.replaceWith(fresh.cloneNode(true));
+            }
             decorateCountries();
             showStatus('Таблица обновлена','success');
         }catch(error){
