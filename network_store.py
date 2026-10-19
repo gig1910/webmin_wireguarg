@@ -176,6 +176,10 @@ def network_manage(conn, req):
             item["geoip_countries"] = sorted({
                 code for ip, code, city, city_code in observations if ip in prefix
             })
+            item["geoip_city_names"] = sorted({
+                city for ip, code, city, city_code in observations
+                if ip in prefix and city
+            })
             item["geoip_cities"] = sorted({
                 locode_lookup(conn, code, city) or city
                 for ip, code, city, city_code in observations
