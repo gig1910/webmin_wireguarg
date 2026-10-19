@@ -105,10 +105,11 @@ print '<div class="wg-ui-form-row">'.
     '<label>'.html_escape($text{'network_icons_prefix'}).' <input name="cidr" required placeholder="203.0.113.0/24" maxlength="64"></label> '.
     '<label>'.html_escape($text{'network_icons_symbol'}).' <input name="icon" value="?" maxlength="8" size="5"></label> '.
     '<label>'.html_escape($text{'network_icons_label'}).' <input name="label" maxlength="100" size="30"></label> '.
-    '<label>'.html_escape($text{'network_icons_city'}).' <input name="city" maxlength="100" size="22"></label> '.
+    '<label>'.html_escape($text{'network_icons_city'}).' <input name="city" maxlength="100" size="22" autocomplete="off"></label> '.
     '<label>'.html_escape($text{'network_icons_city_code'}).' <input name="city_code" maxlength="5" size="8" placeholder="RUMOW" title="'.html_escape($text{'network_icons_city_help'}).'"></label> '.
     wg_ui_button(type=>'submit',icon=>'save',tone=>'success',
         label=>$text{'network_icons_save'}).'</div>';
+print '<div data-wg-city-choices hidden role="listbox"></div>';
 print ui_form_end();
 print '</div>';
 print '<table class="table table-striped table-hover"><thead><tr><th>'.
@@ -202,6 +203,7 @@ print '<div class="wg-ui-modal" data-wg-cache-dialog hidden role="dialog" aria-m
         attrs=>{'data-wg-cache-close'=>'1'}).'</div>'.
     '<div class="wg-ui-modal-body" data-wg-cache-output role="status" aria-live="polite"></div>'.
     '</div></div>';
+print '<div hidden data-wg-unlocode-search-url="'.html_escape(module_script_url('unlocode_search.cgi')).'"></div>';
 print '<div hidden data-wg-cache-options data-wg-cache-url="'.
     html_escape(module_script_url('network_refresh.cgi')).'" data-wg-cache-token="'.
     html_escape(csrf_token()).'"></div>';
