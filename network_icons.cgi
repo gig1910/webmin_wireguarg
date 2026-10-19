@@ -107,15 +107,16 @@ print '<div class="wg-ui-form-row">'.
     '<label>'.html_escape($text{'network_icons_label'}).' <input name="label" maxlength="100" size="30"></label> '.
     '<label>'.html_escape($text{'network_icons_city'}).' <input name="city" maxlength="100" size="22" autocomplete="off"></label> '.
     '<label>'.html_escape($text{'network_icons_city_code'}).' <input name="city_code" maxlength="5" size="8" placeholder="RUMOW" title="'.html_escape($text{'network_icons_city_help'}).'"></label> '.
-    wg_ui_button(type=>'submit',icon=>'save',tone=>'success',
-        label=>$text{'network_icons_save'}).'</div>';
-print '<div class="wg-city-search-controls">'.
+    '</div>';
+print '<div class="wg-network-editor-actions">'.
+    wg_ui_button(type=>'submit',icon=>'save',tone=>'success',label=>$text{'network_icons_save'}).
+    wg_ui_button(type=>'button',icon=>'search',tone=>'info',label=>$text{'unlocode_search_button'},attrs=>{'data-wg-city-search-button'=>'1'}).
     wg_ui_button(type=>'button',icon=>'close',tone=>'danger',label=>$text{'network_city_clear'},attrs=>{'data-wg-city-clear'=>'1'}).
-    wg_ui_button(type=>'button',icon=>'search',tone=>'info',label=>$text{'unlocode_search_button'},attrs=>{'data-wg-city-search-button'=>'1'}).'</div>';
+    '</div>';
 print '<div data-wg-city-choices hidden role="listbox"></div>';
 print ui_form_end();
 print '</div>';
-print '<table class="table table-striped table-hover"><thead><tr><th>'.
+print '<table data-wg-network-table class="table table-striped table-hover"><thead><tr><th>'.
     html_escape($text{'network_icons_prefix'}).'</th><th>'.html_escape($text{'network_icons_symbol'}).
     '</th><th>'.html_escape($text{'network_icons_label'}).'</th><th>'.
     html_escape($text{'network_icons_owner'}).'</th><th>'.
@@ -208,6 +209,7 @@ print '<div class="wg-ui-modal" data-wg-cache-dialog hidden role="dialog" aria-m
     wg_ui_button(type=>'button',icon=>'close',label=>$text{'ui_close'},
         attrs=>{'data-wg-cache-close'=>'1'}).'</div>'.
     '<div class="wg-ui-modal-body" data-wg-cache-output role="status" aria-live="polite"></div>'.
+    '<div class="wg-cache-confirm-actions" data-wg-cache-confirm hidden></div>'.
     '</div></div>';
 print '<div hidden data-wg-city-save-url="'.html_escape(module_script_url('network_save.cgi')).'"></div>';
 print '<div hidden data-wg-unlocode-search-url="'.html_escape(module_script_url('unlocode_search.cgi')).'"></div>';
