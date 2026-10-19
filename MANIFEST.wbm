@@ -102,4 +102,5 @@ network_refresh.cgi
 network_save.cgi
 network_icons.cgi
 unlocode_update.cgi
+unlocode_status.cgi
 unlocode_search.cgi
