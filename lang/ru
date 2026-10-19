@@ -586,3 +586,5 @@ network_refresh_geoip=GeoIP
 network_refresh_city=Пересчитать город
 
 unlocode_search_button=Найти город в UN/LOCODE
+
+network_city_clear=Очистить город и код
