@@ -62,7 +62,7 @@ sub wg_network_icons_page_script
         const url=locodeSource.dataset.wgUnlocodeSearchUrl;
         let offset=0,total=0,sequence=0,debounce=null,abort=null;
         const normalize=value=>String(value||'').normalize('NFD')
-            .replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase();
+            .replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase();
         function highlight(parent,name,term){
             // Highlight literal matching fragments, never inject server text as HTML.
             const original=String(name||'');
