@@ -28,10 +28,14 @@ sub wg_network_icons_page_script
     const choices=editor.querySelector('[data-wg-city-choices]');
     const locodeSource=root.querySelector('[data-wg-unlocode-search-url]');
     let countryHint='';
+    const overrideCountry=editor.querySelector('[name="country_override"]');
+    let manualCountry='';
     let searchSequence=0;
     editor.querySelector('[data-wg-city-clear]')?.addEventListener('click',()=>{
         if(city)city.value='';
         if(cityCode)cityCode.value='';
+        if(overrideCountry)overrideCountry.value='';
+        manualCountry='';
         searchSequence++;
         const matches=editor.querySelector('[data-wg-city-choices]');
         if(matches){matches.replaceChildren();matches.hidden=true;}
@@ -44,7 +48,9 @@ sub wg_network_icons_page_script
             icon.value=button.dataset.icon||'?';
             label.value=button.dataset.label||'';
             if(city)city.value=button.dataset.city||button.dataset.suggestedCity||'';
-            countryHint=button.closest('tr')?.querySelector('[data-wg-country]')?.dataset.wgCountry||'';
+            countryHint=button.dataset.observedCountry||'';
+            manualCountry=button.dataset.manualCountry||'';
+            if(overrideCountry)overrideCountry.value=manualCountry;
             if(choices)choices.hidden=true;
             if(cityCode)cityCode.value=button.dataset.cityCode||button.dataset.suggestedCode||'';
             editor.scrollIntoView({behavior:'smooth',block:'center'});
@@ -58,6 +64,8 @@ sub wg_network_icons_page_script
     const page=picker?.querySelector('[data-wg-locode-page]');
     const prev=picker?.querySelector('[data-wg-locode-prev]');
     const next=picker?.querySelector('[data-wg-locode-next]');
+    const filter=picker?.querySelector('[data-wg-locode-filter]');
+    const filterCountry=picker?.querySelector('[data-wg-locode-country]');
     if(city&&cityCode&&picker&&locodeSource&&queryInput&&results){
         const url=locodeSource.dataset.wgUnlocodeSearchUrl;
         let offset=0,total=0,sequence=0,debounce=null,abort=null;
@@ -90,6 +98,7 @@ sub wg_network_icons_page_script
                 const requestUrl=new URL(url,window.location.href);
                 requestUrl.searchParams.set('term',term);
                 requestUrl.searchParams.set('offset',String(offset));
+                if(filter?.checked && countryHint)requestUrl.searchParams.set('country',countryHint);
                 const response=await window.WireGuardTransport.requestJson(
                     requestUrl.toString(),{method:'GET',signal:abort.signal},{requireOk:true});
                 if(seq!==sequence||picker.hidden)return;
@@ -126,7 +135,17 @@ sub wg_network_icons_page_script
                     choose.type='button';choose.className='btn btn-info btn-sm';
                     choose.textContent='Выбрать';
                     choose.addEventListener('click',()=>{
+                        const chosen=place.country||place.code.slice(0,2);
+                        if(countryHint && chosen!==countryHint){
+                            const message='Город '+place.name+' ('+place.code+
+                                ') относится к стране '+chosen+
+                                ', а ранее определённая страна сети — '+countryHint+
+                                '. Изменить отображаемую страну вручную на '+chosen+'?';
+                            if(!window.confirm(message))return;
+                        }
                         city.value=place.name;cityCode.value=place.code;
+                        manualCountry=countryHint && chosen!==countryHint ? chosen : '';
+                        if(overrideCountry)overrideCountry.value=manualCountry;
                         picker.hidden=true;city.focus();
                     });
                     action.append(choose);
@@ -160,9 +179,12 @@ sub wg_network_icons_page_script
         editor.querySelector('[data-wg-city-search-button]')?.addEventListener('click',()=>{
             picker.hidden=false;
             queryInput.value=city.value.trim()||cityCode.value.trim();
+            if(filter){filter.checked=!!countryHint;filter.disabled=!countryHint;}
+            if(filterCountry)filterCountry.textContent=countryHint||'не определена';
             offset=0;search();queryInput.focus();
         });
         queryInput.addEventListener('input',schedule);
+        filter?.addEventListener('change',()=>{offset=0;search();});
         prev.addEventListener('click',()=>{offset=Math.max(0,offset-100);search();});
         next.addEventListener('click',()=>{if(offset+100<total){offset+=100;search();}});
         picker.querySelector('[data-wg-locode-close]')?.addEventListener('click',()=>{
