@@ -6,6 +6,19 @@ ReadParse();
 assert_view_access();
 assert_manage_access();
 
+# AJAX mutation requests must return JSON and never render the Webmin shell.
+# Preserve the same ACL, CSRF and rate limits in the shared dispatcher.
+if (($in{'_wg_ajax'}||'') eq '1') {
+    my $ok=eval { wg_network_icons_dispatch(); 1 };
+    if (!$ok) {
+        my $message=$@||'Network operation failed';
+        $message =~ s/[\r\n]+/ /g;
+        json_response({ok=>JSON::PP::false(),error=>"$message"});
+    } else {
+        json_response({ok=>JSON::PP::true()});
+    }
+    exit;
+}
 my $notice=wg_network_icons_dispatch();
 my ($report,$err)=analytics_backend('network_manage',{action=>'list'});
 error($err) unless $report;
