@@ -128,11 +128,16 @@ for my $cidr (sort keys %ranges) {
     my $city=$manual && $manual->{'city'} ? $manual->{'city'} : '';
     my $city_code=$manual && $manual->{'city_code'} ? $manual->{'city_code'} : ''; 
     my @city_observations=@{$item->{'geoip_cities'}||[]};
-    my $cities=join(', ',map {
+    # City has meaning only when it is a validated UN/LOCODE or an
+    # actual city name. Reject corrupted legacy single-character values.
+    my @display_cities=map {
         /^[A-Z]{2}([A-Z0-9]{3})$/ ? $1 :
-        /^[A-Za-z][A-Za-z .'-]{1,79}$/ ? $_ : ()
+        /^[A-Za-z][A-Za-z .'-]{2,79}$/ ? $_ : ()
+    } @city_observations;
+    my $cities=join(', ',@display_cities);
+    my $city_hint=join(', ',grep {
+        /^[A-Z]{2}[A-Z0-9]{3}$/ || /^[A-Za-z][A-Za-z .'-]{2,79}$/
     } @city_observations);
-    my $city_hint=join(', ',@city_observations);
     my $geoip_codes=join(',', @{$item->{'geoip_countries'}||[]});
     print '<tr><td><span class="wg-ui-mono">'.html_escape($cidr).'</span></td>'.
         '<td>'.html_escape($icon).'</td><td>'.html_escape($label).'</td>'.
@@ -158,10 +163,10 @@ for my $cidr (sort keys %ranges) {
             attrs=>{'data-wg-confirm'=>$text{'network_icons_delete'}.' — '.$cidr});
         print ui_form_end();
     }
-    print '</span>';
+    print '</span></td></tr>';
     if ($item->{'observed_ips'} && @{$item->{'observed_ips'}}) {
         my @observed=@{$item->{'observed_ips'}};
-        print '<details class="wg-network-refresh"><summary>'.
+        print '<tr class="wg-network-refresh-detail"><td colspan="8"><details class="wg-network-refresh"><summary>'.
             html_escape(sprintf($text{'network_refresh_count'},scalar(@observed))).
             '</summary>';
         for my $ip (@observed) {
@@ -184,9 +189,9 @@ for my $cidr (sort keys %ranges) {
             }
             print '</div>';
         }
-        print '</details>';
+        print '</details></td></tr>';
     }
-    print '</td></tr>';
+
 }
 print '</tbody></table>';
 print wg_ui_panel_start($text{'ui_network_maintenance'}).
