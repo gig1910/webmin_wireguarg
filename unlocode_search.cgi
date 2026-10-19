@@ -12,8 +12,10 @@ eval {
     my $country=uc($in{'country'}||'');
     die 'Invalid city search' if length($term)>80 || $term =~ /[\x00-\x1f]/;
     die 'Invalid country filter' if $country ne '' && $country !~ /^[A-Z]{2}$/;
+    my $offset=$in{'offset'}||0;
+    die 'Invalid offset' unless $offset =~ /^[0-9]{1,7}$/;
     my ($data,$err)=analytics_backend('network_manage',{
-        action=>'search_unlocode',term=>$term,country=>$country
+        action=>'search_unlocode',term=>$term,country=>$country,offset=>0+$offset
     });
     die $err if !$data;
     json_response($data);
