@@ -87,9 +87,11 @@ sub wg_network_icons_page_script
             if(term.length<2){count.textContent='Введите минимум 2 символа';return;}
             count.textContent='Поиск…';
             try{
-                const query=new URLSearchParams({term,offset:String(offset)});
+                const requestUrl=new URL(url,window.location.href);
+                requestUrl.searchParams.set('term',term);
+                requestUrl.searchParams.set('offset',String(offset));
                 const response=await window.WireGuardTransport.requestJson(
-                    url+'?'+query.toString(),{method:'GET',signal:abort.signal},{requireOk:true});
+                    requestUrl.toString(),{method:'GET',signal:abort.signal},{requireOk:true});
                 if(seq!==sequence||picker.hidden)return;
                 total=Number(response.total||0);
                 count.textContent='Найдено: '+total;
@@ -178,7 +180,9 @@ sub wg_network_icons_page_script
             if(!/^[A-Z]{2}[A-Z0-9]{3}$/.test(code))return;
             try{
                 const data=await window.WireGuardTransport.requestJson(
-                    url+'?'+new URLSearchParams({term:code}).toString(),
+                    (()=>{const lookupUrl=new URL(url,window.location.href);
+                        lookupUrl.searchParams.set('term',code);
+                        return lookupUrl.toString();})(),
                     {method:'GET'},{requireOk:true});
                 const match=(data.matches||[]).find(place=>place.code===code);
                 if(match)city.value=match.name;
