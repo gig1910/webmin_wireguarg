@@ -99,6 +99,7 @@ geoip_timer.cgi
 geoip_city_setup.cgi
 network_icon_data.cgi
 network_refresh.cgi
+network_save.cgi
 network_icons.cgi
 unlocode_update.cgi
 unlocode_search.cgi
