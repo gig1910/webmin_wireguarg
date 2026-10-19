@@ -97,7 +97,27 @@ sub wg_network_icons_page_script
             search();
         });
         editor.querySelector('[data-wg-city-search-button]')?.addEventListener('click',search);
-        cityCode.addEventListener('input',()=>{searchSequence++;clear();});
+        cityCode.addEventListener('input',()=>{
+            searchSequence++;
+            clear();
+            const code=cityCode.value.trim().toUpperCase();
+            if(!/^[A-Z]{2}[A-Z0-9]{3}$/.test(code))return;
+            const seq=++searchSequence;
+            (async()=>{
+                try{
+                    const url=searchUrl+'?'+new URLSearchParams({term:code}).toString();
+                    const result=await window.WireGuardTransport.requestJson(url,{method:'GET'},{requireOk:true});
+                    if(seq!==searchSequence)return;
+                    const match=(result.matches||[]).find(p=>p.code===code);
+                    if(match)city.value=match.name;
+                }catch(error){
+                    if(seq===searchSequence){
+                        choices.hidden=false;
+                        choices.textContent='Не удалось найти код: '+(error.message||String(error));
+                    }
+                }
+            })();
+        });
         editor.addEventListener('reset',()=>{countryHint='';clear();});
     }
     const saveUrl=root.querySelector('[data-wg-city-save-url]')?.dataset.wgCitySaveUrl;
