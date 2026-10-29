@@ -9,6 +9,12 @@ require "$FindBin::Bin/../lib/firewall-ufw-lib.pl";
 our (%config, %text);
 require "$FindBin::Bin/../wireguard-lib.pl";
 
+# WebminCore test stub does not load lang/ru or lang/en. Supply explicit
+# localized-message fixtures, never compare undefined strings.
+$text{'warning_firewall_ufw_missing'} = 'UFW missing (test)';
+$text{'warning_firewall_ufw_inactive'} = 'UFW inactive (test)';
+$text{'error_firewall_ufw_unknown'} = 'UFW status unknown (test)';
+
 my $temp = tempdir(CLEANUP => 1);
 my @rules = ();
 my @calls;
@@ -112,7 +118,12 @@ die "Unknown UFW status was silently bypassed\n" if ($unknown_ok);
 {
     no warnings 'redefine';
     local *main::wg_firewall_ufw_state = sub { return 'unknown'; };
-    die "Unknown UFW status passed preflight\n" if (!wg_firewall_preflight(38250));
+    my $unknown_error = wg_firewall_preflight(38250);
+    die "Unknown UFW status passed preflight\n"
+        unless defined($unknown_error) &&
+               $unknown_error eq $text{'error_firewall_ufw_unknown'};
+    die "Unknown UFW state not reported in interface editor\n"
+        unless wg_firewall_status_warning() eq $text{'error_firewall_ufw_unknown'};
 }
 
 my %fields = (
@@ -140,13 +151,13 @@ $config{'conf_dir'} = $temp;
 my $stop_calls = 0;
 {
     no warnings 'redefine';
-    local *main::wg_firewall_preflight = sub { return 'UFW inactive test'; };
+    local *main::wg_firewall_preflight = sub { return 'UFW status unknown test'; };
     local *main::action_stop_interface = sub { $stop_calls++; return (1, 'stopped'); };
     my ($start_ok, $start_error) = action_start_interface('wg_safe');
-    die "start did not block before wg-quick\n" if ($start_ok || $start_error ne 'UFW inactive test');
+    die "start did not block before wg-quick\n" if ($start_ok || $start_error ne 'UFW status unknown test');
     my ($restart_ok, $restart_error) = action_restart_interface('wg_safe');
     die "restart did not preflight before shutdown\n"
-        if ($restart_ok || $restart_error ne 'UFW inactive test' || $stop_calls);
+        if ($restart_ok || $restart_error ne 'UFW status unknown test' || $stop_calls);
 }
 
 print "tagged UFW rule lifecycle, ownership and generated hook tests passed\n";
