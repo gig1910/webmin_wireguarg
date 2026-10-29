@@ -98,8 +98,8 @@ sub wg_firewall_ufw_state
     local $ENV{'LC_ALL'} = 'C';
     my ($ok, $output) = run_command([ $ufw, 'status' ], 1, 10, 4096);
     return 'unknown' if (!$ok);
-    return 'active' if ($output =~ /^Status:\\s+active\\b/im);
-    return 'inactive' if ($output =~ /^Status:\\s+inactive\\b/im);
+    return 'active' if ($output =~ /^Status:\s+active\b/im);
+    return 'inactive' if ($output =~ /^Status:\s+inactive\b/im);
     return 'unknown';
 }
 
