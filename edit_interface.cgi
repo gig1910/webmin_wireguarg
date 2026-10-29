@@ -32,7 +32,7 @@ if (!length($client_allowed_display)) {
         : $text{'interface_client_allowed_none'};
 }
 
-print '<section class="wg-ui-info-section"><h3>'.html_escape($text{'interface_settings'}).'</h3><div class="wg-ui-summary">';
+print '<section class="wg-ui-info-section"><h3>'.html_escape($text{'interface_settings'}).'</h3><div class="wg-ui-summary wg-ui-interface-summary">';
 print wg_ui_summary_card($text{'interface_file'}, '<tt>'.html_escape($path).'</tt>');
 print wg_ui_summary_card($text{'interface_state'}, '<span class="wg-ui-status" id="wg-interface-state">'.html_escape($text{'runtime_loading'}).'</span>');
 print wg_ui_summary_card($text{'interface_addresses'}, wg_ui_ip_value(join(', ', get_section_values($ifc, 'Address')) || '-',kind=>'cidr'));
@@ -140,7 +140,7 @@ for (my $i = 0; $i < @{$cfg->{'peers'}}; $i++) {
     push @rows, [
         $name_link,
         $state_html,
-        wg_ui_ip_value($allowed,kind=>'cidr'),
+        wg_ui_ip_preview($allowed,20),
         '<span class="wg-network-icon" data-wg-net-icon="'.$id.'"'.
          ($endpoint eq '-'?' hidden':'').' title="'.html_escape($text{'network_icons_unknown'}).'">?</span>',
         '<span class="wg-geoip-country" data-wg-geoip-country="'.$id.'" hidden></span>',
