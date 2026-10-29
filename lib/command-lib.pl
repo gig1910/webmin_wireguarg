@@ -107,9 +107,11 @@ sub wg_firewall_status_warning
 {
     my $state = wg_firewall_ufw_state();
     return '' if ($state eq 'active');
-    return $text{'warning_firewall_ufw_missing'} if ($state eq 'missing');
-    return $text{'warning_firewall_ufw_inactive'} if ($state eq 'inactive');
-    return $text{'error_firewall_ufw_unknown'};
+    return ($text{'warning_firewall_ufw_missing'} || 'UFW missing; rule management skipped')
+        if ($state eq 'missing');
+    return ($text{'warning_firewall_ufw_inactive'} || 'UFW inactive; rule management skipped')
+        if ($state eq 'inactive');
+    return ($text{'error_firewall_ufw_unknown'} || 'Cannot determine UFW status');
 }
 
 sub wg_firewall_preflight
@@ -119,7 +121,8 @@ sub wg_firewall_preflight
         if (!defined($port) || $port !~ /^[0-9]+$/ || $port < 1 || $port > 65535);
     return $text{'error_firewall_hook_missing'} if (!-r File::Spec->rel2abs('wg-firewall-hook.pl'));
     my $state = wg_firewall_ufw_state();
-    return $text{'error_firewall_ufw_unknown'} if ($state eq 'unknown');
+    return ($text{'error_firewall_ufw_unknown'} || 'Cannot determine UFW status')
+        if ($state eq 'unknown');
     return '';
 }
 
