@@ -48,6 +48,73 @@ die "down failed: $msg\n" if (!$ok || @rules != 1 || $rules[0]->{'tag'} ne 'manu
 die "invalid interface accepted\n" if ((WebminWireGuardFirewall::manage('up', 'wg;bad', 38250, %opts))[0]);
 die "invalid port accepted\n" if ((WebminWireGuardFirewall::manage('up', 'wg_vpn', 0, %opts))[0]);
 
+# Missing UFW must not tear down wg-quick in either hook direction.
+my ($missing_ok, $missing_message) = WebminWireGuardFirewall::manage(
+    'up', 'wg_vpn', 38250,
+    ufw => "$temp/no-ufw-binary", lock_path => "$temp/missing.lock"
+);
+die "Missing UFW blocked interface startup: $missing_message\\n"
+    unless ($missing_ok && $missing_message =~ /WARNING: UFW unavailable/);
+($missing_ok, $missing_message) = WebminWireGuardFirewall::manage(
+    'down', 'wg_vpn', undef,
+    ufw => "$temp/no-ufw-binary", lock_path => "$temp/missing.lock"
+);
+die "Missing UFW blocked interface shutdown: $missing_message\\n"
+    unless ($missing_ok && $missing_message =~ /rule management skipped/);
+
+my @inactive_calls;
+my $inactive_runner = sub {
+    my ($argv) = @_;
+    push(@inactive_calls, [ @$argv ]);
+    return (1, "Status: inactive\\n");
+};
+my %inactive_opts = (
+    runner => $inactive_runner, lock_path => "$temp/inactive.lock"
+);
+for my $action ('up', 'down') {
+    my ($ok, $output) = WebminWireGuardFirewall::manage(
+        $action, 'wg_vpn', $action eq 'up' ? 38250 : undef,
+        %inactive_opts
+    );
+    die "Inactive UFW blocked $action: $output\\n"
+        unless ($ok && $output =~ /WARNING: UFW inactive/);
+}
+die "Inactive UFW changed firewall rules\\n"
+    if (grep { $_->[1] ne 'status' } @inactive_calls);
+
+my $failed_runner = sub { return (0, 'UFW status command failed'); };
+my ($failed_ok) = WebminWireGuardFirewall::manage(
+    'up', 'wg_vpn', 38250,
+    runner => $failed_runner, lock_path => "$temp/failed.lock"
+);
+die "Failed UFW status was silently bypassed\\n" if ($failed_ok);
+my $unknown_runner = sub { return (1, "Status: unexpected\\n"); };
+my ($unknown_ok) = WebminWireGuardFirewall::manage(
+    'up', 'wg_vpn', 38250,
+    runner => $unknown_runner, lock_path => "$temp/unknown.lock"
+);
+die "Unknown UFW status was silently bypassed\\n" if ($unknown_ok);
+
+{
+    no warnings 'redefine';
+    local *main::wg_firewall_ufw_state = sub { return 'missing'; };
+    die "Missing UFW failed preflight\\n" if (wg_firewall_preflight(38250));
+    die "Missing UFW warning absent\\n"
+        unless (wg_firewall_status_warning() eq $text{'warning_firewall_ufw_missing'});
+}
+{
+    no warnings 'redefine';
+    local *main::wg_firewall_ufw_state = sub { return 'inactive'; };
+    die "Inactive UFW failed preflight\\n" if (wg_firewall_preflight(38250));
+    die "Inactive UFW warning absent\\n"
+        unless (wg_firewall_status_warning() eq $text{'warning_firewall_ufw_inactive'});
+}
+{
+    no warnings 'redefine';
+    local *main::wg_firewall_ufw_state = sub { return 'unknown'; };
+    die "Unknown UFW status passed preflight\\n" if (!wg_firewall_preflight(38250));
+}
+
 my %fields = (
     listen_port => '38250', firewall_managed => 1, firewall_ufw => 1,
     addresses => ['10.10.10.1/24'], preup => [], postup => ['echo custom'],
@@ -64,7 +131,7 @@ die "opt-out left an allow hook\n" if ($block =~ /PostUp\s*=\s*.*wg-firewall-hoo
 die "opt-out removed cleanup hook\n" if ($block !~ /PostDown\s*=\s*.*wg-firewall-hook[.]pl/m);
 die "opt-out marker missing\n" if ($block !~ /^#WebminFirewall = off$/m);
 
-# Runtime preflight must reject an unavailable firewall BEFORE stopping a tunnel.
+# Runtime preflight must still reject an unknown/error state BEFORE stopping a tunnel.
 my $config_path = "$temp/wg_safe.conf";
 open(my $conf_fh, '>', $config_path) or die $!;
 print {$conf_fh} "[Interface]\nAddress = 10.10.10.1/24\nPrivateKey = TEST_PRIVATE\nListenPort = 38250\n#WebminFirewall = ufw\n";
