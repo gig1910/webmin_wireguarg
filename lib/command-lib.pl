@@ -88,18 +88,38 @@ sub wg_firewall_hook_command
     return join(' ', map { shell_quote($_) } @args);
 }
 
+# UFW is optional: missing/inactive UFW must not prevent wg-quick from
+# bringing up a tunnel. Unknown status is different: do not silently bypass
+# an active firewall whose status command is failing.
+sub wg_firewall_ufw_state
+{
+    my $ufw = '/usr/sbin/ufw';
+    return 'missing' if (!-x $ufw);
+    local $ENV{'LC_ALL'} = 'C';
+    my ($ok, $output) = run_command([ $ufw, 'status' ], 1, 10, 4096);
+    return 'unknown' if (!$ok);
+    return 'active' if ($output =~ /^Status:\\s+active\\b/im);
+    return 'inactive' if ($output =~ /^Status:\\s+inactive\\b/im);
+    return 'unknown';
+}
+
+sub wg_firewall_status_warning
+{
+    my $state = wg_firewall_ufw_state();
+    return '' if ($state eq 'active');
+    return $text{'warning_firewall_ufw_missing'} if ($state eq 'missing');
+    return $text{'warning_firewall_ufw_inactive'} if ($state eq 'inactive');
+    return $text{'error_firewall_ufw_unknown'};
+}
+
 sub wg_firewall_preflight
 {
     my ($port) = @_;
     return $text{'error_firewall_port_required'}
         if (!defined($port) || $port !~ /^[0-9]+$/ || $port < 1 || $port > 65535);
-    my $ufw = '/usr/sbin/ufw';
-    return $text{'error_firewall_ufw_missing'} if (!-x $ufw);
     return $text{'error_firewall_hook_missing'} if (!-r File::Spec->rel2abs('wg-firewall-hook.pl'));
-    local $ENV{'LC_ALL'} = 'C';
-    my ($ok, $output) = run_command([ $ufw, 'status' ], 1, 10, 4096);
-    return $text{'error_firewall_ufw_inactive'}
-        if (!$ok || $output !~ /^Status:\s+active\b/im);
+    my $state = wg_firewall_ufw_state();
+    return $text{'error_firewall_ufw_unknown'} if ($state eq 'unknown');
     return '';
 }
 
