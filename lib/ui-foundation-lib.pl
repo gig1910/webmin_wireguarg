@@ -125,6 +125,18 @@ sub wg_ui_ip_value {
     return '<span class="wg-ui-mono wg-ui-address" data-wg-address-kind="'.$kind.'"'.
         $attrs.'>'.html_escape($value).'</span>';
 }
+# Only the peer-list presentation is abbreviated. Preserve the first full
+# CIDR in a separate sort key so IPv4/IPv6 numeric sorting stays correct.
+sub wg_ui_ip_preview {
+    my ($value,$limit)=@_;
+    $value='-' unless defined($value) && length($value);
+    $limit=20 unless defined($limit) && $limit =~ /^\d+$/ && $limit > 0;
+    my $visible=length($value)>$limit ? substr($value,0,$limit).'...' : $value;
+    my ($sort_address)=split(/,/, $value, 2);
+    $sort_address =~ s/^\s+|\s+$//g;
+    return wg_ui_ip_value($visible,kind=>'cidr',
+        attrs=>{'data-wg-sort-address'=>$sort_address});
+}
 sub wg_ui_table_actions {
     my (@actions)=@_;
     return '<span class="wg-ui-table-actions">'.join('',grep {defined($_) && length($_)} @actions).'</span>';
@@ -248,6 +260,23 @@ sub wg_ui_foundation {
 .wg-ui .wg-ui-info-section>h3{font-size:14px;font-weight:600;margin:0 0 12px;line-height:1.4}
 .wg-ui .wg-ui-table-actions [hidden],.wg-ui [data-wg-ip-action][hidden]{display:none!important}
 .wg-ui .wg-ui-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+/* Interface properties: six equal cards, then endpoint + five-card AllowedIPs. */
+.wg-ui .wg-ui-interface-summary{grid-template-columns:repeat(6,minmax(0,1fr))}
+.wg-ui .wg-ui-interface-summary>.wg-ui-summary-card:last-child{grid-column:span 5}
+@media(max-width:1250px){
+ .wg-ui .wg-ui-interface-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .wg-ui .wg-ui-interface-summary>.wg-ui-summary-card:last-child{grid-column:span 3}
+}
+@media(max-width:700px){
+ .wg-ui .wg-ui-interface-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .wg-ui .wg-ui-interface-summary>.wg-ui-summary-card:last-child{grid-column:span 2}
+}
+@media(max-width:480px){
+ .wg-ui .wg-ui-interface-summary{grid-template-columns:minmax(0,1fr)}
+ .wg-ui .wg-ui-interface-summary>.wg-ui-summary-card:last-child{grid-column:span 1}
+}
+.wg-ui .wg-ui-allowed-editor{display:block;width:100%;max-width:100%;min-height:120px;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere}
+.wg-ui .wg-ui-allowed-help{margin-top:6px;overflow-wrap:anywhere}
 .wg-ui .wg-ui-summary-card{border:1px solid var(--wg-border);border-radius:5px;padding:12px;min-width:0} .wg-ui .wg-ui-dependency-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:10px} .wg-ui .wg-ui-dependency-item{border:1px solid var(--wg-border);padding:12px;border-radius:5px;min-width:0} .wg-ui .wg-ui-dependency-item strong{display:block;margin-bottom:6px} .wg-ui .wg-ui-dependency-item small{display:block;overflow-wrap:anywhere;margin-top:5px}
 .wg-ui .wg-ui-summary-card>span{display:block;font-size:12px;opacity:.7;margin-bottom:6px}
 .wg-ui .wg-ui-summary-card>strong,.wg-ui .wg-ui-summary-value{display:block;font-size:13px;font-weight:550;overflow-wrap:anywhere;min-width:0}
