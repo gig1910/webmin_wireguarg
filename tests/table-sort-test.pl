@@ -158,6 +158,29 @@ if(sort.value(row(cell('Никогда',{dataset:{sortEpoch:'0'}})),0,'handshake
     throw new Error('Handshake epoch 0 must be NULL');
 if(sort.value(row(cell('0 B')),0,'bytes')!==0)
     throw new Error('Zero bytes is valid, not NULL');
+
+const fullIpNode={
+  dataset:{wgSortAddress:'2001:db8::10/128'},
+  textContent:'2001:db8::10/12...'
+};
+const ipWithIcon={
+  textContent:'✳ 2001:db8::10/12...',
+  querySelector(selector){
+    return selector.includes('[data-wg-address-kind]')?fullIpNode:null;
+  }
+};
+if(!eq(sort.value({cells:[ipWithIcon]},0,'ip'),parse('2001:db8::10/128')))
+  throw new Error('Truncated AllowedIPs must sort by the full first CIDR without icon glyphs');
+const endpointNode={dataset:{},textContent:'10.66.66.2:51820'};
+const endpointWithIcon={
+  textContent:'✳ 10.66.66.2:51820',
+  querySelector(selector){
+    return selector.includes('[data-wg-endpoint]')?endpointNode:null;
+  }
+};
+if(!eq(sort.value({cells:[endpointWithIcon]},0,'endpoint'),parse('10.66.66.2:51820')))
+  throw new Error('Endpoint sorting must ignore adjacent network icon');
+
 CHECKS
     close($fh);
     system($node,'--check',$name)==0 or die "sort helper JavaScript invalid\n";
