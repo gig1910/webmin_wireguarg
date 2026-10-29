@@ -83,7 +83,7 @@ function value(row,i,kind){
   if(kind==='ip'||kind==='endpoint'){
     // Network icon is a presentation glyph, not part of the endpoint address.
     const address=cell.querySelector('[data-wg-address-kind],[data-wg-endpoint]');
-    return ip(address?address.textContent.trim():t);
+    return ip(address?(address.dataset.wgSortAddress||address.textContent.trim()):t);
   }
   if(kind==='handshake'){
     const el=cell.querySelector('[data-wg-handshake]');
