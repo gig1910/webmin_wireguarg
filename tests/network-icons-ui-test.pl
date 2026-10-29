@@ -130,9 +130,11 @@ die "network icon script queries external WHOIS automatically\n"
     if $iface =~ /fetch\([^)]*peer_ip_info/;
 die "icons poller not cleaned up on page destroy\n"
     unless $iface=~/if\(networkRequest\)networkRequest\.abort\(\)/;
-die "sorter must ignore the icon glyph\n"
+# Full CIDR sort keys may differ from abbreviated cell text. Verify the
+# address element is still selected instead of the preceding network icon.
+die "sorter must ignore icon glyphs and preserve full address sort keys\n"
     unless $sort=~/cell\.querySelector\('\[data-wg-address-kind\],\[data-wg-endpoint\]'\)/ &&
-           $sort=~/return ip\(address\?address\.textContent\.trim\(\):t\)/;
+           $sort=~/address\.dataset\.wgSortAddress\|\|address\.textContent\.trim\(\)/;
 die "peer tabs not restricted to existing peers\n"
     unless $peer =~ /if \(\$peer\) \{\s+print '<div id=.*wg-peer-detail-tabs/s;
 for my $pane (qw(settings usage activity)) {
