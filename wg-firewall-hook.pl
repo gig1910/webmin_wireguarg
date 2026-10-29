@@ -10,5 +10,10 @@ if (!$ok) {
     print STDERR "WireGuard/UFW: $message\n";
     exit 1;
 }
-print "$message\n";
+if ($message =~ /^WARNING:/) {
+    print STDERR "WireGuard/UFW: $message\n";
+}
+else {
+    print "$message\n";
+}
 exit 0;
