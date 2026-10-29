@@ -17,6 +17,16 @@ my $action=wg_ui_icon_action(icon=>'globe',label=>'WHOIS / GeoIP',
 die "WHOIS button missing accessibility or index\n"
     unless $action=~/type="button"/ &&
            $action=~/data-wg-ip-inspect="3"/ && $action=~/<svg/;
+my $full_allowed='10.66.66.2/32, 192.168.251.0/24, 2001:db8::/64';
+my $preview=wg_ui_ip_preview($full_allowed,20);
+my ($shown)=$preview =~ />([^<]+)<\/span>/;
+die "Peer AllowedIPs preview must show only 20 characters and ellipsis\n"
+    unless defined($shown) && $shown eq substr($full_allowed,0,20).'...';
+die "Truncated AllowedIPs must preserve the first full CIDR for sorting\n"
+    unless $preview =~ /data-wg-sort-address="10\.66\.66\.2\/32"/;
+my $short_preview=wg_ui_ip_preview('10.66.66.2/32',20);
+die "Short AllowedIPs must not be abbreviated\n"
+    unless $short_preview =~ />10\.66\.66\.2\/32<\/span>/;
 my $zone=wg_ui_danger_zone('<button>delete</button>','Danger');
 die "Danger zone is not collapsed by default\n"
     unless $zone=~/<details/ && $zone=~/<summary>/ && $zone!~/\sopen(?:\s|>)/;
