@@ -190,8 +190,10 @@ if ($access{'manage'}) {
     }
     print ui_table_row(
         $text{'peer_client_allowed'},
-        wg_ui_validated_input('clientallowedips',$client_allowed_override,60,'cidr-list',
-             $text{'ui_form_invalid'}).'<br><small>'.$client_allowed_help.'</small>'
+        '<textarea class="form-control wg-ui-allowed-editor" name="clientallowedips" rows="7"'.
+        ' data-wg-validate="cidr-list" title="'.html_escape($text{'ui_form_invalid'}).'">'.
+        html_escape($client_allowed_override).'</textarea>'.
+        '<div class="wg-ui-allowed-help"><small>'.$client_allowed_help.'</small></div>'
     );
     print ui_table_row($text{'peer_client_mtu'}, wg_ui_number_input('clientmtu',$peer ?
              (get_meta_value($peer,'clientmtu')||'') : '',1,65535));
