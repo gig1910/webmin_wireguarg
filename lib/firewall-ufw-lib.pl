@@ -39,7 +39,9 @@ sub manage {
         if ($action eq 'up' && (!defined($port) || $port !~ /^[0-9]+$/ || $port < 1 || $port > 65535));
     my $ufw = $options{'ufw'} || '/usr/sbin/ufw';
     my $runner = $options{'runner'} || \&_execute;
-    return (0, "UFW unavailable: $ufw") if (!-x $ufw && !$options{'runner'});
+    # UFW is optional. Never abort wg-quick when it is not installed.
+    return (1, "WARNING: UFW unavailable ($ufw); $action rule management skipped")
+        if (!-x $ufw && !$options{'runner'});
 
     # Serialize our own hook invocations so numbered-rule deletion is stable.
     # This cannot prevent independent administrators from changing UFW rules
@@ -51,9 +53,13 @@ sub manage {
     my $status = sub { return $runner->([ $ufw, 'status', 'numbered' ]); };
     my ($ok, $output) = $status->();
     return (0, "UFW status failed: $output") if (!$ok);
-    if ($action eq 'up' && $output !~ /^Status:\s+active\b/im) {
-        return (0, 'UFW must be active before automatically opening a WireGuard port');
-    }
+    # Inactive UFW has no live filtering policy to update. Leave WireGuard
+    # operational and avoid creating/deleting rules on an inactive firewall.
+    # An unrecognized or failed status remains an error: it might be active.
+    return (1, "WARNING: UFW inactive; $action rule management skipped")
+        if ($output =~ /^Status:\s+inactive\b/im);
+    return (0, "Unrecognized UFW status: $output")
+        if ($output !~ /^Status:\s+active\b/im);
 
     if ($action eq 'up') {
         my @current = _managed_rules($output, $name);
