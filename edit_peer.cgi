@@ -161,23 +161,24 @@ if ($access{'manage'}) {
         wg_ui_validated_input('clientaddress',$client_address,48,'cidr-list',
              $text{'ui_form_invalid'}).'<br><small>'.$client_address_help.'</small>'
     );
-    print ui_table_row(
-        $text{'peer_allowed_ips'},
-        textarea_field('allowed_ips', $routes, 3).'<br><small>'.$text{'peer_allowed_ips_help'}.'</small>'
-    );
-    # Existing route overlaps are informational; they do not block saving.
+    # Route overlaps are informational; show warnings inside the AllowedIPs row.
     my @shown_allowed = grep { length($_) } ($client_address, @$routes_ref);
     my $route_overlap = peer_allowed_ip_conflict(
         $cfg, \@shown_allowed, $new ? undef : $in{'peer'}
     );
+    my $route_warning = '<p class="help-block">'.
+        html_escape($text{'peer_allowed_overlap_general_warning'}).'</p>';
     if ($route_overlap) {
-        print '<div class="alert alert-warning" role="alert">'.
+        $route_warning .= '<div class="alert alert-warning" role="alert">'.
             html_escape(text('peer_allowed_overlap_warning',
                 $route_overlap->{'candidate'}, $route_overlap->{'existing'},
                 $route_overlap->{'peer_name'})).'</div>';
     }
-    print '<p class="help-block">'.
-        html_escape($text{'peer_allowed_overlap_general_warning'}).'</p>';
+    print ui_table_row(
+        $text{'peer_allowed_ips'},
+        textarea_field('allowed_ips', $routes, 3).'<br><small>'.
+        $text{'peer_allowed_ips_help'}.'</small>'.$route_warning
+    );
     print ui_table_row($text{'peer_endpoint'}, wg_ui_validated_input('endpoint',$peer ?
              (get_section_value($peer,'Endpoint')||'') : '',52,'endpoint',
              $text{'ui_form_endpoint'}));
