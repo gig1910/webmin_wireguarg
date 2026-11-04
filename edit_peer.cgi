@@ -165,6 +165,19 @@ if ($access{'manage'}) {
         $text{'peer_allowed_ips'},
         textarea_field('allowed_ips', $routes, 3).'<br><small>'.$text{'peer_allowed_ips_help'}.'</small>'
     );
+    # Existing route overlaps are informational; they do not block saving.
+    my @shown_allowed = grep { length($_) } ($client_address, @$routes_ref);
+    my $route_overlap = peer_allowed_ip_conflict(
+        $cfg, \@shown_allowed, $new ? undef : $in{'peer'}
+    );
+    if ($route_overlap) {
+        print '<div class="alert alert-warning" role="alert">'.
+            html_escape(text('peer_allowed_overlap_warning',
+                $route_overlap->{'candidate'}, $route_overlap->{'existing'},
+                $route_overlap->{'peer_name'})).'</div>';
+    }
+    print '<p class="help-block">'.
+        html_escape($text{'peer_allowed_overlap_general_warning'}).'</p>';
     print ui_table_row($text{'peer_endpoint'}, wg_ui_validated_input('endpoint',$peer ?
              (get_section_value($peer,'Endpoint')||'') : '',52,'endpoint',
              $text{'ui_form_endpoint'}));
