@@ -48,21 +48,26 @@ die "IPv4 false overlap\n" if (cidrs_overlap('10.66.66.8/32', '10.66.66.4/30'));
 die "IPv6 overlap missed\n" if (!cidrs_overlap('fd66::2/128', 'fd66::/64'));
 die "cross-family false overlap\n" if (cidrs_overlap('10.66.66.2/32', 'fd66::2/128'));
 
-my $conflict = peer_allowed_ip_conflict($cfg, [ '10.66.66.6/32' ], undef);
+# Preserve the original overlap checks without the added default-route peer.
+my $cfg_without_default = {
+    %$cfg,
+    peers => [ @{$cfg->{'peers'}}[0, 1, 3] ],
+};
+my $conflict = peer_allowed_ip_conflict($cfg_without_default, [ '10.66.66.6/32' ], undef);
 die "peer conflict missed\n" if (!$conflict);
 die "wrong conflicting peer\n" if (($conflict->{'peer_name'} || '') ne 'Peer-3-and-range');
 die "wrong existing range\n" if (($conflict->{'existing'} || '') ne '10.66.66.4/30');
 
-my $disabled_conflict = peer_allowed_ip_conflict($cfg, [ 'fd66::2/128' ], undef);
+my $disabled_conflict = peer_allowed_ip_conflict($cfg_without_default, [ 'fd66::2/128' ], undef);
 die "disabled peer conflict missed\n" if (!$disabled_conflict || !$disabled_conflict->{'disabled'});
 
-my $skip_conflict = peer_allowed_ip_conflict($cfg, [ '10.66.66.2/32' ], 0);
+my $skip_conflict = peer_allowed_ip_conflict($cfg_without_default, [ '10.66.66.2/32' ], 0);
 die "editing peer conflicts with itself\n" if ($skip_conflict);
 
-my $route_conflict = peer_allowed_ip_conflict($cfg, [ '192.168.10.128/25' ], undef);
+my $route_conflict = peer_allowed_ip_conflict($cfg_without_default, [ '192.168.10.128/25' ], undef);
 die "routed subnet overlap missed\n" if (!$route_conflict);
 
-my $clean = peer_allowed_ip_conflict($cfg, [ '172.16.0.0/16' ], undef);
+my $clean = peer_allowed_ip_conflict($cfg_without_default, [ '172.16.0.0/16' ], undef);
 die "false peer conflict\n" if ($clean);
 
 # Wide prefixes are routing entries, not allocations. Exact hosts still
