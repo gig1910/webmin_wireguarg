@@ -260,6 +260,39 @@ sub peer_allowed_ip_conflict
     return undef;
 }
 
+# Only exact tunnel host addresses are exclusive assignments. Broad routes
+# can legitimately overlap and must not prevent allocating a new tunnel IP.
+sub peer_exact_host_conflict
+{
+    my ($cfg, $candidate_values, $skip_index) = @_;
+    return undef if (!$cfg || !$candidate_values);
+    my @candidate = grep { $_->{'prefix'} == $_->{'bits'} }
+        grep { defined($_) } map { _cidr_details($_) } @$candidate_values;
+
+    for (my $i = 0; $i < @{$cfg->{'peers'} || []}; $i++) {
+        next if (defined($skip_index) && "$i" eq "$skip_index");
+        my $peer = $cfg->{'peers'}->[$i];
+        foreach my $value (get_section_values($peer, 'AllowedIPs')) {
+            foreach my $item (_split_list($value)) {
+                my $existing = _cidr_details($item);
+                next if (!$existing || $existing->{'prefix'} != $existing->{'bits'});
+                foreach my $candidate (@candidate) {
+                    next if ($candidate->{'family'} != $existing->{'family'});
+                    next if ($candidate->{'address_packed'} ne $existing->{'address_packed'});
+                    return {
+                        candidate => $candidate->{'value'},
+                        existing => $existing->{'value'},
+                        peer_index => $i,
+                        peer_name => peer_display_name($peer, $i),
+                        disabled => $peer->{'disabled'} ? 1 : 0,
+                    };
+                }
+            }
+        }
+    }
+    return undef;
+}
+
 sub first_free_peer_address
 {
     my ($cfg) = @_;
@@ -274,7 +307,8 @@ sub first_free_peer_address
     my @used;
     foreach my $peer (@{$cfg->{'peers'} || []}) {
         foreach my $value (get_section_values($peer, 'AllowedIPs')) {
-            push(@used, grep { defined($_) } map { _cidr_details($_) } _split_list($value));
+            push(@used, grep { defined($_) && $_->{'prefix'} == $_->{'bits'} }
+                map { _cidr_details($_) } _split_list($value));
         }
     }
 
