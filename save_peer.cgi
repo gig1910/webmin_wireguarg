@@ -73,7 +73,9 @@ my %seen;
 my @server_allowed = grep { length($_) && !$seen{$_}++ } (@client_addresses, @routes);
 error($text{'error_allowed_required'}) if (!@server_allowed);
 
-my $conflict = peer_allowed_ip_conflict(
+# Only duplicate exclusive host assignments are fatal. Overlapping
+# routed prefixes are legitimate in WireGuard and must remain warnings.
+my $conflict = peer_exact_host_conflict(
     $cfg,
     \@server_allowed,
     $is_new ? undef : $in{'peer'}
