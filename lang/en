@@ -591,3 +591,5 @@ network_refresh_city=Resolve city again
 unlocode_search_button=Find city in UN/LOCODE
 
 network_city_clear=Clear city and code
+peer_allowed_overlap_warning=AllowedIPs $1 overlaps $2 on peer “$3”. This is permitted, but check routing precedence.
+peer_allowed_overlap_general_warning=Overlapping routed prefixes are permitted. Exact duplicate tunnel host addresses (/32 or /128) are blocked. A broad route (including 0.0.0.0/0) does not reserve all addresses for automatic allocation.
